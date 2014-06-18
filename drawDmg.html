@@ -17,7 +17,7 @@
 					};
 				},
 				startDraw = function (c, index) {
-				var skills = {}, name, i = 0, checkbox, indexLine, zoomLvl = 1, redraw, padding = 30,
+				var skills = {}, name, i = 0, checkbox, indexLine, zoomLvl = 1, redraw, padding = 50,
 					ctx = c.getContext("2d"),
 					life = document.getElementById("life"),
 					fireRes = document.getElementById("fireRes"),
@@ -90,6 +90,20 @@
 						}
 						return d;
 					},
+					dmgToCtx = function (dmg) {
+						if (enableLogDmgScale) {
+							dmg = Math.log(1 + dmg) * 100;
+						}
+						return parseInt(c.height - (dmg * zoomLvl)) - padding;
+					},
+					ctxPxToDmg = function (px) {
+						var dmg = (c.height - (px + padding)) / zoomLvl;
+						if (enableLogDmgScale) {
+							dmg /= 100;
+							dmg = Math.pow(Math.E, dmg) - 1;
+						}
+						return dmg | 0;
+					}
 					skill = function (rawSkill, name) {
 						var s = {apply: {crit: true, def: true, castTime: true, burn: true, shock: true}}, i, type;
 						s.name = name;
@@ -336,13 +350,14 @@
 				}
 				
 				redraw = function () {
-						var name, lvl, dmg, lastLvl, first;
+						var name, lvl, dmg, lastLvl, first, i;
 						c.width = 1000;
 						c.height = 900;
 						
-						ctx.fillStyle = "#cccccc";
-						ctx.beginPath();
-						ctx.fillRect(padding, 0, c.width - padding, c.height - padding);
+						for (i = 0; i < c.height - padding; i += 10) {
+							ctx.fillStyle = (i / 10) & 1 ? "#CCCCCC" : "#DDDDDD";
+							ctx.fillRect(padding, i, c.width - padding, 10);
+						}
 						
 						for (name in skills) {
 							lastLvl = -1;
@@ -355,10 +370,7 @@
 									dmg = skills[name].totalDmg(lvl);
 									if (dmg > 0) {
 										//start drawing:
-										if (enableLogDmgScale) {
-											dmg = Math.log(1 + dmg) * 100;
-										}
-										ctx[first ? 'moveTo': 'lineTo'](padding + lvl * 10, parseInt(c.height - (dmg * zoomLvl)) - padding);
+										ctx[first ? 'moveTo': 'lineTo'](padding + lvl * 10, dmgToCtx(dmg));
 										first = false;
 									}
 									lastLvl = lvl;
@@ -390,12 +402,16 @@
 						ctx.stroke();
 						
 						ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
-						for (i = 10; i <= 100; i += 10) {
+						for (i = 10; i <= 100; i += 10) {//char/mosnter lvl on axis.
 							ctx.fillText(i, padding - 5 + i * 10, c.height - 19);
 							ctx.beginPath();
 							ctx.moveTo(padding + i * 10, c.height - padding);
 							ctx.lineTo(padding + i * 10, 0);
 							ctx.stroke();
+						}
+						
+						for (i = 1; i <= 100; i += 2) {//dmg values on axis.
+							ctx.fillText(ctxPxToDmg(c.height - padding - i * 10), 25, c.height - padding - i * 10);
 						}
 					};
 				redraw();
@@ -427,7 +443,7 @@
 				display: block;
 			}
 			.misc label {
-				width: 250px;
+				width: 300px;
 				height: 25px;
 				position: relative;
 			}
@@ -435,15 +451,13 @@
 				right: 0;
 				top: 0;
 				position: absolute;
+				max-width: 50px;
 			}
 			.misc div {
 				display: block;
 				margin-bottom: 10px;
 				padding: 2px;
 				border: 1px solid #000;
-			}
-			.misc input {
-				max-width: 50px;
 			}
 			.canvasContainer {
 				width: 1080px;
