@@ -60,6 +60,7 @@
 						for (i = 0; i < 100; i += 1) {
 							armour = armourValues[i] || armour;
 							res = 49 + i / 2;// for now: assume no chaos res, life is not used and all ele res are equal
+							res = res > 80 ? 80 : res;//cap res at 80
 							lvls[i] = {life : -1, 'armour': armour, fire: res, cold: res, light: res};
 						}
 						return lvls;
@@ -403,7 +404,7 @@
 						
 						ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
 						for (i = 10; i <= 100; i += 10) {//char/mosnter lvl on axis.
-							ctx.fillText(i, padding - 5 + i * 10, c.height - 19);
+							ctx.fillText(i, padding - 5 + i * 10, c.height - 30);
 							ctx.beginPath();
 							ctx.moveTo(padding + i * 10, c.height - padding);
 							ctx.lineTo(padding + i * 10, 0);
@@ -496,6 +497,12 @@
 				<label title="(disable to see dmg per cast or for cast on crit builds)">Enable cast speed <input type="checkbox" checked="true" id="cbCastSpeed" /></label>
 			</div>
 			<div>
+				<h2>Skill specifics.</h2>
+				<label>Asume burning for Flame Surge: <input type="checkbox" id="cbFlameSurgeBurn" /></label>
+				<label>Flame blast stage: <input type="text" id="cbFlameBlastStage" value="0" /></label>
+				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input type="text" id="txtincinerateCastDuration" value="5" /></label>
+			</div>
+			<div>
 				<h2>Player stats. (values are in %)</h2>
 				<label title="for iron will (not in % ofcourse...)">Strength<input type="text" /></label>
 				<label>Cast speed incr.<input type="text" /></label>
@@ -521,12 +528,6 @@
 				<label>(crit weakness)Additional chance to crit<input type="text" /></label>
 				<label>(crit weakness)Extra crit multiplier<input type="text" /></label>
 				<label>(temp chains)Extra burn duration<input type="text" /></label>
-			</div>
-			<div>
-				<h2>Skill specifics.</h2>
-				<label>Asume burning for Flame Surge: <input type="checkbox" id="cbFlameSurgeBurn" /></label>
-				<label>Flame blast stage: <input type="text" id="cbFlameBlastStage" value="0" /></label>
-				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input type="text" id="txtincinerateCastDuration" value="5" /></label>
 			</div>
 		</div>
 	</body>
