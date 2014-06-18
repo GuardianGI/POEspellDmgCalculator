@@ -39,6 +39,8 @@
 					enableFlameSurgeBurn = false;
 					cbFlameBlastStage = document.getElementById("cbFlameBlastStage"),
 					flameBlastStage = 0;
+					txtincinerateCastDuration = document.getElementById("txtincinerateCastDuration"),
+					incinerateCastDuration = 5
 					getColor = function (n) {
 						var color = "#",
 							colors = ['00', '88', 'FF'];
@@ -171,8 +173,32 @@
 							}
 							return sum *= s.eff;
 						};
+						
+						s.applyIncinerateStage = function () {
+							var lvl, apply = function (dmg) {
+								var i, time, total = 0, stage;
+								for (time = 0, stage = 1;
+										time + s.castTime <= incinerateCastDuration;
+										time += s.castTime) {
+									total += dmg * stage;
+									if (stage < 4) {
+										stage += 1;
+									}
+								}
+								return total / time;
+							};
+							
+							for (lvl = 0; lvl < 100; lvl += 1) {
+								for (type in s.dmg[lvl]) {
+									s.dmg[lvl][type] = apply(s.dmg[lvl][type]);
+								}
+							}
+						}
 						s.isFlameSurge = s.name.indexOf("Flame Surge") > -1;
 						s.isFlameBlast = s.name.indexOf("Flameblast") > -1;
+						s.isIncinerate = s.name.indexOf("Incinerate") > -1;
+						s.isIceSpear = s.name.indexOf("Ice Spear") > -1;
+						
 						s.calcDmg = once(function () {
 							for (i = 0; i < 100; i += 1) {
 								s.dmg[i] = skillDmg(rawSkill, i);
@@ -190,7 +216,10 @@
 							if (enableMonsterDef) {
 								s.applyDefense();
 							}
-							if (enableCastSpeed) {
+							if (s.isIncinerate) {
+								s.applyIncinerateStage();
+							}
+							if (enableCastSpeed && !s.isIncinerate) {
 								s.applyCastTime();
 							}
 							if (enableFlameSurgeBurn && s.isFlameSurge) {
@@ -252,6 +281,12 @@
 				};
 				cbFlameBlastStage.onchange = function () {
 					flameBlastStage = cbFlameBlastStage.value - 0;
+					redraw();
+				};
+				
+				txtincinerateCastDuration.value = incinerateCastDuration;
+				txtincinerateCastDuration.onchange = function () {
+					incinerateCastDuration = txtincinerateCastDuration.value - 0
 					redraw();
 				};
 				
@@ -389,7 +424,7 @@
 			}
 			.misc label {
 				width: 250px;
-				height: 50px;
+				height: 25px;
 				position: relative;
 			}
 			.misc input {
@@ -421,6 +456,11 @@
 			<canvas id="canvas"></canvas>
 		</div>
 		<div class="misc">
+			<div>
+				<h2>graph options</h2>
+				<label>Zoom: <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
+				<label>Logarithmic vertical scale: <input type="checkbox" id="cbLogDmgScale" /></label>
+			</div>
 			<div style="display: none;">
 				<h2>Monster.</h2>
 				<label>Life: <input type="text" value="2000" id="life" /></label>
@@ -431,21 +471,44 @@
 			</div>
 			<div>
 				<h2>Misc.</h2>
-				<label>Enable Shock (requires lightning dmg): <input type="checkbox" checked="true" id="cbShock" /></label>
-				<label>Enable Burn (requires fire dmg): <input type="checkbox" checked="true" id="cbBurn" /></label>
-				<label>Enable crit (assumes 100 crit dmg for now): <input type="checkbox" checked="true" id="cbCrit" /></label>
+				<label title="(requires lightning dmg)">Enable Shock <input type="checkbox" checked="true" id="cbShock" /></label>
+				<label>Enable Burn (requires fire dmg) <input type="checkbox" checked="true" id="cbBurn" /></label>
+				<label>Enable crit <input type="checkbox" checked="true" id="cbCrit" /></label>
 				<label>Enable monster res/armour: <input type="checkbox" checked="true" id="cbMonsterDef" /></label>
-				<label>Enable cast speed (disable to see dmg per cast or for cast on crit builds): <input type="checkbox" checked="true" id="cbCastSpeed" /></label>
+				<label title="(disable to see dmg per cast or for cast on crit builds)">Enable cast speed <input type="checkbox" checked="true" id="cbCastSpeed" /></label>
+			</div>
+			<div>
+				<h2>Player stats. (values are in %)</h2>
+				<label title="for iron will (not in % ofcourse...)">Strength<input type="text" /></label>
+				<label>Cast speed incr.<input type="text" /></label>
+				<label>Crit chance incr.<input type="text" /></label>
+				<label>Crit dmg incr.<input type="text" /></label>
+				<label>incr. spell dmg<input type="text" /></label>
+				<label>incr. elemental dmg<input type="text" /></label>
+				<label>incr. burn dmg<input type="text" /></label>
+				<label>Chance to shock<input type="text" /></label>
+				<label>Chance to ignite<input type="text" /></label>
+				<label>Chance to freeze?</label>
+			</div>
+			<div>
+				<h2>Curses etc. (values are in %)</h2>
+				<label>(vulnerability)incr. phys dmg<input type="text" /></label>
+				<label>reduced elemental resist<input type="text" /></label>
+				<label>reduced fire resist<input type="text" /></label>
+				<label>reduced cold resist<input type="text" /></label>
+				<label>reduced light resist<input type="text" /></label>
+				<label>Chance to shock<input type="text" /></label>
+				<label>Chance to ignite<input type="text" /></label>
+				<label>Chance to freeze?</label>
+				<label>(crit weakness)Additional chance to crit<input type="text" /></label>
+				<label>(crit weakness)Extra crit multiplier<input type="text" /></label>
+				<label>(temp chains)Extra burn duration<input type="text" /></label>
 			</div>
 			<div>
 				<h2>Skill specifics.</h2>
 				<label>Asume burning for Flame Surge: <input type="checkbox" id="cbFlameSurgeBurn" /></label>
 				<label>Flame blast stage: <input type="text" id="cbFlameBlastStage" value="0" /></label>
-			</div>
-			<div>
-				<h2>graph options</h2>
-				<label>Zoom: <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
-				<label>Logarithmic vertical scale: <input type="checkbox" id="cbLogDmgScale" /></label>
+				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input type="text" id="txtincinerateCastDuration" value="5" /></label>
 			</div>
 		</div>
 	</body>
