@@ -176,14 +176,14 @@
 						
 						s.applyIncinerateStage = function () {
 							var lvl, apply = function (dmg) {
-								var i, time, total = 0, stage;
-								for (time = 0, stage = 1;
-										time + s.castTime <= incinerateCastDuration;
-										time += s.castTime) {
+								var time = 0, total = 0, stage = 1, repetition = 0;
+								for (; time + s.castTime <= incinerateCastDuration; time += s.castTime) {
 									total += dmg * stage;
-									if (stage < 4) {
+									if (stage < 4 && repetition == 4) {
 										stage += 1;
+										repetition = 0;
 									}
+									repetition += 1;
 								}
 								return total / time;
 							};
