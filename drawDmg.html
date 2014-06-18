@@ -19,30 +19,7 @@
 				startDraw = function (c, index) {
 				var skills = {}, name, i = 0, checkbox, indexLine, zoomLvl = 1, redraw, padding = 50,
 					ctx = c.getContext("2d"),
-					life = document.getElementById("life"),
-					fireRes = document.getElementById("fireRes"),
-					coldRes = document.getElementById("coldRes"),
-					lightRes = document.getElementById("lightRes"),
-					cbShock = document.getElementById("cbShock"),
-					enableShock = false,
-					cbBurn = document.getElementById("cbBurn"),
-					enableBurn = true,
-					cbCrit = document.getElementById("cbCrit"),
-					enableCrit = true,
-					cbCastSpeed = document.getElementById("cbCastSpeed"),
-					enableCastSpeed = true,
-					cbMonsterDef = document.getElementById("cbMonsterDef"),
-					enableMonsterDef = true,
-					cbLogDmgScale = document.getElementById("cbLogDmgScale"),
-					enableLogDmgScale = true;
-					cbFlameSurgeBurn = document.getElementById("cbFlameSurgeBurn"),
-					enableFlameSurgeBurn = false;
-					txtFlameBlastStage = document.getElementById("txtFlameBlastStage"),
-					flameBlastStage = 10;
-					txtIncrCastSpeed = document.getElementById("txtIncrCastSpeed"),
-					incrCastSpeed = 0;
-					txtincinerateCastDuration = document.getElementById("txtincinerateCastDuration"),
-					incinerateCastDuration = 5
+					userInput = {},
 					getColor = function (n) {
 						var color = "#",
 							colors = ['00', '88', 'FF'];
@@ -94,14 +71,14 @@
 						return d;
 					},
 					dmgToCtx = function (dmg) {
-						if (enableLogDmgScale) {
+						if (userInput.enableLogDmgScale) {
 							dmg = Math.log(1 + dmg) * 100;
 						}
 						return parseInt(c.height - (dmg * zoomLvl)) - padding;
 					},
 					ctxPxToDmg = function (px) {
 						var dmg = (c.height - (px + padding)) / zoomLvl;
-						if (enableLogDmgScale) {
+						if (userInput.enableLogDmgScale) {
 							dmg /= 100;
 							dmg = Math.pow(Math.E, dmg) - 1;
 						}
@@ -116,12 +93,12 @@
 						s.dmg = [];
 						s.castTime = rawSkill.castTime;
 						s.getCastTime = function () {
-							return s.castTime / (1 + (incrCastSpeed / 100));
+							return s.castTime / (1 + (userInput.incrCastSpeed / 100));
 						};
 						s.applyCastTime = once(function () {
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
-									s.dmg[i][type] /= s.getCastTime() * (!s.isFlameBlast ? 1 : 1 + flameBlastStage);
+									s.dmg[i][type] /= s.getCastTime() * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage);
 								}
 							}
 						});
@@ -224,33 +201,33 @@
 								s.dmg[i] = skillDmg(rawSkill, i);
 							}
 							
-							if (enableShock) {
+							if (userInput.enableShock) {
 								s.applyShock();
 							}
-							if (enableCrit) {
+							if (userInput.enableCrit) {
 								s.applyCrit();
 							}
-							if (enableBurn && !s.isFlameSurge) {
+							if (userInput.enableBurn && !s.isFlameSurge) {
 								s.applyBurn();
 							}
-							if (enableMonsterDef) {
+							if (userInput.enableMonsterDef) {
 								s.applyDefense();
 							}
 							if (s.isIncinerate) {
-								if (enableCastSpeed) {
+								if (userInput.enableCastSpeed) {
 									s.applyIncinerateStage();
 								} else {
 									s.applyDmgMultiplier(4);
 								}
 							}
-							if (enableCastSpeed && !s.isIncinerate) {
+							if (userInput.enableCastSpeed && !s.isIncinerate) {
 								s.applyCastTime();
 							}
-							if (enableFlameSurgeBurn && s.isFlameSurge) {
+							if (userInput.enableFlameSurgeBurn && s.isFlameSurge) {
 								s.applyDmgMultiplier(1.5);
 							}
 							if (s.isFlameBlast) {
-								s.applyDmgMultiplier(1 + 1.1 * flameBlastStage);
+								s.applyDmgMultiplier(1 + 1.1 * userInput.flameBlastStage);
 							}
 							s.hasDmg = s.totalDmg(40) > 0;
 						});
@@ -274,54 +251,21 @@
 					zoomLvl /= 2;
 					redraw();
 				}
-				
-				cbBurn.checked = enableBurn;
-				cbBurn.onchange = function () {
-					enableBurn = cbBurn.checked;
-					redraw();
-				};
-				cbCrit.checked = enableCrit;
-				cbCrit.onchange = function () {
-					enableCrit = cbCrit.checked;
-					redraw();
-				};
-				cbCastSpeed.checked = enableCastSpeed;
-				cbCastSpeed.onchange = function () {
-					enableCastSpeed = cbCastSpeed.checked;
-					redraw();
-				};
-				cbMonsterDef.checked = enableMonsterDef;
-				cbMonsterDef.onchange = function () {
-					enableMonsterDef = cbMonsterDef.checked;
-					redraw();
-				};
-				cbShock.checked = enableShock;
-				cbShock.onchange = function () {
-					enableShock = cbShock.checked;
-					redraw();
-				};
-				cbLogDmgScale.checked = enableLogDmgScale;
-				cbLogDmgScale.onchange = function () {
-					enableLogDmgScale = cbLogDmgScale.checked;
-					redraw();
-				};
-				cbFlameSurgeBurn.checked = enableFlameSurgeBurn;
-				cbFlameSurgeBurn.onchange = function () {
-					enableFlameSurgeBurn = cbFlameSurgeBurn.checked;
-					redraw();
-				};
-				txtFlameBlastStage.value = flameBlastStage;
-				txtFlameBlastStage.onchange = function () {
-					flameBlastStage = txtFlameBlastStage.value - 0;
-					redraw();
-				};
-				
-				txtIncrCastSpeed.value = incrCastSpeed;
-				txtIncrCastSpeed.onchange = function () {
-					incrCastSpeed = txtIncrCastSpeed.value - 0;
-					redraw();
-				};
-				
+								
+				(function () {
+					var key, inputs, input;
+					inputs = document.getElementsByClassName("userInput");
+					for (key in inputs) {
+						input = inputs[key];
+						userInput[input.id] = "checkbox" == input.type ? input.checked : input.value - 0;
+						input.onchange = (function (self) {
+							return function () {
+								userInput[self.id] = "checkbox" == self.type ? self.checked : self.value - 0;
+								redraw();
+							};
+						}(input));
+					}
+				}());
 				
 				txtincinerateCastDuration.value = incinerateCastDuration;
 				txtincinerateCastDuration.onchange = function () {
@@ -501,56 +445,56 @@
 			<div>
 				<h2>graph options</h2>
 				<label>Zoom: <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
-				<label>Logarithmic vertical scale: <input type="checkbox" id="cbLogDmgScale" /></label>
+				<label>Logarithmic vertical scale: <input class="userInput" type="checkbox" id="cbLogDmgScale" /></label>
 			</div>
 			<div style="display: none;">
 				<h2>Monster.</h2>
-				<label>Life: <input type="text" value="2000" id="life" /></label>
-				<label>Armour: <input disabled="true" type="text" value="72 - 9072" id="armour" /></label>
-				<label>Fire res: <input type="text" value="75" id="fireRes" /></label>
-				<label>Cold res: <input type="text" value="75" id="coldRes" /></label>
-				<label>light res: <input type="text" value="75" id="lightRes" /></label>
+				<label>Life: <input class="userInput" type="text" value="2000" id="life" /></label>
+				<label>Armour: <input class="userInput" disabled="true" type="text" value="72 - 9072" id="armour" /></label>
+				<label>Fire res: <input class="userInput" type="text" value="75" id="fireRes" /></label>
+				<label>Cold res: <input class="userInput" type="text" value="75" id="coldRes" /></label>
+				<label>light res: <input class="userInput" type="text" value="75" id="lightRes" /></label>
 			</div>
 			<div>
 				<h2>Misc.</h2>
-				<label title="(requires lightning dmg)">Enable Shock <input type="checkbox" id="cbShock" /></label>
-				<label>Enable Burn (requires fire dmg) <input type="checkbox" id="cbBurn" /></label>
-				<label>Enable crit <input type="checkbox" id="cbCrit" /></label>
-				<label>Enable monster res/armour: <input type="checkbox" id="cbMonsterDef" /></label>
-				<label title="(disable to see dmg per cast or for cast on crit builds)">Enable cast speed <input type="checkbox" id="cbCastSpeed" /></label>
+				<label title="(requires lightning dmg)">Enable Shock <input class="userInput" type="checkbox" id="enableShock" /></label>
+				<label>Enable Burn (requires fire dmg) <input class="userInput" type="checkbox" id="enableBurn" /></label>
+				<label>Enable crit <input class="userInput" type="checkbox" id="enableCrit" /></label>
+				<label>Enable monster res/armour: <input class="userInput" type="checkbox" id="enableMonsterDef" /></label>
+				<label title="(disable to see dmg per cast or for cast on crit builds)">Enable cast speed <input class="userInput" type="checkbox" id="enableCastSpeed" /></label>
 			</div>
 			<div>
 				<h2>Skill specifics.</h2>
-				<label>Asume burning for Flame Surge: <input type="checkbox" id="cbFlameSurgeBurn" /></label>
-				<label>Flame blast stage: <input type="text" id="txtFlameBlastStage" value="0" /></label>
-				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input type="text" id="txtincinerateCastDuration" value="5" /></label>
+				<label>Asume burning for Flame Surge: <input class="userInput" type="checkbox" id="enableFlameSurgeBurn" /></label>
+				<label>Flame blast stage: <input class="userInput" type="text" id="flameBlastStage" value="0" /></label>
+				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input class="userInput" type="text" id="incinerateCastDuration" value="5" /></label>
 			</div>
 			<div>
 				<h2>Player stats. (values are in %)</h2>
-				<label title="for iron will (not in % ofcourse...)">Strength<input type="text" id="txtStr" /></label>
-				<label>Cast speed incr.<input type="text" id="txtIncrCastSpeed" /></label>
-				<label>Crit chance incr.<input type="text" /></label>
-				<label>Crit dmg incr.<input type="text" /></label>
-				<label>incr. spell dmg<input type="text" /></label>
-				<label>incr. elemental dmg<input type="text" /></label>
-				<label>incr. burn dmg<input type="text" /></label>
-				<label>Chance to shock<input type="text" /></label>
-				<label>Chance to ignite<input type="text" /></label>
+				<label title="for iron will (not in % ofcourse...)">Strength<input class="userInput" type="text" id="txtStr" /></label>
+				<label>Cast speed incr.<input class="userInput" type="text" id="incrCastSpeed" /></label>
+				<label>Crit chance incr.<input class="userInput" type="text" /></label>
+				<label>Crit dmg incr.<input class="userInput" type="text" /></label>
+				<label>incr. spell dmg<input class="userInput" type="text" /></label>
+				<label>incr. elemental dmg<input class="userInput" type="text" /></label>
+				<label>incr. burn dmg<input class="userInput" type="text" /></label>
+				<label>Chance to shock<input class="userInput" type="text" /></label>
+				<label>Chance to ignite<input class="userInput" type="text" /></label>
 				<label>Chance to freeze?</label>
 			</div>
 			<div>
 				<h2>Curses etc. (values are in %)</h2>
-				<label>(vulnerability)incr. phys dmg<input type="text" /></label>
-				<label>reduced elemental resist<input type="text" /></label>
-				<label>reduced fire resist<input type="text" /></label>
-				<label>reduced cold resist<input type="text" /></label>
-				<label>reduced light resist<input type="text" /></label>
-				<label>Chance to shock<input type="text" /></label>
-				<label>Chance to ignite<input type="text" /></label>
+				<label>(vulnerability)incr. phys dmg<input class="userInput" type="text" /></label>
+				<label>reduced elemental resist<input class="userInput" type="text" /></label>
+				<label>reduced fire resist<input class="userInput" type="text" /></label>
+				<label>reduced cold resist<input class="userInput" type="text" /></label>
+				<label>reduced light resist<input class="userInput" type="text" /></label>
+				<label>Chance to shock<input class="userInput" type="text" /></label>
+				<label>Chance to ignite<input class="userInput" type="text" /></label>
 				<label>Chance to freeze?</label>
-				<label>(crit weakness)Additional chance to crit<input type="text" /></label>
-				<label>(crit weakness)Extra crit multiplier<input type="text" /></label>
-				<label>(temp chains)Extra burn duration<input type="text" /></label>
+				<label>(crit weakness)Additional chance to crit<input class="userInput" type="text" /></label>
+				<label>(crit weakness)Extra crit multiplier<input class="userInput" type="text" /></label>
+				<label>(temp chains)Extra burn duration<input class="userInput" type="text" /></label>
 			</div>
 		</div>
 	</body>
