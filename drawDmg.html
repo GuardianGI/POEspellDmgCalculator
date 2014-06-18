@@ -24,7 +24,7 @@
 					coldRes = document.getElementById("coldRes"),
 					lightRes = document.getElementById("lightRes"),
 					cbShock = document.getElementById("cbShock"),
-					enableShock = true,
+					enableShock = false,
 					cbBurn = document.getElementById("cbBurn"),
 					enableBurn = true,
 					cbCrit = document.getElementById("cbCrit"),
@@ -34,11 +34,13 @@
 					cbMonsterDef = document.getElementById("cbMonsterDef"),
 					enableMonsterDef = true,
 					cbLogDmgScale = document.getElementById("cbLogDmgScale"),
-					enableLogDmgScale = false;
+					enableLogDmgScale = true;
 					cbFlameSurgeBurn = document.getElementById("cbFlameSurgeBurn"),
 					enableFlameSurgeBurn = false;
-					cbFlameBlastStage = document.getElementById("cbFlameBlastStage"),
-					flameBlastStage = 0;
+					txtFlameBlastStage = document.getElementById("txtFlameBlastStage"),
+					flameBlastStage = 10;
+					txtIncrCastSpeed = document.getElementById("txtIncrCastSpeed"),
+					incrCastSpeed = 0;
 					txtincinerateCastDuration = document.getElementById("txtincinerateCastDuration"),
 					incinerateCastDuration = 5
 					getColor = function (n) {
@@ -113,10 +115,13 @@
 						s.cd = 2;//get from passive tree and inc crit dmg support.
 						s.dmg = [];
 						s.castTime = rawSkill.castTime;
+						s.getCastTime = function () {
+							return s.castTime / (1 + (incrCastSpeed / 100));
+						};
 						s.applyCastTime = once(function () {
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
-									s.dmg[i][type] /= s.castTime * (!s.isFlameBlast ? 1 : 1 + flameBlastStage);
+									s.dmg[i][type] /= s.getCastTime() * (!s.isFlameBlast ? 1 : 1 + flameBlastStage);
 								}
 							}
 						});
@@ -192,7 +197,7 @@
 						s.applyIncinerateStage = function () {
 							var lvl, apply = function (dmg) {
 								var time = 0, total = 0, stage = 1, repetition = 0;
-								for (; time + s.castTime <= incinerateCastDuration; time += s.castTime) {
+								for (; time + s.getCastTime() <= incinerateCastDuration; time += s.getCastTime()) {
 									total += dmg * stage;
 									if (stage < 4 && repetition == 4) {
 										stage += 1;
@@ -270,38 +275,53 @@
 					redraw();
 				}
 				
+				cbBurn.checked = enableBurn;
 				cbBurn.onchange = function () {
 					enableBurn = cbBurn.checked;
 					redraw();
 				};
+				cbCrit.checked = enableCrit;
 				cbCrit.onchange = function () {
 					enableCrit = cbCrit.checked;
 					redraw();
 				};
+				cbCastSpeed.checked = enableCastSpeed;
 				cbCastSpeed.onchange = function () {
 					enableCastSpeed = cbCastSpeed.checked;
 					redraw();
 				};
+				cbMonsterDef.checked = enableMonsterDef;
 				cbMonsterDef.onchange = function () {
 					enableMonsterDef = cbMonsterDef.checked;
 					redraw();
 				};
+				cbShock.checked = enableShock;
 				cbShock.onchange = function () {
 					enableShock = cbShock.checked;
 					redraw();
 				};
+				cbLogDmgScale.checked = enableLogDmgScale;
 				cbLogDmgScale.onchange = function () {
 					enableLogDmgScale = cbLogDmgScale.checked;
 					redraw();
 				};
+				cbFlameSurgeBurn.checked = enableFlameSurgeBurn;
 				cbFlameSurgeBurn.onchange = function () {
 					enableFlameSurgeBurn = cbFlameSurgeBurn.checked;
 					redraw();
 				};
-				cbFlameBlastStage.onchange = function () {
-					flameBlastStage = cbFlameBlastStage.value - 0;
+				txtFlameBlastStage.value = flameBlastStage;
+				txtFlameBlastStage.onchange = function () {
+					flameBlastStage = txtFlameBlastStage.value - 0;
 					redraw();
 				};
+				
+				txtIncrCastSpeed.value = incrCastSpeed;
+				txtIncrCastSpeed.onchange = function () {
+					incrCastSpeed = txtIncrCastSpeed.value - 0;
+					redraw();
+				};
+				
 				
 				txtincinerateCastDuration.value = incinerateCastDuration;
 				txtincinerateCastDuration.onchange = function () {
@@ -330,10 +350,10 @@
 					if (skills[name].hasDmg) {
 						skills[name].draw = true;
 						skills[name].color = getColor(i);
+						i += 1;
 						indexLine = document.createElement("span");
 						indexLine.style.color = skills[name].color;
 						index.appendChild(indexLine);
-						indexLine.innerHTML = name;
 						
 						checkbox = document.createElement("input");
 						checkbox.type = "checkbox";
@@ -346,7 +366,10 @@
 								}
 							})(skills[name], checkbox);
 						indexLine.appendChild(checkbox);
-						i += 1;
+						
+						var lbl = document.createElement("label");
+						lbl.innerHTML = name;
+						indexLine.appendChild(lbl);
 					}
 				}
 				
@@ -469,7 +492,7 @@
 	</head>
 	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'))">
 		<div id="index">
-			<span>Toggle all <input type="checkbox" checked="true" onclick="toggleCheckAll(this)" /></span>
+			<span>Toggle all <input type="checkbox" checked onclick="toggleCheckAll(this)" /></span>
 		</div>
 		<div class="canvasContainer">
 			<canvas id="canvas"></canvas>
@@ -490,22 +513,22 @@
 			</div>
 			<div>
 				<h2>Misc.</h2>
-				<label title="(requires lightning dmg)">Enable Shock <input type="checkbox" checked="true" id="cbShock" /></label>
-				<label>Enable Burn (requires fire dmg) <input type="checkbox" checked="true" id="cbBurn" /></label>
-				<label>Enable crit <input type="checkbox" checked="true" id="cbCrit" /></label>
-				<label>Enable monster res/armour: <input type="checkbox" checked="true" id="cbMonsterDef" /></label>
-				<label title="(disable to see dmg per cast or for cast on crit builds)">Enable cast speed <input type="checkbox" checked="true" id="cbCastSpeed" /></label>
+				<label title="(requires lightning dmg)">Enable Shock <input type="checkbox" id="cbShock" /></label>
+				<label>Enable Burn (requires fire dmg) <input type="checkbox" id="cbBurn" /></label>
+				<label>Enable crit <input type="checkbox" id="cbCrit" /></label>
+				<label>Enable monster res/armour: <input type="checkbox" id="cbMonsterDef" /></label>
+				<label title="(disable to see dmg per cast or for cast on crit builds)">Enable cast speed <input type="checkbox" id="cbCastSpeed" /></label>
 			</div>
 			<div>
 				<h2>Skill specifics.</h2>
 				<label>Asume burning for Flame Surge: <input type="checkbox" id="cbFlameSurgeBurn" /></label>
-				<label>Flame blast stage: <input type="text" id="cbFlameBlastStage" value="0" /></label>
+				<label>Flame blast stage: <input type="text" id="txtFlameBlastStage" value="0" /></label>
 				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input type="text" id="txtincinerateCastDuration" value="5" /></label>
 			</div>
 			<div>
 				<h2>Player stats. (values are in %)</h2>
-				<label title="for iron will (not in % ofcourse...)">Strength<input type="text" /></label>
-				<label>Cast speed incr.<input type="text" /></label>
+				<label title="for iron will (not in % ofcourse...)">Strength<input type="text" id="txtStr" /></label>
+				<label>Cast speed incr.<input type="text" id="txtIncrCastSpeed" /></label>
 				<label>Crit chance incr.<input type="text" /></label>
 				<label>Crit dmg incr.<input type="text" /></label>
 				<label>incr. spell dmg<input type="text" /></label>
