@@ -217,7 +217,11 @@
 								s.applyDefense();
 							}
 							if (s.isIncinerate) {
-								s.applyIncinerateStage();
+								if (enableCastSpeed) {
+									s.applyIncinerateStage();
+								} else {
+									s.applyDmgMultiplier(4);
+								}
 							}
 							if (enableCastSpeed && !s.isIncinerate) {
 								s.applyCastTime();
