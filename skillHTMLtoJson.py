@@ -236,13 +236,15 @@ for skill in skills:
 	i = 1
 	for lvl in skill.dmg.lvlStages:
 		s += "{"
-		s += "'lvl': '{}', 'dmg': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}".format(
+		s += "'lvl': '{}', 'dmg': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}".format(
 			lvl, skill.dmg.getAvgDmg(i),
 			sum(skill.dmg.phys[i]) / 2,
 			sum(skill.dmg.fire[i]) / 2,
 			sum(skill.dmg.cold[i]) / 2,
 			sum(skill.dmg.light[i]) / 2,
-			sum(skill.dmg.chaos[i]) / 2)
+			sum(skill.dmg.chaos[i]) / 2,
+			skill.dmg.mana[i])
+			
 		s += "}, ";
 		i += 1
 	s += "]}, "
