@@ -75,6 +75,9 @@
 						lvl += 1;//lvl to 1 based index for comparison to wiki tables.
 						for (i = 0; i < rawSkill.dmg.length; i += 1) {
 							dmgLvl = rawSkill.dmg[i].lvl - 0;
+							if (dmgLvl < 0) {
+								dmgLvl = lastLvl;
+							}
 							if (lastLvl === dmgLvl) {
 								while (dmgLvl < lvl && i < rawSkill.dmg.length) {
 									lvl -= 2;
@@ -626,10 +629,10 @@
 								
 								ctx.fillStyle = "#000000";
 								ctx.fillText(lvl + 1, offset, c.height - 30);
-								ctx.fillText(totalDmg, offset, dmgToCtx(totalDmg) - 5);
+								ctx.fillText(totalDmg | 0, offset, dmgToCtx(totalDmg) - 5);
 								offset += barWidth + 1;
 								if (!nameDrawn && key > s.stages.length / 2) {
-									ctx.fillText(s.name, offset, c.height - 10);
+									ctx.fillText(s.name + " / assumed monster level.", offset - 250, c.height - 10);
 									nameDrawn = true;
 								}
 							}
