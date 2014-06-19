@@ -379,6 +379,26 @@
 					zoomLvl /= 2;
 					redraw();
 				};
+				document.getElementById("shuffleColors").onclick = (function () {
+					var beginColor = 1;
+					return function () {
+						var name, j, i = beginColor, indexLines = document.getElementsByClassName("spellIndexLine");
+						for (name in skills) {
+							if (skills[name].draw) {
+								skills[name].color = getColor(i);
+								for (j in indexLines) {
+									if (name == indexLines[j].getElementsByTagName("label")[0].innerHTML) {
+										indexLines[j].style.color = skills[name].color;
+										break;
+									}
+								}
+							}
+							i += 1;
+						}
+						beginColor += 3;
+						redraw();
+					};
+				})();
 				document.getElementById("useBarGraph").executeOnChange.push((function () {
 					var enableLogDmgScale = document.getElementById("enableLogDmgScale"),
 						useBarGraph = document.getElementById("useBarGraph");
@@ -407,6 +427,7 @@
 						i += 1;
 						indexLine = document.createElement("span");
 						indexLine.style.color = skills[name].color;
+						indexLine.className = "spellIndexLine";
 						index.appendChild(indexLine);
 						
 						checkbox = document.createElement("input");
@@ -458,8 +479,10 @@
 				
 				redraw = function () {
 					var drawBg = function () {
-						for (i = 0; i < c.height - padding; i += 10) {
-							ctx.fillStyle = (i / 10) & 1 ? "#CCCCCC" : "#DDDDDD";
+						ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
+						ctx.fillRect(padding, 0, c.width - padding, c.height - padding);
+						for (i = 0; i < c.height - padding; i += 20) {
+							ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
 							ctx.fillRect(padding, i, c.width - padding, 10);
 						}
 						ctx.font = "15px Georgia";
@@ -671,6 +694,8 @@
 				<label>Zoom: <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
 				<label>Logarithmic vertical scale: <input checked="true" class="userInput" type="checkbox" id="enableLogDmgScale" /></label>
 				<label>Use bar graph: <input class="userInput" type="checkbox" id="useBarGraph" /></label>
+				<label>Use dark background: <input class="userInput" type="checkbox" id="useDarkBg" /></label>
+				<label><button id="shuffleColors">Shuffle graph colors.</button></label>
 			</div>
 			<div style="display: none;">
 				<h2>Monster.</h2>
