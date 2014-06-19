@@ -642,7 +642,8 @@
 									drawSkills.push(skills[name]);
 								}
 							}
-							c.width = !userInput.interlaceBarGraph ? padding + barWidth * 30 * drawSkills.length + drawSkills.length * 10 :
+							c.width = !userInput.interlaceBarGraph ? 
+								padding + (barWidth + 1) * 30 * drawSkills.length + drawSkills.length * 10 :
 								padding + (barWidth + 10) * 90 * drawSkills.length + drawSkills.length * 10;
 							c.height = 900;
 							drawBg();
