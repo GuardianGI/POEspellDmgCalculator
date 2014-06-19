@@ -207,18 +207,13 @@
 							}
 						});
 						s.applyDefense = once(function () {
-							var pen, monster, dprev;
+							var pen, monster;
 							for (i = 0; i < 100; i += 1) {
 								monster = monsters[i] || monster;
 								for (type in s.dmg[i]) {
 									switch (type) {
 									case 'phys':
-									dprev = s.dmg[i][type]
-										s.dmg[i][type] = calcPhysDmg(s.dmg[i][type], monster.armour);
-										if(!isNaN(dprev) && isNaN(s.dmg[i][type])) {
-											console.log(dprev);
-											console.log(monster);
-										}
+										s.dmg[i][type] = calcPhysDmg(s.dmg[i][type] * (1 + userInput.morePhysDmg / 100), monster.armour);
 										break;
 									case 'chaos':
 										s.dmg[i][type] = s.dmg[i][type];//for now, assume 0 chaos res...
@@ -830,7 +825,7 @@
 			</div>
 			<div>
 				<h2>Curses etc. (values are in %)</h2>
-				<label>(vulnerability)incr. phys dmg<input class="userInput" type="text" /></label>
+				<label>(vulnerability)more phys dmg<input class="userInput" type="text" value="0" id="morePhysDmg" /></label>
 				<label>reduced elemental resist<input class="userInput" type="text" value="0" id="reducedEleRes" /></label>
 				<label>reduced fire resist<input class="userInput" type="text" /></label>
 				<label>reduced cold resist<input class="userInput" type="text" /></label>

@@ -28,15 +28,23 @@ sint = ignore_exception(ValueError)(int)
 def getNodeVal(node):
 	return re.search("(<?\<.*?\>)(.*?)\<\/", node.toxml().lower()).group(2).strip()
 
+def tryGetTitle(node):
+	try:
+		nodeTitle = re.search('title="([^"]*)"', node).group(1)
+	except Exception:
+		nodeTitle = node;
+	return nodeTitle
+	
 class support:
 	def __init__(self, fileName):
 		print(fileName)
 		self.name = fileName.split(".")[0]
 		self.lvlStages = []
 		self.qualityBonus = ""
-		self.keywords = ""
+		self.keywords = []
 		self.manaMultiplier = 1
 		self.values = []
+		self.modifiers = []
 		
 		f = open(dir + file, "rb")
 		content = ""
@@ -83,12 +91,13 @@ class support:
 		except Exception: pass
 		try:
 			keywords = self.getMeta("keywords")
-			self.keywords = keywords
+			self.keywords = [tryGetTitle(word) for word in keywords.split(',')]
 		except Exception: pass
 		try:
 			manaMultiplier = self.getMeta("mana.*?multiplier")
 			self.manaMultiplier = self.percentToFloat(manaMultiplier)
 		except Exception: pass
+		self.getModifiers()
 
 	def parseStatTable(self, table):
 		charLvlColumn = -1
@@ -125,7 +134,16 @@ class support:
 					i += 1
 			rowId += 1
 		self.values = values
-
+	
+	def getModifiers(self):
+		regexStr = 'class="GemInfoboxModifier"[^>]*\>([^<]*)'
+		lastMatch = 0
+		match = re.search(regexStr.lower(), self.content[lastMatch:])
+		while match:
+			self.modifiers.append(match.group(1))
+			lastMatch = self.content.find(match.group(0), lastMatch) + match.group(0).__len__()
+			match = re.search(regexStr.lower(), self.content[lastMatch:])
+	
 	def strToFloat(self, s):
 		return float(re.search("([\d.]*)", s).group(1))
 	
@@ -146,7 +164,12 @@ for file in os.listdir(dir):
 
 s = "{"
 for skill in skills:
-	s += "'{}': {{'manaMultiplier': {}, 'keywords': '{}', 'qualityBonus': '{}', 'stages': [".format(skill.name, skill.manaMultiplier, skill.keywords, skill.qualityBonus)
+	s += "'{}': {{'manaMultiplier': {}, 'keywords': [{}], 'modifiers': [{}], 'qualityBonus': '{}', 'stages': [".format(
+		skill.name,
+		skill.manaMultiplier,
+		', '.join(["'{}'".format(word) for word in skill.keywords]),
+		', '.join(["'{}'".format(word) for word in skill.modifiers]),
+		skill.qualityBonus)
 	
 	for lvl in skill.lvlStages:
 		s += "{}, ".format(lvl)
@@ -155,7 +178,7 @@ for skill in skills:
 	for lvl in skill.lvlStages:
 		s += "{"
 		for collName in skill.values[lvl].keys():
-			s += "'{}': '{}', ".format(collName, skill.values[lvl][collName])
+			s += "'{}': '{}', ".format(tryGetTitle(collName), skill.values[lvl][collName])
 		s += "}, ";
 		i += 1
 	s += "]}, "
