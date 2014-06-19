@@ -425,13 +425,19 @@
 						redraw();
 					};
 				})();
-				document.getElementById("useBarGraph").executeOnChange.push((function () {
+				document.getElementById("elementalColors").executeOnChange.push((function () {
 					var enableLogDmgScale = document.getElementById("enableLogDmgScale"),
-						useBarGraph = document.getElementById("useBarGraph");
+						elementalColors = document.getElementById("elementalColors"),
+						storedEnableLogDmgScaleChecked = true;
 					
 					return function () {
-						enableLogDmgScale.checked = !useBarGraph.checked;
-						enableLogDmgScale.disabled = useBarGraph.checked;
+						if (elementalColors.checked) {
+							storedEnableLogDmgScaleChecked = enableLogDmgScale.checked;
+							enableLogDmgScale.checked = !elementalColors.checked;
+						} else {
+							enableLogDmgScale.checked = storedEnableLogDmgScaleChecked;
+						}
+						enableLogDmgScale.disabled = elementalColors.checked;
 						enableLogDmgScale.apply();
 					}
 				})());
@@ -604,14 +610,21 @@
 									mana: 'rgba(100, 100, 100, 0.4)'},
 								drawBar = function () {
 									totalDmg = 0;
-									for (type in s.dmg[lvl]) {
-										if (s.dmg[lvl][type] > 0) {
-											ctx.fillStyle = styles[type];
-											ctx.fillRect(offset, dmgToCtx(totalDmg),
-												barWidth, -dmgToPx(s.dmg[lvl][type]));
-											totalDmg += s.dmg[lvl][type];
-											
+									if (userInput.elementalColors) {
+										for (type in s.dmg[lvl]) {
+											if (s.dmg[lvl][type] > 0) {
+												ctx.fillStyle = styles[type];
+												ctx.fillRect(offset, dmgToCtx(totalDmg),
+													barWidth, -dmgToPx(s.dmg[lvl][type]));
+												totalDmg += s.dmg[lvl][type];
+												
+											}
 										}
+									} else {
+										totalDmg = s.totalDmg(lvl);
+										ctx.fillStyle = s.color;
+										ctx.fillRect(offset, dmgToCtx(0),
+											barWidth, -dmgToPx(totalDmg));
 									}
 									ctx.fillStyle = styles.mana;
 									ctx.fillRect(offset, c.height - padding,
@@ -629,7 +642,8 @@
 									drawSkills.push(skills[name]);
 								}
 							}
-							c.width = (barWidth) * 35 * (userInput.interlaceBarGraph ? 3 : 1) * drawSkills.length + padding;
+							c.width = !userInput.interlaceBarGraph ? padding + barWidth * 30 * drawSkills.length + drawSkills.length * 10 :
+								padding + (barWidth + 10) * 90 * drawSkills.length + drawSkills.length * 10;
 							c.height = 900;
 							drawBg();
 							//draw bar graph
@@ -758,12 +772,21 @@
 		<div class="misc">
 			<div>
 				<h2>graph options</h2>
-				<label>Zoom: <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
-				<label>Logarithmic vertical scale: <input checked="true" class="userInput" type="checkbox" id="enableLogDmgScale" /></label>
-				<label>Use bar graph: <input class="userInput" type="checkbox" id="useBarGraph" /></label>
-				<label>bargraph: compare skills by lvl: <input class="userInput" type="checkbox" id="interlaceBarGraph" /></label>
-				<label>Use dark background: <input class="userInput" type="checkbox" id="useDarkBg" /></label>
-				<label><button id="shuffleColors">Shuffle graph colors.</button></label>
+				<fieldset>
+					<legend>Scaling.</legend>
+					<label>Zoom: <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
+					<label>Logarithmic vertical scale: <input checked="true" class="userInput" type="checkbox" id="enableLogDmgScale" /></label>
+				</fieldset>
+				<fieldset>
+					<legend><label>Use bar graph: <input class="userInput" type="checkbox" id="useBarGraph" /></label></legend>
+					<label>Show elemental colors: <input class="userInput" type="checkbox" id="elementalColors" /></label>
+					<label>bargraph: compare skills by lvl: <input class="userInput" type="checkbox" id="interlaceBarGraph" /></label>
+				</fieldset>
+				<fieldset>
+					<legend>Color options.</legend>
+					<label>Use dark background: <input class="userInput" type="checkbox" id="useDarkBg" /></label>
+					<label><button id="shuffleColors">Shuffle graph colors.</button></label>
+				</fieldset>
 			</div>
 			<div style="display: none;">
 				<h2>Monster.</h2>
