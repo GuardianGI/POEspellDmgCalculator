@@ -106,6 +106,7 @@ class skill:
 		print(fileName)
 		self.name = fileName.split(".")[0]
 		self.dmg = dmg()
+		self.qualityBonus = ""
 		f_spell = open(dir + file, "rb")
 		content = ""
 		byte = f_spell.read(1)
@@ -187,6 +188,13 @@ class skill:
 			castTime = self.getMeta("cast.*?time")
 			self.dmg.castTime = self.strToFloat(castTime)
 		except Exception: pass
+		try:
+			qualityBonus = self.getMeta("per.*?quality")
+			self.qualityBonus = self.getBonus(qualityBonus)
+		except Exception: pass
+		
+	def getBonus(self, s):
+		return s
 	
 	def strToFloat(self, s):
 		return float(re.search("([\d.]*)", s).group(1))
@@ -232,7 +240,7 @@ f.close()
 
 s = "{"
 for skill in skills:
-	s += "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'dmg': [".format(skill.name, skill.dmg.crit, skill.dmg.effectiveness, skill.dmg.castTime)
+	s += "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'dmg': [".format(skill.name, skill.dmg.crit, skill.dmg.effectiveness, skill.dmg.castTime, skill.qualityBonus)
 	i = 1
 	for lvl in skill.dmg.lvlStages:
 		s += "{"
