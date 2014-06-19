@@ -177,7 +177,7 @@
 							}
 						});
 						s.applyCrit = once(function () {
-							var mult = s.cc * s.cd;
+							var mult = (s.cc * (1 + userInput.incrCritChance / 100)) * (s.cd + userInput.incrCritDmg / 100);
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
 									s.dmg[i][type] += s.dmg[i][type] * mult;
@@ -186,7 +186,7 @@
 						});
 						s.applyBurn = once(function () {
 							for (i = 0; i < 100; i += 1) {
-								s.dmg[i].fire += s.dmg[i].fire * s.cc * 0.8;//20% dmg per second for 4 seconds = 0.8
+								s.dmg[i].fire += s.dmg[i].fire * s.cc * 0.8 * (1 + userInput.incrBurnDmg / 100);//20% dmg per second for 4 seconds = 0.8
 							}
 						});
 						s.applyDmgMultiplier = function (mult) {
@@ -195,6 +195,12 @@
 								for (type in s.dmg[i]) {
 									s.dmg[i][type] *= mult;
 								}
+							}
+						};
+						s.applySpecificMultiplier = function (mult, type) {
+							var i;
+							for (i = 0; i < 100; i += 1) {
+								s.dmg[i][type] *= mult;
 							}
 						};
 						s.applyShock = once(function () {//asumes multi projectile always shotguns & light dmg is enough to make shock last.
@@ -247,6 +253,7 @@
 						s.isFlameBlast = s.name.indexOf("Flameblast") > -1;
 						s.isIncinerate = s.name.indexOf("Incinerate") > -1;
 						s.isIceSpear = s.name.indexOf("Ice Spear") > -1;
+						s.isSearingBond = s.name.indexOf("Searing") > -1;
 						
 						s.calcDmg = once(function () {
 							var lastDmg = 0;
@@ -289,6 +296,15 @@
 								s.applyDmgMultiplier(1 + 1.1 * userInput.flameBlastStage);
 							}
 							s.applyDmgMultiplier(s.eff);
+							s.applyDmgMultiplier(1 + userInput.incrSpellDmg / 100);
+							s.applySpecificMultiplier(1 + userInput.incrEleDmg / 100, 'fire');
+							s.applySpecificMultiplier(1 + userInput.incrEleDmg / 100, 'cold');
+							s.applySpecificMultiplier(1 + userInput.incrEleDmg / 100, 'light');
+							
+							if (s.isSearingBond) {
+								s.applySpecificMultiplier(1 + userInput.incrBurnDmg / 100, 'fire');
+							}
+							
 							s.hasDmg = s.totalDmg(40) > 0;
 						});
 						
@@ -615,12 +631,12 @@
 			<div>
 				<h2>Player stats. (values are in %)</h2>
 				<label title="for iron will (not in % ofcourse...)">Strength<input class="userInput" type="text" id="txtStr" /></label>
-				<label>Cast speed incr.<input class="userInput" type="text" id="incrCastSpeed" /></label>
-				<label>Crit chance incr.<input class="userInput" type="text" /></label>
-				<label>Crit dmg incr.<input class="userInput" type="text" /></label>
-				<label>incr. spell dmg<input class="userInput" type="text" /></label>
-				<label>incr. elemental dmg<input class="userInput" type="text" /></label>
-				<label>incr. burn dmg<input class="userInput" type="text" /></label>
+				<label>Cast speed incr.<input class="userInput" type="text" id="incrCastSpeed" value="0" /></label>
+				<label>Crit chance incr.<input class="userInput" type="text" id="incrCritChance" value="0" /></label>
+				<label>Crit dmg incr.<input class="userInput" type="text" id="incrCritDmg" value="0" /></label>
+				<label>incr. spell dmg<input class="userInput" type="text" id="incrSpellDmg" value="0" /></label>
+				<label>incr. elemental dmg<input class="userInput" type="text" id="incrEleDmg" value="0" /></label>
+				<label>incr. burn dmg<input class="userInput" type="text"  id="incrBurnDmg" value="0" /></label>
 				<label>Chance to shock<input class="userInput" type="text" /></label>
 				<label>Chance to ignite<input class="userInput" type="text" /></label>
 				<label>Chance to freeze?</label>
