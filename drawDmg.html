@@ -644,7 +644,7 @@
 							}
 							c.width = !userInput.interlaceBarGraph ? 
 								padding + (barWidth + 1) * 30 * drawSkills.length + drawSkills.length * 10 :
-								padding + (barWidth + 10) * 90 * drawSkills.length + drawSkills.length * 10;
+								padding + (barWidth + 1) * 90 * drawSkills.length + (90) * 10;
 							c.height = 900;
 							drawBg();
 							//draw bar graph
@@ -662,6 +662,8 @@
 									}
 									offset += 10;
 								}
+								ctx.fillStyle = "#000000";
+								ctx.fillText("Char/monster lvl", 500, c.height - 3);
 							} else {
 								for (i in drawSkills) {//grouped by spell mode
 									s = drawSkills[i];
