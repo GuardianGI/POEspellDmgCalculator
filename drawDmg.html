@@ -153,7 +153,6 @@
 							var reIncr = /(\d+[.]?\d*)%\s*increased\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
 								reChance = /(\d+[.]?\d*)%\s*chance\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
 								matches = s.qualityBonus.match(reIncr), i, value, effect;
-								console.log(matches);
 								if (null != matches && matches.length > 2) {
 									value = matches[1] - 0;
 									if (matches.length > 3) {
@@ -162,7 +161,6 @@
 											s.qualityEffects.push(function () {
 												s.applyDmgMultiplier(1 + value * s.qualityLvl / 100);
 											});
-											console.log("dmg multiplier: " + value)
 											break;
 										}
 										switch (matches[2] + ' ' + matches[3]) {
@@ -222,7 +220,11 @@
 							}
 						});
 						s.applyCrit = once(function () {
-							var mult = (s.cc * (1 + userInput.incrCritChance / 100 + s.incrCcFromQuality * s.qualityLvl)) * (s.cd + userInput.incrCritDmg / 100);
+							var chance = (s.cc * 
+									(1 + userInput.incrCritChance / 100 +
+										s.incrCcFromQuality * s.qualityLvl +
+										(s.isIceSpear && userInput.asumeStageTwoIceSpear ? 5 : 0))),
+								mult = (chance > 1 ? 1 : chance) * (s.cd + userInput.incrCritDmg / 100);
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
 									s.dmg[i][type] += s.dmg[i][type] * mult;
@@ -299,6 +301,7 @@
 						s.isIncinerate = s.name.indexOf("Incinerate") > -1;
 						s.isIceSpear = s.name.indexOf("Ice Spear") > -1;
 						s.isSearingBond = s.name.indexOf("Searing") > -1;
+						s.isIceSpear = s.name.indexOf("Ice Spear") > -1;
 						
 						s.calcDmg = once(function () {
 							var lastDmg = 0;
@@ -690,7 +693,8 @@
 				<label>Asume burning for Flame Surge: <input class="userInput" type="checkbox" id="enableFlameSurgeBurn" /></label>
 				<label>Flame blast stage: <input class="userInput" type="text" id="flameBlastStage" value="10" /></label>
 				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input class="userInput" type="text" id="incinerateCastDuration" value="5" /></label>
-				<label>Quality lvl for all skills<input class="userInput" type="text" value="20" id="qualityLvlAll" /></label>
+				<label title="overides all skill quality lvls and sets them to the given value.">Quality lvl for all skills<input class="userInput" type="text" value="20" id="qualityLvlAll" /></label>
+				<label>Asume stage 2 for Ice Spear<input class="userInput" type="checkbox" id="asumeStageTwoIceSpear" /></label>
 			</div>
 			<div>
 				<h2>Player stats. (values are in %)</h2>
