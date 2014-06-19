@@ -144,6 +144,7 @@
 						s.mana = [];
 						s.incrCastSpeedFromQuality = 0;
 						s.incrCcFromQuality = 0;
+						s.igniteChanceFromQuality = 0;
 						s.castTime = rawSkill.castTime;
 						s.getCastTime = function () {
 							return s.castTime / (1 + (userInput.incrCastSpeed / 100 +
@@ -220,7 +221,7 @@
 										s.dmg[i][type] = s.dmg[i][type];//for now, assume 0 chaos res...
 										break;
 									default:
-										pen = 0;//penetrate and res reduction for the element.
+										pen = userInput.reducedEleRes / 100;//penetrate and res reduction for the element.
 										s.dmg[i][type] *= 1 - ((monster[type] - pen) / 100);
 										break;
 									}
@@ -240,13 +241,15 @@
 							}
 						});
 						s.applyBurn = once(function () {
-							var chanceToIgnite = 1 - ((1 - c.cc) *
-								(1 - s.igniteChanceFromQuality * s.qualityLvl -
-								userInput.chanceToIgnite / 100));
+							//todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
+							var additionalIgniteChance = (s.igniteChanceFromQuality * s.qualityLvl) +
+								((userInput.chanceToIgnite + userInput.monsterChanceToIgnite) / 100),
+								chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
+							chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
 							for (i = 0; i < 100; i += 1) {
 								s.dmg[i].fire += s.dmg[i].fire *
-									s.cc * 0.8 *
-									(1 + userInput.incrBurnDmg / 100);//20% dmg per second for 4 seconds = 0.8
+									chanceToIgnite * 0.8 *
+									(1 + (userInput.incrBurnDmg / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
 							}
 						});
 						s.applyDmgMultiplier = function (mult) {
@@ -750,12 +753,12 @@
 			<div>
 				<h2>Curses etc. (values are in %)</h2>
 				<label>(vulnerability)incr. phys dmg<input class="userInput" type="text" /></label>
-				<label>reduced elemental resist<input class="userInput" type="text" /></label>
+				<label>reduced elemental resist<input class="userInput" type="text" value="0" id="reducedEleRes" /></label>
 				<label>reduced fire resist<input class="userInput" type="text" /></label>
 				<label>reduced cold resist<input class="userInput" type="text" /></label>
 				<label>reduced light resist<input class="userInput" type="text" /></label>
 				<label>Chance to shock<input class="userInput" type="text" /></label>
-				<label>Chance to ignite<input class="userInput" type="text" /></label>
+				<label>Chance to ignite<input class="userInput" type="text" value="0" id="monsterChanceToIgnite" /></label>
 				<label>Chance to freeze?</label>
 				<label>(crit weakness)Additional chance to crit<input class="userInput" type="text" /></label>
 				<label>(crit weakness)Extra crit multiplier<input class="userInput" type="text" /></label>
