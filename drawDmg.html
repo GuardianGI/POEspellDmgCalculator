@@ -183,6 +183,14 @@
 											});
 										}
 									}
+								} else {
+									matches = s.qualityBonus.match(reChance);
+									if (null != matches && matches.length > 4) {
+										value = matches[1] - 0;
+										if ("chance" == matches[2] && "ignite" == matches[4]) {
+											s.igniteChanceFromQuality = value / 100;
+										}
+									}
 								}
 						};
 						s.parseQualityBonus();
@@ -232,8 +240,13 @@
 							}
 						});
 						s.applyBurn = once(function () {
+							var chanceToIgnite = 1 - ((1 - c.cc) *
+								(1 - s.igniteChanceFromQuality * s.qualityLvl -
+								userInput.chanceToIgnite / 100));
 							for (i = 0; i < 100; i += 1) {
-								s.dmg[i].fire += s.dmg[i].fire * s.cc * 0.8 * (1 + userInput.incrBurnDmg / 100);//20% dmg per second for 4 seconds = 0.8
+								s.dmg[i].fire += s.dmg[i].fire *
+									s.cc * 0.8 *
+									(1 + userInput.incrBurnDmg / 100);//20% dmg per second for 4 seconds = 0.8
 							}
 						});
 						s.applyDmgMultiplier = function (mult) {
@@ -731,7 +744,7 @@
 				<label>incr. elemental dmg<input class="userInput" type="text" id="incrEleDmg" value="0" /></label>
 				<label>incr. burn dmg<input class="userInput" type="text"  id="incrBurnDmg" value="0" /></label>
 				<label>Chance to shock<input class="userInput" type="text" /></label>
-				<label>Chance to ignite<input class="userInput" type="text" /></label>
+				<label>Chance to ignite<input class="userInput" type="text" value="0" id="chanceToIgnite" /></label>
 				<label>Chance to freeze?</label>
 			</div>
 			<div>
