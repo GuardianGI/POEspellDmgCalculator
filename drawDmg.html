@@ -507,164 +507,167 @@
 				}
 				
 				redraw = function () {
-					var drawBg = function () {
-						var intLen = function (n) {
-								var i = 1;
-								for (i = 1; n >= 10; i += 1) {
-									n /= 10;
-								}
-								return i;
-							},
-							dmg;
-						ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
-						ctx.fillRect(padding, 0, c.width - padding, c.height - padding);
-						for (i = 0; i < c.height - padding; i += 20) {
-							ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-							ctx.fillRect(padding, i, c.width - padding, 10);
-						}
-						ctx.font = "15px Georgia";
-						ctx.fillStyle = "#000000";
-						ctx.save();
-						ctx.rotate(90 * Math.PI / 180);
-						ctx.fillText("Damage", c.height / 2, -5);
-						ctx.restore();
-						
-						
-						ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-						ctx.lineWidth = 1;
-						ctx.beginPath();
-						ctx.moveTo(padding, c.height - padding);
-						ctx.lineTo(padding, 0);
-						ctx.stroke();
-						ctx.beginPath();
-						ctx.moveTo(padding, c.height - padding);
-						ctx.lineTo(c.width, c.height - padding);
-						ctx.stroke();
-						
-						for (i = 1; i <= 100; i += 2) {//dmg values on axis.
-							dmg = ctxPxToDmg(c.height - padding - i * 10);
-							ctx.fillText(dmg, padding - 5 - 8 * intLen(dmg), c.height - padding - i * 10);
-						}
-					},
-					plot = function () {
-						var name, lvl, dmg, lastLvl, first, i;
-						c.width = 1000;
-						c.height = 900;
-						
-						drawBg();
-						
-						for (name in skills) {
-							lastLvl = -1;
-							first = true;
-							if (skills[name].draw) {
-								skills[name].calcDmg();//recalc dmg.
-								ctx.beginPath();
-								for (lvl in skills[name].dmg) {
-									//if (skills[name].dmg[lvl].phys > 0) alert(name);
-									dmg = skills[name].totalDmg(lvl);
-									if (dmg > 0) {
-										//start drawing:
-										ctx[first ? 'moveTo': 'lineTo'](padding + lvl * 10, dmgToCtx(dmg));
-										first = false;
+					var getTextColor = function () {
+							return userInput.useDarkBg ? "#FFFFFF" : "#000000";
+						},
+						drawBg = function () {
+							var intLen = function (n) {
+									var i = 1;
+									for (i = 1; n >= 10; i += 1) {
+										n /= 10;
 									}
-									lastLvl = lvl;
+									return i;
+								},
+								dmg;
+							ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
+							ctx.fillRect(padding, 0, c.width - padding, c.height - padding);
+							for (i = 0; i < c.height - padding; i += 20) {
+								ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+								ctx.fillRect(padding, i, c.width - padding, 10);
+							}
+							ctx.font = "15px Georgia";
+							ctx.fillStyle = "#000000";
+							ctx.save();
+							ctx.rotate(90 * Math.PI / 180);
+							ctx.fillText("Damage", c.height / 2, -5);
+							ctx.restore();
+							
+							
+							ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+							ctx.lineWidth = 1;
+							ctx.beginPath();
+							ctx.moveTo(padding, c.height - padding);
+							ctx.lineTo(padding, 0);
+							ctx.stroke();
+							ctx.beginPath();
+							ctx.moveTo(padding, c.height - padding);
+							ctx.lineTo(c.width, c.height - padding);
+							ctx.stroke();
+							
+							for (i = 1; i <= 100; i += 2) {//dmg values on axis.
+								dmg = ctxPxToDmg(c.height - padding - i * 10);
+								ctx.fillText(dmg, padding - 5 - 8 * intLen(dmg), c.height - padding - i * 10);
+							}
+						},
+						plot = function () {
+							var name, lvl, dmg, lastLvl, first, i;
+							c.width = 1000;
+							c.height = 900;
+							
+							drawBg();
+							
+							for (name in skills) {
+								lastLvl = -1;
+								first = true;
+								if (skills[name].draw) {
+									skills[name].calcDmg();//recalc dmg.
+									ctx.beginPath();
+									for (lvl in skills[name].dmg) {
+										//if (skills[name].dmg[lvl].phys > 0) alert(name);
+										dmg = skills[name].totalDmg(lvl);
+										if (dmg > 0) {
+											//start drawing:
+											ctx[first ? 'moveTo': 'lineTo'](padding + lvl * 10, dmgToCtx(dmg));
+											first = false;
+										}
+										lastLvl = lvl;
+									}
+									ctx.strokeStyle = skills[name].color;
+									ctx.lineWidth = 2;
+									ctx.stroke();
 								}
-								ctx.strokeStyle = skills[name].color;
-								ctx.lineWidth = 2;
+							}
+							//draw misc stuff
+							ctx.font = "15px Georgia";
+							ctx.fillStyle = "#000000";
+							ctx.fillText("Char/monster lvl", c.width / 2, c.height - 3);
+							
+							ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+							for (i = 10; i <= 100; i += 10) {//char/mosnter lvl on axis.
+								ctx.fillText(i, padding - 5 + i * 10, c.height - 30);
+								ctx.beginPath();
+								ctx.moveTo(padding + i * 10, c.height - padding);
+								ctx.lineTo(padding + i * 10, 0);
 								ctx.stroke();
 							}
-						}
-						//draw misc stuff
-						ctx.font = "15px Georgia";
-						ctx.fillStyle = "#000000";
-						ctx.fillText("Char/monster lvl", c.width / 2, c.height - 3);
-						
-						ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
-						for (i = 10; i <= 100; i += 10) {//char/mosnter lvl on axis.
-							ctx.fillText(i, padding - 5 + i * 10, c.height - 30);
-							ctx.beginPath();
-							ctx.moveTo(padding + i * 10, c.height - padding);
-							ctx.lineTo(padding + i * 10, 0);
-							ctx.stroke();
-						}
-						
-					},
-					barGraph = function () {
-						var nameDrawn = false, key, name, i, offset = padding, totalDmg = 0, type, lvl, s, barWidth = 25,
-							drawSkills = [],
-							styles = {
-								phys: '#888888',
-								fire: '#FF0000',
-								cold: '#0000FF',
-								light: '#FFFF00',
-								chaos: '#00FF00',
-								mana: 'rgba(100, 100, 100, 0.4)'},
-							drawBar = function () {
-								totalDmg = 0;
-								for (type in s.dmg[lvl]) {
-									if (s.dmg[lvl][type] > 0) {
-										ctx.fillStyle = styles[type];
-										ctx.fillRect(offset, dmgToCtx(totalDmg),
-											barWidth, -dmgToPx(s.dmg[lvl][type]));
-										totalDmg += s.dmg[lvl][type];
-										
+							
+						},
+						barGraph = function () {
+							var nameDrawn = false, key, name, i, offset = padding, totalDmg = 0, type, lvl, s, barWidth = 25,
+								drawSkills = [],
+								styles = {
+									phys: '#888888',
+									fire: '#FF0000',
+									cold: '#0000FF',
+									light: '#FFFF00',
+									chaos: '#00FF00',
+									mana: 'rgba(100, 100, 100, 0.4)'},
+								drawBar = function () {
+									totalDmg = 0;
+									for (type in s.dmg[lvl]) {
+										if (s.dmg[lvl][type] > 0) {
+											ctx.fillStyle = styles[type];
+											ctx.fillRect(offset, dmgToCtx(totalDmg),
+												barWidth, -dmgToPx(s.dmg[lvl][type]));
+											totalDmg += s.dmg[lvl][type];
+											
+										}
 									}
+									ctx.fillStyle = styles.mana;
+									ctx.fillRect(offset, c.height - padding,
+										barWidth, -s.mana[lvl]);
+									
+									ctx.fillStyle = getTextColor();
+									ctx.fillText(totalDmg | 0, offset, dmgToCtx(totalDmg) - 5);
+								},
+								drawLvl = function (extraOffset) {
+									ctx.fillStyle = getTextColor();
+									ctx.fillText(lvl + 1, offset + extraOffset, c.height - 30);
+								};
+							for (name in skills) {
+								if (skills[name].draw) {
+									drawSkills.push(skills[name]);
 								}
-								ctx.fillStyle = styles.mana;
-								ctx.fillRect(offset, c.height - padding,
-									barWidth, -s.mana[lvl]);
-								
-								ctx.fillStyle = "#000000";
-								ctx.fillText(totalDmg | 0, offset, dmgToCtx(totalDmg) - 5);
-							},
-							drawLvl = function (extraOffset) {
-								ctx.fillStyle = "#000000";
-								ctx.fillText(lvl + 1, offset + extraOffset, c.height - 30);
-							};
-						for (name in skills) {
-							if (skills[name].draw) {
-								drawSkills.push(skills[name]);
 							}
-						}
-						c.width = (barWidth) * 35 * (userInput.interlaceBarGraph ? 3 : 1) * drawSkills.length + padding;
-						c.height = 900;
-						drawBg();
-						//draw bar graph
-						if (userInput.interlaceBarGraph) {//side by side lvl mode
-							for (i in drawSkills) {
-								drawSkills[i].calcDmg();
-							}
-							for (lvl = 1; lvl < 90; lvl += 1) {
-								drawLvl((drawSkills.length - 1) * barWidth / 2);
+							c.width = (barWidth) * 35 * (userInput.interlaceBarGraph ? 3 : 1) * drawSkills.length + padding;
+							c.height = 900;
+							drawBg();
+							//draw bar graph
+							if (userInput.interlaceBarGraph) {//side by side lvl mode
 								for (i in drawSkills) {
-									s = drawSkills[i];
-									drawBar();
-									
-									offset += barWidth + 1;
+									drawSkills[i].calcDmg();
 								}
-								offset += 10;
-							}
-						} else {
-							for (i in drawSkills) {//grouped by spell mode
-								s = drawSkills[i];
-								s.calcDmg();
-								nameDrawn = false;
-								for (key in s.stages) {
-									lvl = s.stages[key];
-									
-									drawBar();
-									drawLvl(0);
-									
-									offset += barWidth + 1;
-									if (!nameDrawn && key > s.stages.length / 2) {
-										ctx.fillText(s.name + " / assumed monster level.", offset - 250, c.height - 10);
-										nameDrawn = true;
+								for (lvl = 1; lvl < 90; lvl += 1) {
+									drawLvl((drawSkills.length - 1) * barWidth / 2);
+									for (i in drawSkills) {
+										s = drawSkills[i];
+										drawBar();
+										
+										offset += barWidth + 1;
 									}
+									offset += 10;
 								}
-								offset += 10;
+							} else {
+								for (i in drawSkills) {//grouped by spell mode
+									s = drawSkills[i];
+									s.calcDmg();
+									nameDrawn = false;
+									for (key in s.stages) {
+										lvl = s.stages[key];
+										
+										drawBar();
+										drawLvl(0);
+										
+										offset += barWidth + 1;
+										if (!nameDrawn && key > s.stages.length / 2) {
+											ctx.fillText(s.name + " / assumed monster level.", offset - 250, c.height - 10);
+											nameDrawn = true;
+										}
+									}
+									offset += 10;
+								}
 							}
-						}
-					};
+						};
 					if (userInput.useBarGraph) {
 						barGraph();
 					} else {
