@@ -351,6 +351,26 @@
 						var lbl = document.createElement("label");
 						lbl.innerHTML = name;
 						indexLine.appendChild(lbl);
+						lbl.onclick = (function (s) {
+							return function () {
+								var details, head, btnClose;
+								details = document.createElement("div");
+								details.className = "spellDetails";
+								spellDetails.appendChild(details);
+								
+								head = document.createElement("h2");
+								head.innerHTML = s.name;
+								details.appendChild(head);
+								
+								btnClose = document.createElement("button");
+								btnClose.innerHTML = "X";
+								btnClose.className = "cornerBtn";
+								btnClose.onclick = function () {
+									spellDetails.removeChild(details);
+								}
+								details.appendChild(btnClose);
+							};
+						})(skills[name]);
 					}
 				}
 				
@@ -446,6 +466,7 @@
 						drawBg();
 						for (i in drawSkills) {
 							s = drawSkills[i];
+							s.calcDmg();
 							nameDrawn = false;
 							for (key in s.stages) {
 								lvl = s.stages[key];
@@ -533,6 +554,26 @@
 				height; 100%;
 				overflow: auto;
 			}
+			#spellDetails {
+				position: absolute;
+				top: 950px;
+				left: 5px;
+				width: 1200px;
+			}
+			.spellDetails {
+				position: relative;
+				display: block;
+				float: left;
+				padding: 5px;
+				margin: 5px;
+				border: 1px solid #000;
+				/*width: 200px;*/
+			}
+			.cornerBtn {
+				position: absolute;
+				right: 0;
+				top: 0;
+			}
 		</style>
 	</head>
 	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'))">
@@ -599,5 +640,6 @@
 				<label>(temp chains)Extra burn duration<input class="userInput" type="text" /></label>
 			</div>
 		</div>
+		<div id="spellDetails"></div>
 	</body>
 </html>
