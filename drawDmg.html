@@ -224,7 +224,7 @@
 										s.dmg[i][type] = s.dmg[i][type];//for now, assume 0 chaos res...
 										break;
 									default:
-										pen = userInput.reducedEleRes / 100;//penetrate and res reduction for the element.
+										pen = userInput.reducedEleRes;//penetrate and res reduction for the element.
 										s.dmg[i][type] *= 1 - ((monster[type] - pen) / 100);
 										break;
 									}
