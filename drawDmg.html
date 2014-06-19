@@ -598,21 +598,8 @@
 								cold: '#0000FF',
 								light: '#FFFF00',
 								chaos: '#00FF00',
-								mana: 'rgba(100, 100, 100, 0.4)'};
-						for (name in skills) {
-							if (skills[name].draw) {
-								drawSkills.push(skills[name]);
-							}
-						}
-						c.width = (barWidth) * 35 * drawSkills.length + padding;
-						c.height = 900;
-						drawBg();
-						for (i in drawSkills) {
-							s = drawSkills[i];
-							s.calcDmg();
-							nameDrawn = false;
-							for (key in s.stages) {
-								lvl = s.stages[key];
+								mana: 'rgba(100, 100, 100, 0.4)'},
+							drawBar = function () {
 								totalDmg = 0;
 								for (type in s.dmg[lvl]) {
 									if (s.dmg[lvl][type] > 0) {
@@ -628,15 +615,54 @@
 									barWidth, -s.mana[lvl]);
 								
 								ctx.fillStyle = "#000000";
-								ctx.fillText(lvl + 1, offset, c.height - 30);
 								ctx.fillText(totalDmg | 0, offset, dmgToCtx(totalDmg) - 5);
-								offset += barWidth + 1;
-								if (!nameDrawn && key > s.stages.length / 2) {
-									ctx.fillText(s.name + " / assumed monster level.", offset - 250, c.height - 10);
-									nameDrawn = true;
-								}
+							},
+							drawLvl = function (extraOffset) {
+								ctx.fillStyle = "#000000";
+								ctx.fillText(lvl + 1, offset + extraOffset, c.height - 30);
+							};
+						for (name in skills) {
+							if (skills[name].draw) {
+								drawSkills.push(skills[name]);
 							}
-							offset += 10;
+						}
+						c.width = (barWidth) * 35 * (userInput.interlaceBarGraph ? 3 : 1) * drawSkills.length + padding;
+						c.height = 900;
+						drawBg();
+						//draw bar graph
+						if (userInput.interlaceBarGraph) {//side by side lvl mode
+							for (i in drawSkills) {
+								drawSkills[i].calcDmg();
+							}
+							for (lvl = 1; lvl < 90; lvl += 1) {
+								drawLvl((drawSkills.length - 1) * barWidth / 2);
+								for (i in drawSkills) {
+									s = drawSkills[i];
+									drawBar();
+									
+									offset += barWidth + 1;
+								}
+								offset += 10;
+							}
+						} else {
+							for (i in drawSkills) {//grouped by spell mode
+								s = drawSkills[i];
+								s.calcDmg();
+								nameDrawn = false;
+								for (key in s.stages) {
+									lvl = s.stages[key];
+									
+									drawBar();
+									drawLvl(0);
+									
+									offset += barWidth + 1;
+									if (!nameDrawn && key > s.stages.length / 2) {
+										ctx.fillText(s.name + " / assumed monster level.", offset - 250, c.height - 10);
+										nameDrawn = true;
+									}
+								}
+								offset += 10;
+							}
 						}
 					};
 					if (userInput.useBarGraph) {
@@ -732,6 +758,7 @@
 				<label>Zoom: <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
 				<label>Logarithmic vertical scale: <input checked="true" class="userInput" type="checkbox" id="enableLogDmgScale" /></label>
 				<label>Use bar graph: <input class="userInput" type="checkbox" id="useBarGraph" /></label>
+				<label>bargraph: compare skills by lvl: <input class="userInput" type="checkbox" id="interlaceBarGraph" /></label>
 				<label>Use dark background: <input class="userInput" type="checkbox" id="useDarkBg" /></label>
 				<label><button id="shuffleColors">Shuffle graph colors.</button></label>
 			</div>
