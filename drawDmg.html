@@ -318,6 +318,13 @@
 						s.isIceSpear = s.name.indexOf("Ice Spear") > -1;
 						s.isSearingBond = s.name.indexOf("Searing") > -1;
 						s.isIceSpear = s.name.indexOf("Ice Spear") > -1;
+						s.isFireStorm = s.name.indexOf("Firestorm") > -1;
+						
+						if (s.isFireStorm) {
+							s.qualityEffects.push(function () {
+								s.applyDmgMultiplier(1 / (0.1 - s.qualityLvl / 1000));
+							});
+						}
 						
 						s.calcDmg = once(function () {
 							var lastDmg = 0;
