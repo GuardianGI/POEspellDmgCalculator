@@ -403,8 +403,8 @@
 							if (skills[name].draw) {
 								skills[name].color = getColor(i);
 								for (j in indexLines) {
-									if (name == indexLines[j].getElementsByTagName("label")[0].innerHTML) {
-										indexLines[j].style.color = skills[name].color;
+									if (name == indexLines[j].getElementsByTagName("button")[0].innerHTML) {
+										indexLines[j].style.backgroundColor = skills[name].color;
 										break;
 									}
 								}
@@ -442,7 +442,7 @@
 						skills[name].color = getColor(i);
 						i += 1;
 						indexLine = document.createElement("span");
-						indexLine.style.color = skills[name].color;
+						indexLine.style.backgroundColor = skills[name].color;
 						indexLine.className = "spellIndexLine";
 						index.appendChild(indexLine);
 						
@@ -463,14 +463,17 @@
 							})(checkbox);
 						indexLine.appendChild(checkbox);
 						
-						var lbl = document.createElement("label");
+						var lbl = document.createElement("button");
 						lbl.innerHTML = name;
+						/*lbl.style.color = skills[name].color;
+						lbl.style.backgroundColor = "#222";*/
 						indexLine.appendChild(lbl);
 						lbl.onclick = (function (s) {
 							return function () {
 								var details, head, btnClose, lblQualityBonus;
 								details = document.createElement("div");
 								details.className = "spellDetails";
+								details.style.backgroundColor = "#FFF";
 								spellDetails.appendChild(details);
 								
 								head = document.createElement("h2");
@@ -495,6 +498,14 @@
 				
 				redraw = function () {
 					var drawBg = function () {
+						var intLen = function (n) {
+								var i = 1;
+								for (i = 1; n >= 10; i += 1) {
+									n /= 10;
+								}
+								return i;
+							},
+							dmg;
 						ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
 						ctx.fillRect(padding, 0, c.width - padding, c.height - padding);
 						for (i = 0; i < c.height - padding; i += 20) {
@@ -521,7 +532,8 @@
 						ctx.stroke();
 						
 						for (i = 1; i <= 100; i += 2) {//dmg values on axis.
-							ctx.fillText(ctxPxToDmg(c.height - padding - i * 10), 25, c.height - padding - i * 10);
+							dmg = ctxPxToDmg(c.height - padding - i * 10);
+							ctx.fillText(dmg, padding - 5 - 8 * intLen(dmg), c.height - padding - i * 10);
 						}
 					},
 					plot = function () {
@@ -576,7 +588,7 @@
 								cold: '#0000FF',
 								light: '#FFFF00',
 								chaos: '#00FF00',
-								mana: 'rgba(0, 0, 200, 0.3)'};
+								mana: 'rgba(100, 100, 100, 0.4)'};
 						for (name in skills) {
 							if (skills[name].draw) {
 								drawSkills.push(skills[name]);
