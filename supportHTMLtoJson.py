@@ -120,7 +120,7 @@ class support:
 							if not 'icon_small.png' in tdTxt:
 								ColumnNames[i - 1] = tdTxt
 					i += 1
-			elif rowId < 21:#supports like iron will have an extra row that we ignore.
+			elif rowId < 21:#supports like iron will have an extra row that we ignore. (but we need to allow up to 23 for corrupting)
 				for td in row.getElementsByTagName("td"):
 					if i == charLvlColumn:
 						val = getNodeVal(td)
@@ -140,7 +140,7 @@ class support:
 		lastMatch = 0
 		match = re.search(regexStr.lower(), self.content[lastMatch:])
 		while match:
-			self.modifiers.append(match.group(1))
+			self.modifiers.append(match.group(1).replace("'", "\\'"))
 			lastMatch = self.content.find(match.group(0), lastMatch) + match.group(0).__len__()
 			match = re.search(regexStr.lower(), self.content[lastMatch:])
 	
