@@ -77,11 +77,11 @@
 						for (i = 0; i < rawSkill.dmg.length; i += 1) {
 							dmgLvl = rawSkill.dmg[i].lvl - 0;
 							if (lastLvl === dmgLvl) {
-								while (dmgLvl < lvl && i + 1 < rawSkill.dmg.length) {
+								while (dmgLvl < lvl && i < rawSkill.dmg.length) {
 									lvl -= 2;
 									i += 1;
 								}
-								dmgKey = i;
+								dmgKey = i - 1;
 								break;
 							}
 							if (dmgLvl === 0 || isNaN(dmgLvl) || dmgLvl > lvl) {
@@ -427,7 +427,7 @@
 						
 					},
 					barGraph = function () {
-						var key, name, i, offset = 0, totalDmg = 0, type, lvl, s, barWidth = 10,
+						var nameDrawn = false, key, name, i, offset = padding, totalDmg = 0, type, lvl, s, barWidth = 25,
 							drawSkills = [],
 							styles = {
 								phys: '#888888',
@@ -446,22 +446,31 @@
 						drawBg();
 						for (i in drawSkills) {
 							s = drawSkills[i];
+							nameDrawn = false;
 							for (key in s.stages) {
 								lvl = s.stages[key];
 								totalDmg = 0;
 								for (type in s.dmg[lvl]) {
 									if (s.dmg[lvl][type] > 0) {
 										ctx.fillStyle = styles[type];
-										ctx.fillRect(padding + offset, dmgToCtx(totalDmg),
+										ctx.fillRect(offset, dmgToCtx(totalDmg),
 											barWidth, -dmgToPx(s.dmg[lvl][type]));
 										totalDmg += s.dmg[lvl][type];
 										
 									}
 								}
 								ctx.fillStyle = styles.mana;
-								ctx.fillRect(padding + offset, c.height - padding,
+								ctx.fillRect(offset, c.height - padding,
 									barWidth, -s.mana[lvl]);
+								
+								ctx.fillStyle = "#000000";
+								ctx.fillText(lvl + 1, offset, c.height - 30);
+								ctx.fillText(totalDmg, offset, dmgToCtx(totalDmg) - 5);
 								offset += barWidth + 1;
+								if (!nameDrawn && key > s.stages.length / 2) {
+									ctx.fillText(s.name, offset, c.height - 10);
+									nameDrawn = true;
+								}
 							}
 							offset += 10;
 						}
