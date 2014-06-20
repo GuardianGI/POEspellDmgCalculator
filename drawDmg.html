@@ -232,7 +232,7 @@
 							var chance = (s.cc * 
 									(1 + userInput.incrCritChance / 100 +
 										s.incrCcFromQuality * s.qualityLvl +
-										(s.isIceSpear && userInput.asumeStageTwoIceSpear ? 5 : 0))),
+										(s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0))),
 								mult = (chance > 1 ? 1 : chance) * (s.cd + userInput.incrCritDmg / 100);
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
@@ -266,7 +266,7 @@
 								s.dmg[i][type] *= mult;
 							}
 						};
-						s.applyShock = once(function () {//asumes multi projectile always shotguns & light dmg is enough to make shock last.
+						s.applyShock = once(function () {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
 							var hits = 1,
 								shockStage = function (stage) {
 									var m = 0.3 * Math.pow(s.cc, stage) * hits;
@@ -1017,11 +1017,11 @@
 			</div>
 			<div>
 				<h2>Skill specifics.</h2>
-				<label>Asume burning for Flame Surge: <input class="userInput" type="checkbox" id="enableFlameSurgeBurn" /></label>
+				<label>Assume burning for Flame Surge: <input class="userInput" type="checkbox" id="enableFlameSurgeBurn" /></label>
 				<label>Flame blast stage: <input class="userInput" type="text" id="flameBlastStage" value="10" /></label>
 				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input class="userInput" type="text" id="incinerateCastDuration" value="5" /></label>
 				<label title="overides all skill quality lvls and sets them to the given value.">Quality lvl for all skills<input class="userInput" type="text" value="20" id="qualityLvlAll" /></label>
-				<label>Asume stage 2 for Ice Spear<input class="userInput" type="checkbox" id="asumeStageTwoIceSpear" /></label>
+				<label>Assume stage 2 for Ice Spear<input class="userInput" type="checkbox" id="assumeStageTwoIceSpear" /></label>
 			</div>
 			<div>
 				<h2>Player stats. (values are in %)</h2>
