@@ -99,6 +99,13 @@ class dmg:
 	def getDmgPerMana(self, lvl=19):
 		return self.getAvgDmg(lvl) / self.mana[lvl]
 
+def tryGetTitle(node):
+	try:
+		nodeTitle = re.search('title="([^"]*)"', node).group(1)
+	except Exception:
+		nodeTitle = node;
+	return nodeTitle
+	
 f_escape = open("escape.txt", "rb")
 escape = f_escape.read(1)
 class skill:
@@ -106,6 +113,7 @@ class skill:
 		print(fileName)
 		self.name = fileName.split(".")[0]
 		self.dmg = dmg()
+		self.keywords = []
 		self.qualityBonus = ""
 		f_spell = open(dir + file, "rb")
 		content = ""
@@ -192,6 +200,10 @@ class skill:
 			qualityBonus = self.getMeta("per.*?quality")
 			self.qualityBonus = self.getBonus(qualityBonus)
 		except Exception: pass
+		try:
+			keywords = self.getMeta("keywords")
+			self.keywords = [tryGetTitle(word) for word in keywords.split(',')]
+		except Exception: pass
 		
 	def getBonus(self, s):
 		return s
@@ -240,7 +252,13 @@ f.close()
 
 s = "{"
 for skill in skills:
-	s += "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'dmg': [".format(skill.name, skill.dmg.crit, skill.dmg.effectiveness, skill.dmg.castTime, skill.qualityBonus)
+	s += "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'dmg': [".format(
+		skill.name,
+		skill.dmg.crit,
+		skill.dmg.effectiveness,
+		skill.dmg.castTime,
+		skill.qualityBonus,
+		', '.join(["'{}'".format(word) for word in skill.keywords]))
 	i = 1
 	for lvl in skill.dmg.lvlStages:
 		s += "{"
