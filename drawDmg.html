@@ -468,6 +468,7 @@
 												switch (reType) {
 												case 'addedDmg':
 													res[sName].dmg = [];
+													res[sName].isApplicable = function (skill) {return true;};
 													for (stage in s.stageStats) {
 														d = {};
 														d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").reduce(function(pv, cv) { return pv + (cv - 0); }, 0) / 2;;
@@ -479,9 +480,16 @@
 														matches[1] = 'spell';
 													}
 													res[sName].isApplicable = (function (dmgType) {
-														return function (skill) {
-															return skill.keywords.indexOf(dmgType) > -1
-														};
+														if (sName.toLowerCase().indexOf('trap') > -1) {
+															console.log(sName);
+															return function (skill) {
+																return skill.keywords.indexOf('traps') < 0;
+															};														
+														} else {
+															return function (skill) {
+																return skill.keywords.indexOf(dmgType) > -1;
+															};
+														}
 													})(translateMatch(matches[1]));
 													res[sName].multipliers = [];
 													for (stage in s.stageStats) {
@@ -646,7 +654,8 @@
 									var select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti;//todo: calclate dmgDiff
 									select = document.createElement('select');
 									for (supportName in supports) {
-										if (s.supports.indexOf(supports[supportName]) < 0) {
+										console.log(supports[supportName])
+										if (s.supports.indexOf(supports[supportName]) < 0 && supports[supportName].isApplicable(s)) {
 											s.calcDmg();
 											dmgPrev = s.totalDmg(70);
 											s.supports.push(supports[supportName]);//temp add support
