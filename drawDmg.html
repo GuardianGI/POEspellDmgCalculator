@@ -539,7 +539,7 @@
 						indexLine.appendChild(lbl);
 						lbl.onclick = (function (s) {
 							return function () {
-								var details, head, btnClose, lblQualityBonus, name, support, btn;
+								var details, head, btnClose, lblQualityBonus, name, support, node, checkbox, i, txtNode;
 								details = document.createElement("div");
 								details.className = "spellDetails";
 								details.style.backgroundColor = "#FFF";
@@ -562,15 +562,27 @@
 								details.appendChild(lblQualityBonus);
 								
 								for (name in supports) {
-									btn = document.createElement("button");
-									btn.onclick = (function (support) {
+									node = document.createElement("label");
+									checkbox = document.createElement("input");
+									checkbox.type = "checkbox";
+									checkbox.onchange = (function (support, checkbox) {
 										return function() {
-											s.supports.push(support);
+											if (checkbox.checked) {
+												s.supports.push(support);
+											} else {
+												i = s.supports.indexOf(support);
+												if (i > -1) {
+													s.supports.splice(i, 1);
+												}
+											}
 											redraw();
 										}
-									})(supports[name]);
-									btn.innerHTML = name;
-									details.appendChild(btn);
+									})(supports[name], checkbox);
+									
+									txtNode = document.createTextNode(name);
+									node.appendChild(txtNode);
+									details.appendChild(node);
+									node.appendChild(checkbox);
 								}
 							};
 						})(skills[name]);
@@ -818,14 +830,14 @@
 			}
 			.canvasContainer {
 				width: 1080px;
-				height; 100%;
+				height: 100%;
 				overflow: auto;
 			}
 			#spellDetails {
 				position: absolute;
 				top: 950px;
 				left: 5px;
-				width: 1200px;
+				width: 100%;
 			}
 			.spellDetails {
 				position: relative;
