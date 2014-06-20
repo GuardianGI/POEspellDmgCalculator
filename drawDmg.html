@@ -352,7 +352,6 @@
 											}
 											j -= 1;
 											if (j > -1) {
-												console.log([s.dmg[i][type], support.dmg[j][type]]);
 												s.dmg[i][type] += support.dmg[j][type];
 											}
 										}
@@ -590,12 +589,21 @@
 										fieldset.appendChild(getDropdown());
 									};
 								getDropdown = function () {
-									var select, option, supportName, i, options = [], dmgMulti = 1;//todo: calclate dmgDiff
+									var select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti;//todo: calclate dmgDiff
 									select = document.createElement('select');
 									for (supportName in supports) {
 										if (s.supports.indexOf(supports[supportName]) < 0) {
+											s.calcDmg();
+											dmgPrev = s.totalDmg(70);
+											s.supports.push(supports[supportName]);//temp add support
+											s.calcDmg();
+											dmgAfter = s.totalDmg(70);
+											s.supports.splice(s.supports.indexOf(supports[supportName]), 1);//remove support
+											dmgMulti = dmgAfter / dmgPrev;
+											console.log([dmgPrev, dmgAfter]);
+											
 											option = document.createElement('option');
-											option.innerHTML = supportName;
+											option.innerHTML = supportName + ' | ' + dmgMulti.toFixed(2);
 											option.apply = (function (self, s, innerSupport) {
 												return function () {
 													s.supports.push(innerSupport);
@@ -603,11 +611,12 @@
 													redraw();
 												};
 											})(option, s, supports[supportName]);
+											
 											options.push({dmg: dmgMulti, opt: option});
 										}
 									}
 									option = document.createElement('option');
-									option.innerHTML = '--Select a support--';
+									option.innerHTML = '--Select a support | dmg multiplier--';
 									select.appendChild(option);
 									
 									options.sort(function (a, b) {
