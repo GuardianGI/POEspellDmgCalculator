@@ -425,6 +425,7 @@
 										if (column.indexOf(matches[1]) > -1 && column.indexOf('damage') > -1) {
 											res[sName] = {};
 											res[sName].dmg = [];
+											res[sName].name = sName;
 											res[sName].stages = s.stages;
 											res[sName].type = 'addedDmg';
 											for (stage in s.stageStats) {
@@ -539,51 +540,94 @@
 						indexLine.appendChild(lbl);
 						lbl.onclick = (function (s) {
 							return function () {
-								var details, head, btnClose, lblQualityBonus, name, support, node, checkbox, i, txtNode;
+								var details, head, btnClose, fieldset, legend, lblQualityBonus, support, node, checkbox, k, txtNode, getDropdown,
+									drawContent = function () {
+										details.innerHTML = '';
+										head = document.createElement("h2");
+										head.innerHTML = s.name;
+										details.appendChild(head);
+										
+										btnClose = document.createElement("button");
+										btnClose.innerHTML = "X";
+										btnClose.className = "cornerBtn";
+										btnClose.onclick = function () {
+											spellDetails.removeChild(details);
+										}
+										details.appendChild(btnClose);
+										
+										lblQualityBonus = document.createElement("label");
+										lblQualityBonus.innerHTML = s.qualityBonus;
+										details.appendChild(lblQualityBonus);
+										
+										fieldset = document.createElement("fieldset");
+										details.appendChild(fieldset);
+										
+										legend = document.createElement("legend");
+										legend.innerHTML = 'Supports';
+										fieldset.appendChild(legend);
+										
+										for (k in s.supports) {
+											node = document.createElement("label");
+											node.className = "support"
+											checkbox = document.createElement("input");
+											checkbox.type = "checkbox";
+											checkbox.checked = true;
+											checkbox.onchange = (function (support, checkbox) {
+												return function() {
+													var i = s.supports.indexOf(support);
+													if (i > -1) {
+														s.supports.splice(i, 1);
+													}
+													drawContent();
+													redraw();
+												}
+											})(s.supports[k], checkbox);
+											txtNode = document.createTextNode(s.supports[k].name);
+											node.appendChild(txtNode);
+											fieldset.appendChild(node);
+											node.appendChild(checkbox);
+										}
+										fieldset.appendChild(getDropdown());
+									};
+								getDropdown = function () {
+									var select, option, supportName, i, options = [], dmgMulti = 1;//todo: calclate dmgDiff
+									select = document.createElement('select');
+									for (supportName in supports) {
+										if (s.supports.indexOf(supports[supportName]) < 0) {
+											option = document.createElement('option');
+											option.innerHTML = supportName;
+											option.apply = (function (self, s, innerSupport) {
+												return function () {
+													s.supports.push(innerSupport);
+													drawContent();
+													redraw();
+												};
+											})(option, s, supports[supportName]);
+											options.push({dmg: dmgMulti, opt: option});
+										}
+									}
+									option = document.createElement('option');
+									option.innerHTML = '--Select a support--';
+									select.appendChild(option);
+									
+									options.sort(function (a, b) {
+										return b.dmg - a.dmg;
+									});
+									for (i = 0; i < options.length; i += 1) {
+										select.appendChild(options[i].opt);
+									}
+									select.onchange = function () {
+										select.options[select.selectedIndex].apply();
+									}
+									return select;
+								};
 								details = document.createElement("div");
 								details.className = "spellDetails";
 								details.style.backgroundColor = "#FFF";
 								spellDetails.insertBefore(details, spellDetails.childNodes[0]);
 								
-								head = document.createElement("h2");
-								head.innerHTML = s.name;
-								details.appendChild(head);
+								drawContent();
 								
-								btnClose = document.createElement("button");
-								btnClose.innerHTML = "X";
-								btnClose.className = "cornerBtn";
-								btnClose.onclick = function () {
-									spellDetails.removeChild(details);
-								}
-								details.appendChild(btnClose);
-								
-								lblQualityBonus = document.createElement("label");
-								lblQualityBonus.innerHTML = s.qualityBonus;
-								details.appendChild(lblQualityBonus);
-								
-								for (name in supports) {
-									node = document.createElement("label");
-									checkbox = document.createElement("input");
-									checkbox.type = "checkbox";
-									checkbox.onchange = (function (support, checkbox) {
-										return function() {
-											if (checkbox.checked) {
-												s.supports.push(support);
-											} else {
-												i = s.supports.indexOf(support);
-												if (i > -1) {
-													s.supports.splice(i, 1);
-												}
-											}
-											redraw();
-										}
-									})(supports[name], checkbox);
-									
-									txtNode = document.createTextNode(name);
-									node.appendChild(txtNode);
-									details.appendChild(node);
-									node.appendChild(checkbox);
-								}
 							};
 						})(skills[name]);
 					}
@@ -852,6 +896,12 @@
 				position: absolute;
 				right: 0;
 				top: 0;
+			}
+			label.support input {
+				float: right;
+			}
+			label.support {
+				display: block;
 			}
 		</style>
 	</head>
