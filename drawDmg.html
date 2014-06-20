@@ -71,7 +71,7 @@
 						}
 						return lvls;
 					}()),
-					getRawSkillDmgAtLvl = function (rawSkill, lvl) {
+					getRawSkillDmgAtLvl = function (rawSkill, lvl, additionalLvl, maxLvl) {
 						var lastLvl = -1, i, dmgLvl = -1, dmgKey, type;
 						lvl += 1;//lvl to 1 based index for comparison to wiki tables.
 						for (i = 0; i < rawSkill.dmg.length; i += 1) {
@@ -94,14 +94,17 @@
 							lastLvl = dmgLvl;
 						}
 						if (dmgKey >= 0) {
+							dmgKey = dmgKey > maxLvl ? maxLvl : dmgKey;
+							dmgKey += additionalLvl;
+							dmgKey = dmgKey > rawSkill.dmg.length - 1 ? rawSkill.dmg.length - 1 : dmgKey;
 							return rawSkill.dmg[dmgKey];
 						} else {
 							return false;
 						}
 					},
-					skillDmg = function (rawSkill, lvl) {
+					skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
 						var d = {phys: -1, fire: -1, cold: -1, light: -1, chaos: -1},
-							rawSkillDmg = getRawSkillDmgAtLvl(rawSkill, lvl);
+							rawSkillDmg = getRawSkillDmgAtLvl(rawSkill, lvl, additionalLvl, maxLvl);
 						if (rawSkillDmg) {
 							for (type in d) {
 								d[type] = rawSkillDmg[type];
@@ -136,6 +139,8 @@
 					},
 					skill = function (rawSkill, name) {
 						var s = {}, i, type;
+						s.additionalLvl = 0
+						s.maxLvl = 30;
 						s.name = name;
 						s.keywords = rawSkill.keywords;
 						s.qualityBonus = rawSkill.qualityBonus;
@@ -147,6 +152,7 @@
 						s.dmg = [];
 						s.stages = [];
 						s.mana = [];
+						s.supports = [];
 						s.incrCastSpeedFromQuality = 0;
 						s.incrCcFromQuality = 0;
 						s.igniteChanceFromQuality = 0;
@@ -174,7 +180,7 @@
 											//ignore, adds no damage, only range/kill speed.
 											break;
 										case 'cast speed':
-											s.incrCastSpeed = value / 100;
+											s.incrCastSpeedFromQuality = value / 100;
 											break;
 										case 'critical strike':
 											if ('chance' === matches[4]) {
@@ -319,9 +325,7 @@
 						s.isSearingBond = s.name.indexOf("Searing") > -1;
 						s.isIceSpear = s.name.indexOf("Ice Spear") > -1;
 						s.isFireStorm = s.name.indexOf("Firestorm") > -1;
-						
-						s.supports = [];
-						
+												
 						if (s.isFireStorm) {
 							s.qualityEffects.push(function () {
 								s.applyDmgMultiplier(1 / (0.1 - s.qualityLvl / 1000));
@@ -345,12 +349,12 @@
 							var lastDmg = 0, support, key, type, j, lvl;
 							s.stages = [];
 							for (i = 0; i < 100; i += 1) {
-								s.dmg[i] = skillDmg(rawSkill, i);
+								s.dmg[i] = skillDmg(rawSkill, i, s.additionalLvl, s.maxLvl);
 								if (s.sumDmgLvl(s.dmg[i]) > lastDmg) {
 									s.stages.push(i);
 									lastDmg = s.sumDmgLvl(s.dmg[i]);
 								}
-								s.mana[i] = getRawSkillDmgAtLvl(rawSkill, i).mana;
+								s.mana[i] = getRawSkillDmgAtLvl(rawSkill, i, s.additionalLvl, s.maxLvl).mana;
 							}
 							
 							for (key in s.supports) {
@@ -428,10 +432,20 @@
 							}
 							
 							s.hasDmg = s.totalDmg(40) > 0;
+							s.draw = s.hasDmg;
 						});
 						
-						s.calcDmg();
 						
+						s.clone = function (newName) {
+							var key, clone = skill(rawSkill, name);
+							for (key in s.supports) {
+								clone.supports.push(s.supports[key]);
+							}
+							clone.name = newName + ' : ' + s.name;
+							return clone;
+						}
+						
+						s.calcDmg();
 						return s;
 					},
 					supports = (function () {
@@ -481,9 +495,13 @@
 													}
 													res[sName].isApplicable = (function (dmgType) {
 														if (sName.toLowerCase().indexOf('trap') > -1) {
-															console.log(sName);
 															return function (skill) {
-																return skill.keywords.indexOf('traps') < 0;
+																return skill.keywords.indexOf('traps') < 0 &&
+																	skill.keywords.indexOf('mine') < 0;
+															};														
+														} else if (sName.toLowerCase().indexOf('mine') > -1) {
+															return function (skill) {
+																return skill.keywords.indexOf('mine') < 0;
 															};														
 														} else {
 															return function (skill) {
@@ -568,141 +586,205 @@
 					};
 				})());
 				
-				for (name in skills) {
-					if (skills[name].hasDmg) {
-						skills[name].draw = true;
-						skills[name].color = getColor(i);
-						i += 1;
-						indexLine = document.createElement("span");
-						indexLine.style.backgroundColor = skills[name].color;
-						indexLine.className = "spellIndexLine";
-						index.appendChild(indexLine);
-						
-						checkbox = document.createElement("input");
-						checkbox.type = "checkbox";
-						checkbox.className = "drawSkill"
-						checkbox.checked = true;
-						checkbox.update = (function (skill, checkbox) {
+				var drawSkillIndex = function () {
+					var btn, name, i = 0;
+					index.innerHTML = '';
+					for (name in skills) {
+						if (skills[name].hasDmg) {
+							skills[name].color = getColor(i);
+							i += 1;
+							indexLine = document.createElement("span");
+							indexLine.style.backgroundColor = skills[name].color;
+							indexLine.className = "spellIndexLine";
+							index.appendChild(indexLine);
+							
+							checkbox = document.createElement("input");
+							checkbox.type = "checkbox";
+							checkbox.className = "drawSkill"
+							checkbox.checked = skills[name].draw;
+							checkbox.update = (function (skill, checkbox) {
+									return function () {
+										skill.draw = checkbox.checked;
+									}
+								})(skills[name], checkbox);
+							checkbox.onclick = (function (checkbox) {
+									return function () {
+										checkbox.update();
+										redraw();
+									}
+								})(checkbox);
+							indexLine.appendChild(checkbox);
+							
+							btn = document.createElement("button");
+							btn.innerHTML = name;
+							indexLine.appendChild(btn);
+							btn.onclick = (function (s) {
 								return function () {
-									skill.draw = checkbox.checked;
-								}
-							})(skills[name], checkbox);
-						checkbox.onclick = (function (checkbox) {
-								return function () {
-									checkbox.update();
-									redraw();
-								}
-							})(checkbox);
-						indexLine.appendChild(checkbox);
-						
-						var lbl = document.createElement("button");
-						lbl.innerHTML = name;
-						/*lbl.style.color = skills[name].color;
-						lbl.style.backgroundColor = "#222";*/
-						indexLine.appendChild(lbl);
-						lbl.onclick = (function (s) {
-							return function () {
-								var details, head, btnClose, fieldset, legend, lblQualityBonus, support, node, checkbox, k, txtNode, getDropdown,
-									drawContent = function () {
-										details.innerHTML = '';
-										head = document.createElement("h2");
-										head.innerHTML = s.name;
-										details.appendChild(head);
-										
-										btnClose = document.createElement("button");
-										btnClose.innerHTML = "X";
-										btnClose.className = "cornerBtn";
-										btnClose.onclick = function () {
-											spellDetails.removeChild(details);
-										}
-										details.appendChild(btnClose);
-										
-										lblQualityBonus = document.createElement("label");
-										lblQualityBonus.innerHTML = s.qualityBonus;
-										details.appendChild(lblQualityBonus);
-										
-										fieldset = document.createElement("fieldset");
-										details.appendChild(fieldset);
-										
-										legend = document.createElement("legend");
-										legend.innerHTML = 'Supports';
-										fieldset.appendChild(legend);
-										
-										for (k in s.supports) {
-											node = document.createElement("label");
-											node.className = "support"
-											checkbox = document.createElement("input");
-											checkbox.type = "checkbox";
-											checkbox.checked = true;
-											checkbox.onchange = (function (support, checkbox) {
-												return function() {
-													var i = s.supports.indexOf(support);
-													if (i > -1) {
-														s.supports.splice(i, 1);
-													}
-													redraw();
-												}
-											})(s.supports[k], checkbox);
-											txtNode = document.createTextNode(s.supports[k].name);
-											node.appendChild(txtNode);
-											fieldset.appendChild(node);
-											node.appendChild(checkbox);
-										}
-										fieldset.appendChild(getDropdown());
-									};
-								getDropdown = function () {
-									var select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti;//todo: calclate dmgDiff
-									select = document.createElement('select');
-									for (supportName in supports) {
-										console.log(supports[supportName])
-										if (s.supports.indexOf(supports[supportName]) < 0 && supports[supportName].isApplicable(s)) {
-											s.calcDmg();
-											dmgPrev = s.totalDmg(70);
-											s.supports.push(supports[supportName]);//temp add support
-											s.calcDmg();
-											dmgAfter = s.totalDmg(70);
-											s.supports.splice(s.supports.indexOf(supports[supportName]), 1);//remove support
-											dmgMulti = dmgAfter / dmgPrev;
+									var details, lblNew, inputNew, btnClone, head, btnClose, fieldset, legend, lblQualityBonus, support, node, checkbox, k, getSupportsDropDown,
+										newFieldset = function (title) {
+											fieldset = document.createElement("fieldset");
+											details.appendChild(fieldset);
+											legend = document.createElement("legend");
+											legend.innerHTML = title;
+											fieldset.appendChild(legend);
+										},
+										drawContent = function () {
+											details.innerHTML = '';
+											head = document.createElement("h2");
+											head.innerHTML = s.name;
+											details.appendChild(head);
 											
-											option = document.createElement('option');
-											option.innerHTML = supportName + ' | ' + dmgMulti.toFixed(2);
-											option.apply = (function (self, s, innerSupport) {
+											btnClose = document.createElement("button");
+											btnClose.innerHTML = "X";
+											btnClose.className = "cornerBtn";
+											btnClose.onclick = function () {
+												spellDetails.removeChild(details);
+											}
+											details.appendChild(btnClose);
+											
+											lblQualityBonus = document.createElement("label");
+											lblQualityBonus.innerHTML = s.qualityBonus;
+											details.appendChild(lblQualityBonus);
+											
+											newFieldset('Supports');
+											
+											for (k in s.supports) {//draw checkbox to turn of applied supports
+												node = document.createElement("label");
+												node.className = "support"
+												checkbox = document.createElement("input");
+												checkbox.type = "checkbox";
+												checkbox.checked = true;
+												checkbox.onchange = (function (support, checkbox) {
+													return function() {
+														var i = s.supports.indexOf(support);
+														if (i > -1) {
+															s.supports.splice(i, 1);
+														}
+														redraw();
+													}
+												})(s.supports[k], checkbox);
+												node.appendChild(document.createTextNode(s.supports[k].name));
+												fieldset.appendChild(node);
+												node.appendChild(checkbox);
+											}
+											
+											fieldset.appendChild(getSupportsDropDown());
+											
+											newFieldset('Details');
+											
+											btnClone = document.createElement("button");
+											btnClone.innerHTML = 'Clone';
+											fieldset.appendChild(btnClone);
+											btnClone.onclick = (function (s) {
 												return function () {
-													s.supports.push(innerSupport);
+													var name = prompt("Skill name", s.name + "2");
+													if (null !== name) {
+														skills[name] = s.clone(name);
+														drawSkillIndex();
+														redraw();
+													}
+												};
+											})(s, name);
+											
+											
+											newFieldset('Quality/Level');
+											
+											lblNew = document.createElement('label');
+											fieldset.appendChild(lblNew);
+											inputNew = document.createElement('input');
+											lblNew.appendChild(document.createTextNode('Quality: '));
+											lblNew.appendChild(inputNew);
+											inputNew.type = "text";
+											inputNew.value = s.qualityLvl
+											inputNew.onchange = (function (self) {
+												return function () {
+													s.qualityLvl = self.value - 0;
 													redraw();
 												};
-											})(option, s, supports[supportName]);
+											})(inputNew);
 											
-											options.push({dmg: dmgMulti, opt: option});
+											lblNew = document.createElement('label');
+											fieldset.appendChild(lblNew);
+											inputNew = document.createElement('input');
+											lblNew.appendChild(document.createTextNode('Additional lvl: '));
+											inputNew.type = "text";
+											lblNew.appendChild(inputNew);
+											inputNew.value = s.additionalLvl;
+											inputNew.onchange = (function (self, s) {
+												return function () {
+													s.additionalLvl = self.value - 0;
+													redraw();
+												};
+											})(inputNew, s);
+											
+											lblNew = document.createElement('label');
+											fieldset.appendChild(lblNew);
+											inputNew = document.createElement('input');
+											lblNew.appendChild(document.createTextNode('Max lvl: '));
+											inputNew.type = "text";
+											lblNew.appendChild(inputNew);
+											inputNew.value = s.maxLvl;
+											inputNew.onchange = (function (self, s) {
+												return function () {
+													s.maxLvl = self.value - 0;
+													redraw();
+												};
+											})(inputNew, s);
+										};
+									getSupportsDropDown = function () {
+										var select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti;//todo: calclate dmgDiff
+										select = document.createElement('select');
+										for (supportName in supports) {
+											if (s.supports.indexOf(supports[supportName]) < 0 && supports[supportName].isApplicable(s)) {
+												s.calcDmg();
+												dmgPrev = s.totalDmg(70);
+												s.supports.push(supports[supportName]);//temp add support
+												s.calcDmg();
+												dmgAfter = s.totalDmg(70);
+												s.supports.splice(s.supports.indexOf(supports[supportName]), 1);//remove support
+												dmgMulti = dmgAfter / dmgPrev;
+												
+												option = document.createElement('option');
+												option.innerHTML = supportName + ' | ' + dmgMulti.toFixed(2);
+												option.apply = (function (self, s, innerSupport) {
+													return function () {
+														s.supports.push(innerSupport);
+														redraw();
+													};
+												})(option, s, supports[supportName]);
+												
+												options.push({dmg: dmgMulti, opt: option});
+											}
 										}
-									}
-									option = document.createElement('option');
-									option.innerHTML = '--Select a support | dmg multiplier--';
-									select.appendChild(option);
+										option = document.createElement('option');
+										option.innerHTML = '--Select a support | dmg multiplier--';
+										select.appendChild(option);
+										
+										options.sort(function (a, b) {
+											return b.dmg - a.dmg;
+										});
+										for (i = 0; i < options.length; i += 1) {
+											select.appendChild(options[i].opt);
+										}
+										select.onchange = function () {
+											select.options[select.selectedIndex].apply();
+										}
+										return select;
+									};
+									details = document.createElement("div");
+									details.className = "spellDetails";
+									details.style.backgroundColor = "#FFF";
+									spellDetails.insertBefore(details, spellDetails.childNodes[0]);
 									
-									options.sort(function (a, b) {
-										return b.dmg - a.dmg;
-									});
-									for (i = 0; i < options.length; i += 1) {
-										select.appendChild(options[i].opt);
-									}
-									select.onchange = function () {
-										select.options[select.selectedIndex].apply();
-									}
-									return select;
+									drawContent();
+									
+									details.update = drawContent;
 								};
-								details = document.createElement("div");
-								details.className = "spellDetails";
-								details.style.backgroundColor = "#FFF";
-								spellDetails.insertBefore(details, spellDetails.childNodes[0]);
-								
-								drawContent();
-								
-								details.update = drawContent;
-							};
-						})(skills[name]);
+							})(skills[name]);
+						}
 					}
-				}
+				};
+				drawSkillIndex();
 				
 				redraw = function () {
 					var getTextColor = function () {
@@ -929,7 +1011,7 @@
 			span {
 				background-color: #ccc;
 			}
-			#index, #canvas, .misc, .canvasContainer {
+			#indexContainer, #canvas, .misc, .canvasContainer {
 				float: left;
 			}
 			.misc label, .monster h2 {
@@ -986,8 +1068,10 @@
 		</style>
 	</head>
 	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'))">
-		<div id="index">
+		<div id="indexContainer">
 			<span>Toggle all <input type="checkbox" checked onclick="toggleCheckAll(this)" /></span>
+			<div id="index">
+			</div>
 		</div>
 		<div class="canvasContainer">
 			<canvas id="canvas"></canvas>
