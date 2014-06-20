@@ -438,7 +438,7 @@
 						var sName, res = {}, i, reType, s, stage, column, d,
 							modRegexes = {
 								addedDmg: /adds x-y (\S+) damage/i,
-								moreDmg: /x% more (\S+) damage/i,
+								moreDmg: /x% more\s?(\S*?) damage/i,
 							}, matches, match,
 							parsePercent = function (str) {
 								return ((str.match(/(\d+)%/i)[1] - 0) / 100) + 1;
@@ -475,6 +475,9 @@
 													}
 													break;
 												case 'moreDmg':
+													if (matches[1].length == 0) {
+														matches[1] = 'spell';
+													}
 													res[sName].isApplicable = (function (dmgType) {
 														return function (skill) {
 															return skill.keywords.indexOf(dmgType) > -1
