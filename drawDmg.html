@@ -61,7 +61,7 @@
 					calcPhysDmg = function (rawDmg, armour) {
 						return (rawDmg * rawDmg) / (rawDmg + (armour / 12));
 					},
-					monsters = (function () {
+					monsters = (function () {//TODO: http://pathofexile.gamepedia.com/Monster_Experience
 						var i, lvls = [], res, armour;
 						for (i = 0; i < 100; i += 1) {
 							armour = armourValues[i] || armour;
@@ -340,7 +340,8 @@
 										break;
 									}
 								}
-								stage -= 1;
+								stage = stage > support.maxLvl ? support.maxLvl : stage;
+								stage -= 1;//to 0 based index
 								fn(stage, lvl);
 							}
 						};
@@ -476,6 +477,7 @@
 										for (column in s.stageStats[0]) {
 											if (column.indexOf(matches[1]) > -1 && column.indexOf('damage') > -1) {
 												res[sName] = {};
+												res[sName].maxLvl = 20;
 												res[sName].name = sName;
 												res[sName].stages = s.stages;
 												res[sName].type = reType;
@@ -650,11 +652,12 @@
 											
 											for (k in s.supports) {//draw checkbox to turn of applied supports
 												node = document.createElement("label");
-												node.className = "support"
-												checkbox = document.createElement("input");
+												node.className = 'support';
+												fieldset.appendChild(node);
+												checkbox = document.createElement('input');
 												checkbox.type = "checkbox";
 												checkbox.checked = true;
-												checkbox.onchange = (function (support, checkbox) {
+												checkbox.onchange = (function (self, support) {
 													return function() {
 														var i = s.supports.indexOf(support);
 														if (i > -1) {
@@ -662,10 +665,21 @@
 														}
 														redraw();
 													}
-												})(s.supports[k], checkbox);
+												})(checkbox, s.supports[k]);
 												node.appendChild(document.createTextNode(s.supports[k].name));
-												fieldset.appendChild(node);
 												node.appendChild(checkbox);
+												
+												inputNew = document.createElement('input');
+												inputNew.type = 'text';
+												node.appendChild(inputNew);
+												inputNew.value = 20;
+												inputNew.title = 'max lvl';
+												inputNew.onchange = (function (self, support) {
+													return function () {
+														support.maxLvl = self.value | 0;
+														redraw();
+													};
+												})(inputNew, s.supports[k]);
 											}
 											
 											fieldset.appendChild(getSupportsDropDown());
@@ -726,7 +740,7 @@
 											inputNew.value = s.maxLvl;
 											inputNew.onchange = (function (self, s) {
 												return function () {
-													s.maxLvl = self.value - 0;
+													s.maxLvl = (self.value | 0) - 1;
 													redraw();
 												};
 											})(inputNew, s);
@@ -909,7 +923,7 @@
 								},
 								drawLvl = function (extraOffset) {
 									ctx.fillStyle = getTextColor();
-									ctx.fillText(lvl + 1, offset + extraOffset, c.height - 30);
+									ctx.fillText(lvl, offset + extraOffset, c.height - 30);
 								};
 							for (name in skills) {
 								if (skills[name].draw) {
