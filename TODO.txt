@@ -1,23 +1,31 @@
-fix off by about 1% dmg (probably rounding issue due to avg dmg instead of min/max for all calculations, probably messes with phys dmg as well)
-calculate proper DPS for phys spells using min/max dmg.
-area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience
-finish support gems
-support gem applicability matrix
-get APS for minions
-apply APS to minion DPS
-apply cast time & duration to max DPS for SRS
-correctly apply correct increases: does desecrate benefit from spell damage, searing bond from burning dmg? etc.
-half decent interface on "any" resolution (minimum of 1024px or maybe down to 800px width)
-Aura support (anger & wrath for minions, haste for cast speed, etc.)
-	?total mana reserved
-mana per second usage
-	?mana per second recovered (maybe not worth the effort w/o passive tree support)
-	dps with mana regen, assuming empty mana pool.
+todo:
+	fix off by about 1% dmg (probably rounding issue due to avg dmg instead of min/max for all calculations, probably messes with phys dmg as well)
+	calculate proper DPS for phys spells using min/max dmg.
+	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience
+	finish support gems
+	support gem applicability matrix
+	get APS for minions
+	apply APS to minion DPS
+	apply cast time & duration to max DPS for SRS
+	correctly apply correct increases: does desecrate benefit from spell damage, searing bond from burning dmg? etc.
+	half decent interface on "any" resolution (minimum of 1024px or maybe down to 800px width)
+	Aura support (anger & wrath for minions, haste for cast speed, etc.)
+		?total mana reserved
+	mana per second usage
+		?mana per second recovered (maybe not worth the effort w/o passive tree support)
+		dps with mana regen, assuming empty mana pool.
 
-curse cast speed
-	avg. combat time (using monster life expectations & curse cast recomendations)
-
+cool to have:
+	curse cast speed
+		avg. combat time (using monster life expectations & curse cast recomendations)
+			reverse plot avg. combat time (quicker combat = higher on the scale)
+	Import character gear from GGG API.
+	Gear recommendations (what stats to look for on what gear pieces for max dps)
+	
 ambitious:
 	implement passive tree
 	passive tree recommendations
 	passive tree multicast-like path calculations/suggestions/fullbuild
+	passive tree full-build generator
+	
+	attack skills (will require gear/weapon for dps)
