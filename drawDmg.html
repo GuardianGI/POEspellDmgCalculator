@@ -61,6 +61,12 @@
 					calcPhysDmg = function (rawDmg, armour) {
 						return (rawDmg * rawDmg) / (rawDmg + (armour / 12));
 					},
+					calcAvgPhysDmg = function (min, max, armour) {
+						var calcPhysIntergral = function (arm) {//defined intergral for dmg ^ 2 / (dmg - armour) over min to max
+							return ((((arm * arm) * (-Math.log(arm + min))) + (arm * arm) * Math.log(arm + max)) - ((max - min) * arm)) + (((max * max) - (min * min)) / 2);
+						};
+						return calcPhysIntergral(armour / 12) / (max - min);
+					},
 					monsters = (function () {//TODO: http://pathofexile.gamepedia.com/Monster_Experience
 						var i, lvls = [], res, armour;
 						for (i = 0; i < 100; i += 1) {
@@ -103,16 +109,18 @@
 						}
 					},
 					skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
-						var d = {phys: {min: -1, max: -1},
-								fire: {min: -1, max: -1},
-								cold: {min: -1, max: -1},
-								light: {min: -1, max: -1},
-								chaos: {min: -1, max: -1}},
+						var defaultDmg = function () { return {min: -1, max: -1, avg: -1};},
+							d = {phys: defaultDmg(),
+								fire: defaultDmg(),
+								cold: defaultDmg(),
+								light: defaultDmg(),
+								chaos: defaultDmg()},
 							rawSkillDmg = getRawSkillDmgAtLvl(rawSkill, lvl, additionalLvl, maxLvl);
 						if (rawSkillDmg) {
 							for (type in d) {
 								d[type].min = rawSkillDmg[type].min;
 								d[type].max = rawSkillDmg[type].max;
+								d[type].avg = (d[type].min + d[type].max) / 2;
 							}
 						}
 						return d;
@@ -228,22 +236,34 @@
 								for (type in s.dmg[i]) {
 									switch (type) {
 									case 'phys':
-										s.dmg[i][type].min = calcPhysDmg(s.dmg[i][type].min * morePhysDmg, monster.armour);
-										s.dmg[i][type].max = calcPhysDmg(s.dmg[i][type].max * morePhysDmg, monster.armour);
+										if (s.dmg[i][type].min > 0 && s.dmg[i][type].max > 0) {
+											s.dmg[i][type].avg = calcAvgPhysDmg(s.dmg[i][type].min, s.dmg[i][type].max, monster.armour);
+											s.dmg[i][type].min = calcPhysDmg(s.dmg[i][type].min * morePhysDmg, monster.armour);
+											s.dmg[i][type].max = calcPhysDmg(s.dmg[i][type].max * morePhysDmg, monster.armour);
+										}
 										break;
-									case 'chaos':
-										s.dmg[i][type].min = s.dmg[i][type].min;
-										s.dmg[i][type].max = s.dmg[i][type].max;//for now, assume 0 chaos res...
+									case 'chaos'://for now, assume 0 chaos res...
+										s.dmg[i][type].avg = (s.dmg[i][type].min + s.dmg[i][type].max) / 2;
 										break;
 									default:
 										pen = userInput.reducedEleRes;//penetrate and res reduction for the element.
+										pen = pen > monster[type] ? monster[type] : pen;
+										pen = monster[type] - pen > 100 ? monster[type] - 100 : pen;
 										s.dmg[i][type].min *= 1 - ((monster[type] - pen) / 100);
 										s.dmg[i][type].max *= 1 - ((monster[type] - pen) / 100);
+										s.dmg[i][type].avg = (s.dmg[i][type].min + s.dmg[i][type].max) / 2;
 										break;
 									}
 								}
 							}
 						});
+						s.calcAvg = function () {
+							for (i = 0; i < 100; i += 1) {
+								for (type in s.dmg[i]) {
+									s.dmg[i][type].avg = (s.dmg[i][type].min + s.dmg[i][type].max) / 2;
+								}
+							}
+						};
 						s.applyCrit = once(function () {
 							var chance = (s.cc * 
 									(1 + userInput.incrCritChance / 100 +
@@ -306,9 +326,9 @@
 						s.sumDmgLvl = function (dmgLvl) {
 							var sum = 0;
 							for (type in dmgLvl) {
-								sum += dmgLvl[type].min + dmgLvl[type].max;
+								sum += dmgLvl[type].avg;
 							}
-							return sum / 2;
+							return sum;
 						};
 						s.totalDmg = function (lvl) {
 							return s.sumDmgLvl(s.dmg[lvl]);
@@ -401,9 +421,6 @@
 							if (userInput.enableBurn && !s.isFlameSurge) {
 								s.applyBurn();
 							}
-							if (userInput.enableMonsterDef) {
-								s.applyDefense();
-							}
 							if (s.isIncinerate) {
 								if (userInput.enableCastSpeed) {
 									s.applyIncinerateStage();
@@ -452,6 +469,11 @@
 								}
 							}
 							
+							if (userInput.enableMonsterDef) {
+								s.applyDefense();
+							} else {
+								s.calcAvg();
+							}
 							s.hasDmg = s.totalDmg(40) > 0;
 							s.draw = s.hasDmg;
 						});
@@ -696,7 +718,7 @@
 												inputNew = document.createElement('input');
 												inputNew.type = 'text';
 												node.appendChild(inputNew);
-												inputNew.value = 20;
+												inputNew.value = s.supports[k].maxLvl;
 												inputNew.title = 'max lvl';
 												inputNew.onchange = (function (self, support) {
 													return function () {
@@ -761,7 +783,7 @@
 											lblNew.appendChild(document.createTextNode('Max lvl: '));
 											inputNew.type = "text";
 											lblNew.appendChild(inputNew);
-											inputNew.value = s.maxLvl;
+											inputNew.value = s.maxLvl + 1;
 											inputNew.onchange = (function (self, s) {
 												return function () {
 													s.maxLvl = (self.value | 0) - 1;
@@ -924,11 +946,11 @@
 									totalDmg = 0;
 									if (userInput.elementalColors) {
 										for (type in s.dmg[lvl]) {
-											if (s.dmg[lvl][type] > 0) {
+											if (s.dmg[lvl][type].max > 0) {
 												ctx.fillStyle = styles[type];
 												ctx.fillRect(offset, dmgToCtx(totalDmg),
-													barWidth, -dmgToPx(s.dmg[lvl][type]));
-												totalDmg += (s.dmg[lvl][type].min + s.dmg[lvl][type].max) / 2;
+													barWidth, -dmgToPx(s.dmg[lvl][type].avg));
+												totalDmg += s.dmg[lvl][type].avg;
 												
 											}
 										}
@@ -1102,6 +1124,7 @@
 			}
 			label.support {
 				display: block;
+				clear: right;
 			}
 		</style>
 	</head>

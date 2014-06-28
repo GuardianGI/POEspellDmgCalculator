@@ -1,6 +1,4 @@
 todo:
-	fix off by about 1% dmg (probably rounding issue due to avg dmg instead of min/max for all calculations, probably messes with phys dmg as well)
-	calculate proper DPS for phys spells using min/max dmg.
 	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience
 	finish support gems
 	support gem applicability matrix
@@ -14,6 +12,10 @@ todo:
 	mana per second usage
 		?mana per second recovered (maybe not worth the effort w/o passive tree support)
 		dps with mana regen, assuming empty mana pool.
+	dps reliability/divergency (crit chance, min v.s. max dmg, cast speed)
+		idea: divergence = (max dmg - min dmg) / casts per second
+			crit: where cc (crit chance) is 0.05 for 5% and cd (crit multiplier) is 1 by default for 100% more dmg
+				divergence /= cc
 
 cool to have:
 	curse cast speed
