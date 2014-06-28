@@ -403,6 +403,7 @@
 									for (type in support.dmg[0]) {
 										s.applySupportStage(support, function (stage, lvl) {
 											if (stage > -1) {
+												console.log([s.dmg[lvl][type].min, support.dmg[stage][type].min])
 												s.dmg[lvl][type].min += support.dmg[stage][type].min;
 												s.dmg[lvl][type].max += support.dmg[stage][type].max;
 											}
@@ -531,7 +532,7 @@
 														d = {};
 														d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").
 															reduce(function(d, val) {
-																d[0 === d.min ? 'min' : 'max'] = val
+																d[0 === d.min ? 'min' : 'max'] = val | 0;
 																return d;
 															}, {min: 0, max: 0});
 														res[sName].dmg.push(d);
@@ -668,13 +669,19 @@
 							indexLine.appendChild(btn);
 							btn.onclick = (function (s) {
 								return function () {
-									var details, lblNew, inputNew, btnClone, head, btnClose, fieldset, legend, lblQualityBonus, support, node, checkbox, k, getSupportsDropDown,
+									var details, dif, lblNew, inputNew, btnClone, head, btnClose, fieldset, legend, lblQualityBonus, support, node, checkbox, k, getSupportsDropDown,
 										newFieldset = function (title) {
 											fieldset = document.createElement("fieldset");
 											details.appendChild(fieldset);
 											legend = document.createElement("legend");
 											legend.innerHTML = title;
 											fieldset.appendChild(legend);
+										},
+										getSuportRemovedDiff = function (skill, supportIndex) {
+											var clone = skill.clone();
+											clone.supports.splice(supportIndex, 1);
+											
+											return clone.totalDmg(70) / skill.totalDmg(70);
 										},
 										drawContent = function () {
 											details.innerHTML = '';
@@ -700,6 +707,11 @@
 												node = document.createElement("label");
 												node.className = 'support';
 												fieldset.appendChild(node);
+												
+												lblNew = document.createElement("label");
+												lblNew.appendChild(document.createTextNode('remove (' +
+													getSuportRemovedDiff(s, k).toFixed(2) + '): '));
+												
 												checkbox = document.createElement('input');
 												checkbox.type = "checkbox";
 												checkbox.checked = true;
@@ -713,7 +725,8 @@
 													}
 												})(checkbox, s.supports[k]);
 												node.appendChild(document.createTextNode(s.supports[k].name));
-												node.appendChild(checkbox);
+												lblNew.appendChild(checkbox);
+												node.appendChild(lblNew);
 												
 												inputNew = document.createElement('input');
 												inputNew.type = 'text';
@@ -1119,7 +1132,7 @@
 				right: 0;
 				top: 0;
 			}
-			label.support input {
+			label.support label {
 				float: right;
 			}
 			label.support {

@@ -23,6 +23,7 @@ cool to have:
 			reverse plot avg. combat time (quicker combat = higher on the scale)
 	Import character gear from GGG API.
 	Gear recommendations (what stats to look for on what gear pieces for max dps)
+	attack support gems (for minions and maybe later attack skills)
 	
 ambitious:
 	implement passive tree
