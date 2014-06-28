@@ -250,6 +250,9 @@ f = open("skillAvgDmgTest.txt", "w")
 f.write(s)
 f.close()
 
+def printMinMaxDmg(dmg):
+	return "{{'min': {}, 'max': {}}}".format(dmg[0], dmg[1])
+
 s = "{"
 for skill in skills:
 	s += "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'dmg': [".format(
@@ -262,13 +265,13 @@ for skill in skills:
 	i = 1
 	for lvl in skill.dmg.lvlStages:
 		s += "{"
-		s += "'lvl': '{}', 'dmg': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}".format(
+		s += "'lvl': '{}', 'avg': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}".format(
 			lvl, skill.dmg.getAvgDmg(i),
-			sum(skill.dmg.phys[i]) / 2,
-			sum(skill.dmg.fire[i]) / 2,
-			sum(skill.dmg.cold[i]) / 2,
-			sum(skill.dmg.light[i]) / 2,
-			sum(skill.dmg.chaos[i]) / 2,
+			printMinMaxDmg(skill.dmg.phys[i]),
+			printMinMaxDmg(skill.dmg.fire[i]),
+			printMinMaxDmg(skill.dmg.cold[i]),
+			printMinMaxDmg(skill.dmg.light[i]),
+			printMinMaxDmg(skill.dmg.chaos[i]),
 			skill.dmg.mana[i])
 			
 		s += "}, ";
