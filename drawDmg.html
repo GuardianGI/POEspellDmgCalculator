@@ -485,8 +485,8 @@
 							for (key in s.supports) {
 								clone.supports.push(s.supports[key]);
 							}
-							clone.calcDmg();
 							clone.name = newName + ' : ' + s.name;
+							clone.calcDmg();
 							return clone;
 						}
 						
@@ -681,6 +681,7 @@
 										getSupportRemovedDiff = function (skill, supportIndex) {
 											var clone = skill.clone();
 											clone.supports.splice(supportIndex, 1);
+											clone.calcDmg();
 											return clone.totalDmg(70) / skill.totalDmg(70);
 										},
 										drawContent = function () {
