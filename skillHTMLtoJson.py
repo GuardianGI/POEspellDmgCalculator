@@ -265,7 +265,7 @@ for skill in skills:
 	i = 1
 	for lvl in skill.dmg.lvlStages:
 		s += "{"
-		s += "'lvl': '{}', 'avg': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}".format(
+		s += "'lvl': '{}', 'dps': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}".format(
 			lvl, skill.dmg.getAvgDmg(i),
 			printMinMaxDmg(skill.dmg.phys[i]),
 			printMinMaxDmg(skill.dmg.fire[i]),

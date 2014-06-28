@@ -103,11 +103,16 @@
 						}
 					},
 					skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
-						var d = {phys: -1, fire: -1, cold: -1, light: -1, chaos: -1},
+						var d = {phys: {min: -1, max: -1},
+								fire: {min: -1, max: -1},
+								cold: {min: -1, max: -1},
+								light: {min: -1, max: -1},
+								chaos: {min: -1, max: -1}},
 							rawSkillDmg = getRawSkillDmgAtLvl(rawSkill, lvl, additionalLvl, maxLvl);
 						if (rawSkillDmg) {
 							for (type in d) {
-								d[type] = rawSkillDmg[type];
+								d[type].min = rawSkillDmg[type].min;
+								d[type].max = rawSkillDmg[type].max;
 							}
 						}
 						return d;
@@ -208,27 +213,32 @@
 						s.parseQualityBonus();
 						
 						s.applyCastTime = once(function () {
+							var castTimeMultiplier = 1 / (s.getCastTime() * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage));
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
-									s.dmg[i][type] /= s.getCastTime() * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage);
+									s.dmg[i][type].min *= castTimeMultiplier;
+									s.dmg[i][type].max *= castTimeMultiplier;
 								}
 							}
 						});
 						s.applyDefense = once(function () {
-							var pen, monster;
+							var pen, monster, morePhysDmg = 1 + userInput.morePhysDmg / 100;
 							for (i = 0; i < 100; i += 1) {
 								monster = monsters[i] || monster;
 								for (type in s.dmg[i]) {
 									switch (type) {
 									case 'phys':
-										s.dmg[i][type] = calcPhysDmg(s.dmg[i][type] * (1 + userInput.morePhysDmg / 100), monster.armour);
+										s.dmg[i][type].min = calcPhysDmg(s.dmg[i][type].min * morePhysDmg, monster.armour);
+										s.dmg[i][type].max = calcPhysDmg(s.dmg[i][type].max * morePhysDmg, monster.armour);
 										break;
 									case 'chaos':
-										s.dmg[i][type] = s.dmg[i][type];//for now, assume 0 chaos res...
+										s.dmg[i][type].min = s.dmg[i][type].min;
+										s.dmg[i][type].max = s.dmg[i][type].max;//for now, assume 0 chaos res...
 										break;
 									default:
 										pen = userInput.reducedEleRes;//penetrate and res reduction for the element.
-										s.dmg[i][type] *= 1 - ((monster[type] - pen) / 100);
+										s.dmg[i][type].min *= 1 - ((monster[type] - pen) / 100);
+										s.dmg[i][type].max *= 1 - ((monster[type] - pen) / 100);
 										break;
 									}
 								}
@@ -242,7 +252,8 @@
 								mult = (chance > 1 ? 1 : chance) * (s.cd + userInput.incrCritDmg / 100);
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
-									s.dmg[i][type] += s.dmg[i][type] * mult;
+									s.dmg[i][type].min += s.dmg[i][type].min * mult;
+									s.dmg[i][type].max += s.dmg[i][type].max * mult;
 								}
 							}
 						});
@@ -250,26 +261,31 @@
 							//todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
 							var additionalIgniteChance = (s.igniteChanceFromQuality * s.qualityLvl) +
 								((userInput.chanceToIgnite + userInput.monsterChanceToIgnite) / 100),
-								chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
+								chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance)),
+								apply = function (dmg) {
+									return dmg * chanceToIgnite * 0.8 *
+										(1 + (userInput.incrBurnDmg / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
+								};
 							chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
 							for (i = 0; i < 100; i += 1) {
-								s.dmg[i].fire += s.dmg[i].fire *
-									chanceToIgnite * 0.8 *
-									(1 + (userInput.incrBurnDmg / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
+								s.dmg[i].fire.min += apply(s.dmg[i].fire.min);
+								s.dmg[i].fire.max += apply(s.dmg[i].fire.max);
 							}
 						});
 						s.applyDmgMultiplier = function (mult) {
 							var i;
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
-									s.dmg[i][type] *= mult;
+									s.dmg[i][type].min *= mult;
+									s.dmg[i][type].max *= mult;
 								}
 							}
 						};
 						s.applySpecificMultiplier = function (mult, type) {
 							var i;
 							for (i = 0; i < 100; i += 1) {
-								s.dmg[i][type] *= mult;
+								s.dmg[i][type].min *= mult;
+								s.dmg[i][type].max *= mult;
 							}
 						};
 						s.applyShock = once(function () {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
@@ -279,9 +295,10 @@
 									return m > 0.3 ? 0.3 : m;
 								}, mult = 1 + shockStage(1) + shockStage(2) + shockStage(3);
 							for (i = 0; i < 100; i += 1) {
-								if (s.dmg[i].light > 0) {
+								if (s.dmg[i].light.max > 0) {
 									for (type in s.dmg[i]) {
-										s.dmg[i][type] *= mult;
+										s.dmg[i][type].min *= mult;
+										s.dmg[i][type].max *= mult;
 									}
 								}
 							}
@@ -289,9 +306,9 @@
 						s.sumDmgLvl = function (dmgLvl) {
 							var sum = 0;
 							for (type in dmgLvl) {
-								sum += dmgLvl[type];
+								sum += dmgLvl[type].min + dmgLvl[type].max;
 							}
-							return sum;
+							return sum / 2;
 						};
 						s.totalDmg = function (lvl) {
 							return s.sumDmgLvl(s.dmg[lvl]);
@@ -313,7 +330,8 @@
 							
 							for (lvl = 0; lvl < 100; lvl += 1) {
 								for (type in s.dmg[lvl]) {
-									s.dmg[lvl][type] = apply(s.dmg[lvl][type]);
+									s.dmg[lvl][type].min = apply(s.dmg[lvl][type].min);
+									s.dmg[lvl][type].max = apply(s.dmg[lvl][type].max);
 								}
 							}
 						};
@@ -365,7 +383,8 @@
 									for (type in support.dmg[0]) {
 										s.applySupportStage(support, function (stage, lvl) {
 											if (stage > -1) {
-												s.dmg[lvl][type] += support.dmg[stage][type];
+												s.dmg[lvl][type].min += support.dmg[stage][type].min;
+												s.dmg[lvl][type].max += support.dmg[stage][type].max;
 											}
 										});
 									}
@@ -423,7 +442,8 @@
 										s.applySupportStage(support, function (stage, lvl) {
 											if (stage > -1) {
 												for (type in s.dmg[lvl]) {
-													s.dmg[lvl][type] *= support.multipliers[stage];
+													s.dmg[lvl][type].min *= support.multipliers[stage];
+													s.dmg[lvl][type].max *= support.multipliers[stage];
 												}
 											}
 										});
@@ -487,7 +507,11 @@
 													res[sName].isApplicable = function (skill) {return true;};
 													for (stage in s.stageStats) {
 														d = {};
-														d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").reduce(function(pv, cv) { return pv + (cv - 0); }, 0) / 2;;
+														d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").
+															reduce(function(d, val) {
+																d[0 === d.min ? 'min' : 'max'] = val
+																return d;
+															}, {min: 0, max: 0});
 														res[sName].dmg.push(d);
 													}
 													break;
@@ -904,7 +928,7 @@
 												ctx.fillStyle = styles[type];
 												ctx.fillRect(offset, dmgToCtx(totalDmg),
 													barWidth, -dmgToPx(s.dmg[lvl][type]));
-												totalDmg += s.dmg[lvl][type];
+												totalDmg += (s.dmg[lvl][type].min + s.dmg[lvl][type].max) / 2;
 												
 											}
 										}
