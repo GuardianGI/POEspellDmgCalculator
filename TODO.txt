@@ -20,7 +20,9 @@ todo:
 cool to have:
 	curse cast speed
 		avg. combat time (using monster life expectations & curse cast recomendations)
-			reverse plot avg. combat time (quicker combat = higher on the scale)
+			reverse plot avg. combat time (quicker combat/faster kill rate = higher on the scale)
+				calc as: top(life / dps / casts per second) * casts per second
+				ex. monster life = 100, dps = 99, casts per second = 0.5, combat time: 100 / 99 = 1.01 sec => 3 casts: top(1.01 / 0.5) = 3 => 3 * 0.5 = 1.5 sec combat time
 	Import character gear from GGG API.
 	Gear recommendations (what stats to look for on what gear pieces for max dps)
 	attack support gems (for minions and maybe later attack skills)
