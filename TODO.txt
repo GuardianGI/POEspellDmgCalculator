@@ -1,5 +1,6 @@
 todo:
 	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience
+	monster life = 2 * xp / lvl (seems about right on driping dead & brittle thiefs & Oozeback Bloom)
 	finish support gems
 	support gem applicability matrix
 	get APS for minions
