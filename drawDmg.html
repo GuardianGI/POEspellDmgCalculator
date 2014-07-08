@@ -384,6 +384,34 @@
 							}
 						};
 						
+						s.applyDmgIncreases = function () {
+							var dmgTypes = ['fire', 'cold', 'light', 'chaos', 'phys'],
+								eleDmgType = ['fire', 'cold', 'light'],
+								spellTypes = ['aoe', 'projectile'],
+								keywords, generalIncr = 0;
+							s.applyDmgMultiplier(1 + userInput.spellDmgIncr / 100);
+							
+							keywords = s.keywords.filter(function (keyword) {
+								for (key in spellTypes) {
+									console.log(keyword);
+									if (spellTypes[key].toLowerCase() == keyword.toLowerCase()) {
+										return true;
+									}
+								}
+								return false;
+							});
+							keywords.forEach(function(keyword) {
+								generalIncr += userInput[keyword + 'DmgIncr'] | 0;
+							});
+							dmgTypes.forEach(function (type) {
+								s.applySpecificMultiplier(1 + (generalIncr +
+										((eleDmgType.indexOf(type) > -1) ? userInput.eleDmgIncr | 0 : 0) +
+										(userInput[type + 'DmgIncr'] | 0)) / 100,
+									type);
+							});
+							
+						};
+						
 						s.calcDmg = once(function () {
 							var lastDmg = 0, support, key, type, j, lvl;
 							s.stages = [];
@@ -439,10 +467,7 @@
 								s.applyDmgMultiplier(1 + 1.1 * userInput.flameBlastStage);
 							}
 							s.applyDmgMultiplier(s.eff);
-							s.applyDmgMultiplier(1 + userInput.incrSpellDmg / 100);
-							s.applySpecificMultiplier(1 + userInput.incrEleDmg / 100, 'fire');
-							s.applySpecificMultiplier(1 + userInput.incrEleDmg / 100, 'cold');
-							s.applySpecificMultiplier(1 + userInput.incrEleDmg / 100, 'light');
+							s.applyDmgIncreases();
 							
 							if (s.isSearingBond) {
 								s.applySpecificMultiplier(1 + userInput.incrBurnDmg / 100, 'fire');
@@ -1047,6 +1072,8 @@
 							spellDetails[key].update();
 						}
 					})();
+					
+					drawSkillIndex();
 				};
 				redraw();
 				//setInterval(redraw, 1000);
@@ -1200,8 +1227,15 @@
 				<label>Cast speed incr.<input class="userInput" type="text" id="incrCastSpeed" value="0" /></label>
 				<label>Crit chance incr.<input class="userInput" type="text" id="incrCritChance" value="0" /></label>
 				<label>Crit dmg incr.<input class="userInput" type="text" id="incrCritDmg" value="0" /></label>
-				<label>incr. spell dmg<input class="userInput" type="text" id="incrSpellDmg" value="0" /></label>
-				<label>incr. elemental dmg<input class="userInput" type="text" id="incrEleDmg" value="0" /></label>
+				<label>incr. spell dmg<input class="userInput" type="text" id="spellDmgIncr" value="0" /></label>
+				<label>incr. elemental dmg<input class="userInput" type="text" id="eleDmgIncr" value="0" /></label>
+				<label>incr. fire dmg<input class="userInput" type="text" id="fireDmgIncr" value="0" /></label>
+				<label>incr. cold dmg<input class="userInput" type="text" id="coldDmgIncr" value="0" /></label>
+				<label>incr. lightning dmg<input class="userInput" type="text" id="lightDmgIncr" value="0" /></label>
+				<label>incr. chaos dmg<input class="userInput" type="text" id="chaosDmgIncr" value="0" /></label>
+				<label>incr. physical dmg<input class="userInput" type="text" id="physDmgIncr" value="0" /></label>
+				<label>incr. AOE dmg<input class="userInput" type="text" id="aoeDmgIncr" value="0" /></label>
+				<label>incr. projectile dmg<input class="userInput" type="text" id="projectileDmgIncr" value="0" /></label>
 				<label>incr. burn dmg<input class="userInput" type="text"  id="incrBurnDmg" value="0" /></label>
 				<label>Chance to shock<input class="userInput" type="text" /></label>
 				<label>Chance to ignite<input class="userInput" type="text" value="0" id="chanceToIgnite" /></label>
