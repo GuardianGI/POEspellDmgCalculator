@@ -226,6 +226,7 @@
 								for (type in s.dmg[i]) {
 									s.dmg[i][type].min *= castTimeMultiplier;
 									s.dmg[i][type].max *= castTimeMultiplier;
+									s.dmg[i][type].avg *= castTimeMultiplier;
 								}
 							}
 						});
@@ -393,7 +394,6 @@
 							
 							keywords = s.keywords.filter(function (keyword) {
 								for (key in spellTypes) {
-									console.log(keyword);
 									if (spellTypes[key].toLowerCase() == keyword.toLowerCase()) {
 										return true;
 									}
@@ -410,6 +410,18 @@
 									type);
 							});
 							
+						};
+						
+						s.getCombatTime = function (lvl) {
+							var life = 1000,//todo: get life from mosnter data
+								castTime = s.getCastTime(),
+								dps = s.totalDmg(lvl);
+							if (dps > 0 && castTime > 0) {
+								console.log(Math.ceil(life / s.totalDmg(lvl) / castTime) * castTime, dps, castTime);
+								return Math.ceil(life / dps / castTime) * castTime;
+							} else {
+								return -1;
+							}
 						};
 						
 						s.calcDmg = once(function () {
@@ -431,7 +443,6 @@
 									for (type in support.dmg[0]) {
 										s.applySupportStage(support, function (stage, lvl) {
 											if (stage > -1) {
-												console.log([s.dmg[lvl][type].min, support.dmg[stage][type].min])
 												s.dmg[lvl][type].min += support.dmg[stage][type].min;
 												s.dmg[lvl][type].max += support.dmg[stage][type].max;
 											}
@@ -456,9 +467,6 @@
 								} else {
 									s.applyDmgMultiplier(4);
 								}
-							}
-							if (userInput.enableCastSpeed && !s.isIncinerate) {
-								s.applyCastTime();
 							}
 							if (userInput.enableFlameSurgeBurn && s.isFlameSurge) {
 								s.applyDmgMultiplier(1.5);
@@ -499,6 +507,10 @@
 								s.applyDefense();
 							} else {
 								s.calcAvg();
+							}
+							
+							if (userInput.enableCastSpeed && !s.isIncinerate) {
+								s.applyCastTime();
 							}
 							s.hasDmg = s.totalDmg(40) > 0;
 							s.draw = s.hasDmg;
@@ -889,74 +901,8 @@
 					var getTextColor = function () {
 							return userInput.useDarkBg ? "#FFFFFF" : "#000000";
 						},
-						drawBg = function () {
-							var intLen = function (n) {
-									var i = 1;
-									for (i = 1; n >= 10; i += 1) {
-										n /= 10;
-									}
-									return i;
-								},
-								dmg;
-							ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
-							ctx.fillRect(padding, 0, c.width - padding, c.height - padding);
-							for (i = 0; i < c.height - padding; i += 20) {
-								ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-								ctx.fillRect(padding, i, c.width - padding, 10);
-							}
-							ctx.font = "15px Georgia";
-							ctx.fillStyle = "#000000";
-							ctx.save();
-							ctx.rotate(90 * Math.PI / 180);
-							ctx.fillText("Damage", c.height / 2, -5);
-							ctx.restore();
-							
-							
-							ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-							ctx.lineWidth = 1;
-							ctx.beginPath();
-							ctx.moveTo(padding, c.height - padding);
-							ctx.lineTo(padding, 0);
-							ctx.stroke();
-							ctx.beginPath();
-							ctx.moveTo(padding, c.height - padding);
-							ctx.lineTo(c.width, c.height - padding);
-							ctx.stroke();
-							
-							for (i = 1; i <= 100; i += 2) {//dmg values on axis.
-								dmg = ctxPxToDmg(c.height - padding - i * 10);
-								ctx.fillText(dmg, padding - 5 - 8 * intLen(dmg), c.height - padding - i * 10);
-							}
-						},
-						plot = function () {
-							var name, lvl, dmg, lastLvl, first, i;
-							c.width = 1000;
-							c.height = 900;
-							
-							drawBg();
-							
-							for (name in skills) {
-								lastLvl = -1;
-								first = true;
-								if (skills[name].draw) {
-									skills[name].calcDmg();//recalc dmg.
-									ctx.beginPath();
-									for (lvl in skills[name].dmg) {
-										//if (skills[name].dmg[lvl].phys > 0) alert(name);
-										dmg = skills[name].totalDmg(lvl);
-										if (dmg > 0) {
-											//start drawing:
-											ctx[first ? 'moveTo': 'lineTo'](padding + lvl * 10, dmgToCtx(dmg));
-											first = false;
-										}
-										lastLvl = lvl;
-									}
-									ctx.strokeStyle = skills[name].color;
-									ctx.lineWidth = 2;
-									ctx.stroke();
-								}
-							}
-							//draw misc stuff
+						drawLvlOnYAxis = function () {
+							var i;
 							ctx.font = "15px Georgia";
 							ctx.fillStyle = "#000000";
 							ctx.fillText("Char/monster lvl", c.width / 2, c.height - 3);
@@ -969,11 +915,87 @@
 								ctx.lineTo(padding + i * 10, 0);
 								ctx.stroke();
 							}
+						},
+						intLen = function (n) {
+							var i = 1;
+							for (i = 1; n >= 10; i += 1) {
+								n /= 10;
+							}
+							return i;
+						},
+						drawDmgScale = function () {
+							var dmg;
+							ctx.font = "15px Georgia";
+							ctx.fillStyle = "#000000";
+							ctx.save();
+							ctx.rotate(90 * Math.PI / 180);
+							ctx.fillText("Damage", c.height / 2, -5);
+							ctx.restore();
 							
+							for (i = 1; i <= 100; i += 2) {//dmg values on axis.
+								dmg = ctxPxToDmg(c.height - padding - i * 10);
+								ctx.fillText(dmg, padding - 5 - 8 * intLen(dmg), c.height - padding - i * 10);
+							}
+						},
+						drawBg = function () {
+							ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
+							ctx.fillRect(padding, 0, c.width - padding, c.height - padding);
+							for (i = 0; i < c.height - padding; i += 20) {
+								ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+								ctx.fillRect(padding, i, c.width - padding, 10);
+							}
+							
+							
+							ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+							ctx.lineWidth = 1;
+							ctx.beginPath();
+							ctx.moveTo(padding, c.height - padding);
+							ctx.lineTo(padding, 0);
+							ctx.stroke();
+							ctx.beginPath();
+							ctx.moveTo(padding, c.height - padding);
+							ctx.lineTo(c.width, c.height - padding);
+							ctx.stroke();
+						},
+						drawSkills = (function() {
+							var res = [], name;
+							for (name in skills) {
+								if (skills[name].draw) {
+									res.push(skills[name]);
+								}
+							}
+							return res;
+						})(),
+						plot = function () {
+							var name, lvl, dmg, first, i, s;
+							c.width = 1000;
+							c.height = 900;
+							
+							drawBg();
+							drawDmgScale();
+							
+							for (name in drawSkills) {
+								s = drawSkills[name];
+								first = true;
+								s.calcDmg();//recalc dmg.
+								ctx.beginPath();
+								for (lvl in s.dmg) {
+									//if (s.dmg[lvl].phys > 0) alert(name);
+									dmg = s.totalDmg(lvl);
+									if (dmg > 0) {
+										//start drawing:
+										ctx[first ? 'moveTo': 'lineTo'](padding + lvl * 10, dmgToCtx(dmg));
+										first = false;
+									}
+								}
+								ctx.strokeStyle = s.color;
+								ctx.lineWidth = 2;
+								ctx.stroke();
+							}
+							drawLvlOnYAxis();
 						},
 						barGraph = function () {
 							var nameDrawn = false, key, name, i, offset = padding, totalDmg = 0, type, lvl, s, barWidth = 25,
-								drawSkills = [],
 								styles = {
 									phys: '#888888',
 									fire: '#FF0000',
@@ -1010,16 +1032,14 @@
 									ctx.fillStyle = getTextColor();
 									ctx.fillText(lvl, offset + extraOffset, c.height - 30);
 								};
-							for (name in skills) {
-								if (skills[name].draw) {
-									drawSkills.push(skills[name]);
-								}
-							}
 							c.width = !userInput.interlaceBarGraph ? 
 								padding + (barWidth + 1) * 30 * drawSkills.length + drawSkills.length * 10 :
 								padding + (barWidth + 1) * 90 * drawSkills.length + (90) * 10;
 							c.height = 900;
+							
 							drawBg();
+							drawDmgScale();
+							
 							//draw bar graph
 							if (userInput.interlaceBarGraph) {//side by side lvl mode
 								for (i in drawSkills) {
@@ -1057,9 +1077,53 @@
 									offset += 10;
 								}
 							}
+						}, plotCombatDuration = function () {
+							var scale = 50,
+								secToPx = function (sec) {
+								sec = drawnSeconds - sec;
+								return c.height - padding - sec * scale * zoomLvl;
+							}, combatDuration, drawnSeconds;
+							c.width = 1000;
+							c.height = 900;
+							drawnSeconds = Math.floor((c.height - padding) / (scale * zoomLvl));
+							
+							drawBg();
+							
+							ctx.font = "15px Georgia";
+							ctx.fillStyle = "#000000";
+							ctx.save();
+							ctx.rotate(90 * Math.PI / 180);
+							ctx.fillText("Combat duration in seconds", c.height / 2 - 50, -5);
+							ctx.restore();
+							
+							for (combatDuration = 0; combatDuration <= drawnSeconds; combatDuration += 1) {
+								ctx.fillText(combatDuration, padding - 5 - 8 * intLen(combatDuration), secToPx(combatDuration));
+							}
+							drawLvlOnYAxis();
+							
+							drawSkills.forEach(function (s) {
+								var first = true, time, lvl;
+								s.calcDmg();//recalc dmg.
+								ctx.beginPath();
+								for (lvl in s.dmg) {
+									//if (s.dmg[lvl].phys > 0) alert(name);
+									time = s.getCombatTime(lvl);
+									if (time > 0 && time <= drawnSeconds) {
+										//start drawing:
+										ctx[first ? 'moveTo': 'lineTo'](padding + lvl * 10, secToPx(time));
+										first = false;
+									}
+								}
+								ctx.strokeStyle = s.color;
+								ctx.lineWidth = 2;
+								ctx.stroke();
+							});
 						};
+						
 					if (userInput.useBarGraph) {
 						barGraph();
+					} else if (userInput.plotCombatDuration) {
+						plotCombatDuration();
 					} else {
 						plot();
 					}
@@ -1190,6 +1254,10 @@
 					<legend><label>Use bar graph: <input class="userInput" type="checkbox" id="useBarGraph" /></label></legend>
 					<label>Show elemental colors: <input class="userInput" type="checkbox" id="elementalColors" /></label>
 					<label>bargraph: compare skills by lvl: <input class="userInput" type="checkbox" id="interlaceBarGraph" /></label>
+				</fieldset>
+				<fieldset>
+					<legend><label>Plot combat duration: <input class="userInput" type="checkbox" id="plotCombatDuration" /></label></legend>
+					
 				</fieldset>
 				<fieldset>
 					<legend>Color options.</legend>
