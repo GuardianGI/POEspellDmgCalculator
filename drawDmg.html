@@ -287,7 +287,7 @@
 								mult = 1 + (chance > 1 ? 1 : chance) * s.getCritDmg();
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
-									if ('phys' !== type || !userInput.enableMonsterDef) {
+									if ('phys' !== type || !userInput.enableMonsterDef) {//crit is applied when applying mosnter def for phys dmg
 										s.dmg[i][type].min *= mult;
 										s.dmg[i][type].max *= mult;
 									}
@@ -397,7 +397,7 @@
 								}
 								stage = stage > support.maxLvl ? support.maxLvl : stage;
 								stage -= 1;//to 0 based index
-								fn(stage, lvl);
+								fn(stage, lvl, s);
 							}
 						};
 						
@@ -464,6 +464,9 @@
 											}
 										});
 									}
+									break;
+								case 'addedConvertedDmg':
+									s.applySupportStage(support, support.apply);
 									break;
 								}
 							}
@@ -551,9 +554,22 @@
 							modRegexes = {
 								addedDmg: /adds x-y (\S+) damage/i,
 								moreDmg: /x% more\s?(\S*?) damage/i,
-							}, matches, match,
+								addedConvertedDmg: /gain x% of (\S+) damage as extra (\S+) damage/i,
+								chain: /chain \+(\d+) times/i,
+								chanceToStatusAilment: /x% chance to (\S+)/i,
+								penetrateRes: /penetrates x% (\S+) res/i,
+								dmgConverted: /x% of (\S+) damage converted to (\S+) damage/i,
+								empower: /\+x level of supported active skill gems/i,//not as general as I'd like, but I doubt there will ever be similar skills
+								faster: /%x increased (\S+) speed/i,
+								incrDmg: /%x increased (\S+) damage/i,
+								aditional: /(\d+) additional (\S+)/i,
+								incrCrit: /x% increased critical strike (\S+)/i,
+								ironWill: /damage bonus applies to spell damage/i,
+								totem: /summons a totem which uses this skill/i,
+								echo: /x% more cast speed/i,
+							}, matches, match, dmgLvls = ['min', 'max'],
 							parsePercent = function (str) {
-								return ((str.match(/(\d+)%/i)[1] - 0) / 100) + 1;
+								return ((str.match(/(\d+)%/i)[1] | 0) / 100);
 							},
 							translateMatch = function(str) {
 								switch (str) {
@@ -578,6 +594,7 @@
 												res[sName].name = sName;
 												res[sName].stages = s.stages;
 												res[sName].type = reType;
+												res[sName].apply = [];
 												switch (reType) {
 												case 'addedDmg':
 													res[sName].dmg = [];
@@ -614,8 +631,48 @@
 													})(translateMatch(matches[1]));
 													res[sName].multipliers = [];
 													for (stage in s.stageStats) {
-														res[sName].multipliers.push(parsePercent(s.stageStats[stage][column]));
+														res[sName].multipliers.push(parsePercent(s.stageStats[stage][column]) + 1);
 													}
+													break;
+												case 'addedConvertedDmg':
+													res[sName].isApplicable = (function (dmgType) {
+														return function (skill) {
+															return skill.dmg[40].phys.min > 0;//has phys dmg (at lvl 40)
+														};
+													})(translateMatch(matches[1]));
+													
+													res[sName].pctConverted = {};
+													for (stage in s.stageStats) {
+														for (column in s.stageStats[stage]) {
+															if (column.indexOf('gain x% of ') >= 0) {
+																res[sName].pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
+															}
+														}
+													}
+													console.log(res[sName].pctConverted);
+													res[sName].apply = (function (s) {
+														return function (supportStage, skillLvl, skill) {
+															if (supportStage >= 0) {
+																dmgLvls.forEach(function (dmgLvl) {
+																	skill.dmg[skillLvl].fire[dmgLvl] +=
+																		skill.dmg[skillLvl].phys[dmgLvl] *
+																		s.pctConverted[supportStage];
+																});
+															}
+														};
+													})(res[sName]);
+													break;
+												case 'chanceToStatusAilment':
+													res[sName].isApplicable = function () {
+														return false;
+													};
+												
+													break;
+												default:
+													res[sName].isApplicable = function () {
+														return false;
+													};
+													console.log(['no case added for', reType, column]);
 													break;
 												}
 											}
@@ -1156,8 +1213,7 @@
 					drawSkillIndex();
 				};
 				redraw();
-				//setInterval(redraw, 1000);
-				/*for (name in rawSupports) {
+				for (name in rawSupports) {//draw all support data (testing/dev purposses only...)
 					s = rawSupports[name];
 					b = document.createElement("h2");
 					b.innerHTML = name;
@@ -1169,7 +1225,7 @@
 						b.innerHTML = s.modifiers[key];
 						div.appendChild(b);
 					}
-				}*/
+				}
 			},
 			toggleCheckAll = function (cb) {
 				var i, allCb = document.getElementsByClassName('drawSkill');
