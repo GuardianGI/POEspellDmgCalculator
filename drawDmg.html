@@ -222,7 +222,7 @@
 										value = matches[1] | 0;
 										if ("ignite" == matches[3]) {
 											s.igniteChanceFromQuality = value / 100;
-										}
+										}//todo: add shock and freeze.
 									}
 								}
 						};
@@ -606,114 +606,116 @@
 							};
 						for (sName in rawSupports) {
 							s = rawSupports[sName]
+							res[sName] = {};
+							res[sName].maxLvl = 20;
+							res[sName].name = sName;
+							res[sName].stages = s.stages;
+							res[sName].apply = [];
+							res[sName].isApplicable = (function () {
+								return function () {
+									console.log('default is applicable was called.');
+									return false;
+								};
+							})(sName);
 							for (i in s.modifiers) {
 								for (reType in modRegexes) {
 									matches = s.modifiers[i].match(modRegexes[reType])
 									if (null != matches) {
 										for (column in s.stageStats[0]) {
-											if (column.indexOf(matches[1]) > -1 && column.indexOf('damage') > -1) {
-												res[sName] = {};
-												res[sName].maxLvl = 20;
-												res[sName].name = sName;
-												res[sName].stages = s.stages;
-												res[sName].type = reType;
-												res[sName].apply = [];
-												res[sName].isApplicable = (function () {
-													return function () {
-														console.log('default is applicable was called.');
-														return false;
-													};
-												})(sName);
-												switch (reType) {
-												case 'addedDmg':
-													res[sName].dmg = [];
-													res[sName].isApplicable = function (skill) {return true;};
-													for (stage in s.stageStats) {
-														d = {};
-														d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").
-															reduce(function(d, val) {
-																d[0 === d.min ? 'min' : 'max'] = val | 0;
-																return d;
-															}, {min: 0, max: 0});
-														res[sName].dmg.push(d);
-													}
-													break;
-												case 'moreDmg':
-													if (matches[1].length == 0) {
-														matches[1] = 'spell';
-													}
-													res[sName].isApplicable = (function (dmgType) {
-														if (sName.toLowerCase().indexOf('trap') > -1) {
+											if (column.indexOf(matches[1]) > -1) {
+												if (column.indexOf('damage') > -1) {
+													res[sName].type = reType;
+													switch (reType) {
+													case 'addedDmg':
+														res[sName].dmg = [];
+														res[sName].isApplicable = function (skill) {return true;};
+														for (stage in s.stageStats) {
+															d = {};
+															d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").
+																reduce(function(d, val) {
+																	d[0 === d.min ? 'min' : 'max'] = val | 0;
+																	return d;
+																}, {min: 0, max: 0});
+															res[sName].dmg.push(d);
+														}
+														break;
+													case 'moreDmg':
+														if (matches[1].length == 0) {
+															matches[1] = 'spell';
+														}
+														res[sName].isApplicable = (function (dmgType) {
+															if (sName.toLowerCase().indexOf('trap') > -1) {
+																return function (skill) {
+																	return skill.keywords.indexOf('traps') < 0 &&
+																		skill.keywords.indexOf('mine') < 0;
+																};														
+															} else if (sName.toLowerCase().indexOf('mine') > -1) {
+																return function (skill) {
+																	return skill.keywords.indexOf('mine') < 0;
+																};														
+															} else {
+																return function (skill) {
+																	return skill.keywords.indexOf(dmgType) > -1;
+																};
+															}
+														})(translateMatch(matches[1]));
+														res[sName].multipliers = [];
+														for (stage in s.stageStats) {
+															res[sName].multipliers.push(parsePercent(s.stageStats[stage][column]) + 1);
+														}
+														break;
+													case 'addedConvertedDmg':
+														res[sName].isApplicable = (function (dmgType) {
 															return function (skill) {
-																return skill.keywords.indexOf('traps') < 0 &&
-																	skill.keywords.indexOf('mine') < 0;
-															};														
-														} else if (sName.toLowerCase().indexOf('mine') > -1) {
-															return function (skill) {
-																return skill.keywords.indexOf('mine') < 0;
-															};														
-														} else {
-															return function (skill) {
-																return skill.keywords.indexOf(dmgType) > -1;
+																return skill.dmg[40].phys.min > 0;//has phys dmg (at lvl 40)
 															};
-														}
-													})(translateMatch(matches[1]));
-													res[sName].multipliers = [];
-													for (stage in s.stageStats) {
-														res[sName].multipliers.push(parsePercent(s.stageStats[stage][column]) + 1);
-													}
-													break;
-												case 'addedConvertedDmg':
-													res[sName].isApplicable = (function (dmgType) {
-														return function (skill) {
-															return skill.dmg[40].phys.min > 0;//has phys dmg (at lvl 40)
-														};
-													})(translateMatch(matches[1]));
-													
-													res[sName].pctConverted = {};
-													for (stage in s.stageStats) {
-														for (column in s.stageStats[stage]) {
-															if (column.indexOf('gain x% of ') >= 0) {
-																res[sName].pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
+														})(translateMatch(matches[1]));
+														
+														res[sName].pctConverted = {};
+														for (stage in s.stageStats) {
+															for (column in s.stageStats[stage]) {
+																if (column.indexOf('gain x% of ') >= 0) {
+																	res[sName].pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
+																}
 															}
 														}
-													}
-													res[sName].apply = (function (s) {
-														return function (supportStage, skillLvl, skill) {
-															if (supportStage >= 0) {
-																dmgLvls.forEach(function (dmgLvl) {
-																	skill.dmg[skillLvl].fire[dmgLvl] +=
-																		skill.dmg[skillLvl].phys[dmgLvl] *
-																		s.pctConverted[supportStage];
-																});
-															}
-														};
-													})(res[sName]);
-													break;
-												case 'chanceToStatusAilment':
-													res[sName].ailmentElement = translateMatch(column.match(/chance to (\S+).*?on hit with (\S+) damage/i)[2]);
-													res[sName].isApplicable = (function (dmgType) {
-														return function (skill) {
-															return skill.dmg[40][dmgType].min > 0;
-														};
-													})(res[sName].ailmentElement);
-													
-													res[sName].additionalAilmentChance = {};
-													
-													for (stage in s.stageStats) {
-														for (column in s.stageStats[stage]) {
-															if (column.indexOf('additional chance to') >= 0) {
-																res[sName].additionalAilmentChance[stage] =
-																	parsePercent(s.stageStats[stage][column]);
+														res[sName].apply = (function (s) {
+															return function (supportStage, skillLvl, skill) {
+																if (supportStage >= 0) {
+																	dmgLvls.forEach(function (dmgLvl) {
+																		skill.dmg[skillLvl].fire[dmgLvl] +=
+																			skill.dmg[skillLvl].phys[dmgLvl] *
+																			s.pctConverted[supportStage];
+																	});
+																}
+															};
+														})(res[sName]);
+														break;
+													case 'chanceToStatusAilment':
+														res[sName].ailmentElement = translateMatch(column.match(/chance to (\S+).*?on hit with (\S+) damage/i)[2]);
+														res[sName].isApplicable = (function (dmgType) {
+															return function (skill) {
+																return skill.dmg[40][dmgType].min > 0;
+															};
+														})(res[sName].ailmentElement);
+														
+														res[sName].additionalAilmentChance = {};
+														
+														for (stage in s.stageStats) {
+															for (column in s.stageStats[stage]) {
+																if (column.indexOf('additional chance to') >= 0) {
+																	res[sName].additionalAilmentChance[stage] =
+																		parsePercent(s.stageStats[stage][column]);
+																}
 															}
 														}
+														
+														break;
+													default:
+														console.log(['no case added for', reType, column]);
+														break;
 													}
-													
-													break;
-												default:
-													console.log(['no case added for', reType, column]);
-													break;
-												}
+												} else console.log(sName);
 											}
 										}
 										
