@@ -187,7 +187,7 @@
 								reChance = /(\d+[.]?\d*)%\s*chance\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
 								matches = s.qualityBonus.match(reIncr), i, value, effect;
 								if (null != matches && matches.length > 2) {
-									value = matches[1] - 0;
+									value = matches[1] | 0;
 									if (matches.length > 3) {
 										switch (matches[3]) {
 										case 'damage':
@@ -219,8 +219,8 @@
 								} else {
 									matches = s.qualityBonus.match(reChance);
 									if (null != matches && matches.length > 4) {
-										value = matches[1] - 0;
-										if ("chance" == matches[2] && "ignite" == matches[4]) {
+										value = matches[1] | 0;
+										if ("ignite" == matches[3]) {
 											s.igniteChanceFromQuality = value / 100;
 										}
 									}
@@ -294,7 +294,6 @@
 								}
 							}
 						};
-						s.getAdditionalChanceToIgnite = function () { return 0; };
 						s.applyBurn = function () {
 							//todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
 							var apply = function (dmg, lvl) {
@@ -448,6 +447,8 @@
 						
 						s.calcDmg = function () {
 							var lastDmg = 0, support, key, type, j, lvl;
+							s.getAdditionalChanceToIgnite = function () { return 0; };
+							
 							s.stages = [];
 							for (i = 0; i < 100; i += 1) {
 								s.dmg[i] = skillDmg(rawSkill, i, s.additionalLvl, s.maxLvl);
@@ -460,7 +461,7 @@
 							
 							for (key in s.supports) {
 								support = s.supports[key];
-								switch(support.type) {
+								switch (support.type) {
 								case 'addedDmg':
 									for (type in support.dmg[0]) {
 										s.applySupportStage(support, function (stage, lvl) {
@@ -475,17 +476,20 @@
 									s.applySupportStage(support, support.apply);
 									break;
 								case 'chanceToStatusAilment':
-									switch (support.ailmentElement) {
-									case 'fire':
-										s.getAdditionalChanceToIgnite = function (lvl) {
-											var stage = s.getSupportStage(support, lvl);
-											if (stage >= 0) {
-												return support.additionalAilmentChance[stage];
-											}
-											return 0;
-										};
-										break;
+									if ('fire' === support.ailmentElement) {
+										s.getAdditionalChanceToIgnite = (function (support) {
+											return function (lvl) {
+												var stage = s.getSupportStage(support, lvl);
+												if (stage >= 0) {
+													return support.additionalAilmentChance[stage];
+												}
+												return 0;
+											};
+										})(support);
 									}
+									break;
+								default:
+									console.log(['default for', support.type, support.name]);
 									break;
 								}
 							}
@@ -614,6 +618,12 @@
 												res[sName].stages = s.stages;
 												res[sName].type = reType;
 												res[sName].apply = [];
+												res[sName].isApplicable = (function () {
+													return function () {
+														console.log('default is applicable was called.');
+														return false;
+													};
+												})(sName);
 												switch (reType) {
 												case 'addedDmg':
 													res[sName].dmg = [];
@@ -668,7 +678,6 @@
 															}
 														}
 													}
-													console.log(res[sName].pctConverted);
 													res[sName].apply = (function (s) {
 														return function (supportStage, skillLvl, skill) {
 															if (supportStage >= 0) {
@@ -683,7 +692,6 @@
 													break;
 												case 'chanceToStatusAilment':
 													res[sName].ailmentElement = translateMatch(column.match(/chance to (\S+).*?on hit with (\S+) damage/i)[2]);
-													console.log(res[sName].ailmentElement);
 													res[sName].isApplicable = (function (dmgType) {
 														return function (skill) {
 															return skill.dmg[40][dmgType].min > 0;
@@ -703,9 +711,6 @@
 													
 													break;
 												default:
-													res[sName].isApplicable = function () {
-														return false;
-													};
 													console.log(['no case added for', reType, column]);
 													break;
 												}
