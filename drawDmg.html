@@ -294,19 +294,22 @@
 								}
 							}
 						};
+						s.getAdditionalChanceToIgnite = function () { return 0; };
 						s.applyBurn = function () {
 							//todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
-							var additionalIgniteChance = (s.igniteChanceFromQuality * s.qualityLvl) +
-								((userInput.chanceToIgnite + userInput.monsterChanceToIgnite) / 100),
-								chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance)),
-								apply = function (dmg) {
+							var apply = function (dmg, lvl) {
+								var additionalIgniteChance = (s.igniteChanceFromQuality * s.qualityLvl) +
+											((userInput.chanceToIgnite + userInput.monsterChanceToIgnite) / 100) +
+											s.getAdditionalChanceToIgnite(lvl),
+										chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
+									chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
 									return dmg * chanceToIgnite * 0.8 *
 										(1 + (userInput.incrBurnDmg / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
 								};
-							chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
+							
 							for (i = 0; i < 100; i += 1) {
-								s.dmg[i].fire.min += apply(s.dmg[i].fire.min);
-								s.dmg[i].fire.max += apply(s.dmg[i].fire.max);
+								s.dmg[i].fire.min += apply(s.dmg[i].fire.min, i);
+								s.dmg[i].fire.max += apply(s.dmg[i].fire.max, i);
 							}
 						};
 						s.applyDmgMultiplier = function (mult) {
@@ -386,17 +389,20 @@
 								s.applyDmgMultiplier(1 / (0.1 - s.qualityLvl / 1000));
 							});
 						}
-						
+						s.getSupportStage = function (support, lvl) {
+							var stage;
+							for (stage = 0; stage < support.stages.length; stage += 1) {
+								if (support.stages[stage] > lvl) {
+									break;
+								}
+							}
+							stage = stage > support.maxLvl ? support.maxLvl : stage;
+							return stage - 1;//to 0 based index
+						};
 						s.applySupportStage = function (support, fn) {
 							var stage, lvl;
 							for (lvl = s.stages[0]; lvl < 100; lvl += 1) {
-								for (stage = 0; stage < support.stages.length; stage += 1) {
-									if (support.stages[stage] > lvl) {
-										break;
-									}
-								}
-								stage = stage > support.maxLvl ? support.maxLvl : stage;
-								stage -= 1;//to 0 based index
+								stage = s.getSupportStage(support, lvl);
 								fn(stage, lvl, s);
 							}
 						};
@@ -467,6 +473,19 @@
 									break;
 								case 'addedConvertedDmg':
 									s.applySupportStage(support, support.apply);
+									break;
+								case 'chanceToStatusAilment':
+									switch (support.ailmentElement) {
+									case 'fire':
+										s.getAdditionalChanceToIgnite = function (lvl) {
+											var stage = s.getSupportStage(support, lvl);
+											if (stage >= 0) {
+												return support.additionalAilmentChance[stage];
+											}
+											return 0;
+										};
+										break;
+									}
 									break;
 								}
 							}
@@ -663,10 +682,25 @@
 													})(res[sName]);
 													break;
 												case 'chanceToStatusAilment':
-													res[sName].isApplicable = function () {
-														return false;
-													};
-												
+													res[sName].ailmentElement = translateMatch(column.match(/chance to (\S+).*?on hit with (\S+) damage/i)[2]);
+													console.log(res[sName].ailmentElement);
+													res[sName].isApplicable = (function (dmgType) {
+														return function (skill) {
+															return skill.dmg[40][dmgType].min > 0;
+														};
+													})(res[sName].ailmentElement);
+													
+													res[sName].additionalAilmentChance = {};
+													
+													for (stage in s.stageStats) {
+														for (column in s.stageStats[stage]) {
+															if (column.indexOf('additional chance to') >= 0) {
+																res[sName].additionalAilmentChance[stage] =
+																	parsePercent(s.stageStats[stage][column]);
+															}
+														}
+													}
+													
 													break;
 												default:
 													res[sName].isApplicable = function () {
