@@ -9,9 +9,9 @@
 				once = function (fn) {
 					var called = false, res;
 					return function () {
-						/*if (called) {
+						if (called) {
 							return res;
-						}*/
+						}
 						called = true;
 						res = fn();
 						return res;
@@ -61,11 +61,19 @@
 					calcPhysDmg = function (rawDmg, armour) {
 						return (rawDmg * rawDmg) / (rawDmg + (armour / 12));
 					},
-					calcAvgPhysDmg = function (min, max, armour) {
+					calcAvgPhysDmg = function (s, min, max, armour) {
 						var calcPhysIntergral = function (arm) {//defined intergral for dmg ^ 2 / (dmg - armour) over min to max
 							return ((((arm * arm) * (-Math.log(arm + min))) + (arm * arm) * Math.log(arm + max)) - ((max - min) * arm)) + (((max * max) - (min * min)) / 2);
-						};
-						return calcPhysIntergral(armour / 12) / (max - min);
+						}, count = max - min, totalDmg, cc = s.getCritChance(), cd = s.getCritDmg();
+						armour /= 12;//just the way armour is applied in POE...
+						totalDmg = calcPhysIntergral(armour);
+						if (userInput.enableCrit) {
+							min *= cd;
+							max *= cd;
+							totalDmg += calcPhysIntergral(armour) * cc;
+							count += count * cc;
+						}
+						return totalDmg / count;
 					},
 					monsters = (function () {//TODO: http://pathofexile.gamepedia.com/Monster_Experience
 						var i, lvls = [], res, armour;
@@ -220,7 +228,7 @@
 						};
 						s.parseQualityBonus();
 						
-						s.applyCastTime = once(function () {
+						s.applyCastTime = function () {
 							var castTimeMultiplier = 1 / (s.getCastTime() * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage));
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
@@ -229,8 +237,8 @@
 									s.dmg[i][type].avg *= castTimeMultiplier;
 								}
 							}
-						});
-						s.applyDefense = once(function () {
+						};
+						s.applyDefense = function () {
 							var pen, monster, morePhysDmg = 1 + userInput.morePhysDmg / 100;
 							for (i = 0; i < 100; i += 1) {
 								monster = monsters[i] || monster;
@@ -238,7 +246,7 @@
 									switch (type) {
 									case 'phys':
 										if (s.dmg[i][type].min > 0 && s.dmg[i][type].max > 0) {
-											s.dmg[i][type].avg = calcAvgPhysDmg(s.dmg[i][type].min, s.dmg[i][type].max, monster.armour);
+											s.dmg[i][type].avg = calcAvgPhysDmg(s, s.dmg[i][type].min, s.dmg[i][type].max, monster.armour);
 											s.dmg[i][type].min = calcPhysDmg(s.dmg[i][type].min * morePhysDmg, monster.armour);
 											s.dmg[i][type].max = calcPhysDmg(s.dmg[i][type].max * morePhysDmg, monster.armour);
 										}
@@ -257,7 +265,7 @@
 									}
 								}
 							}
-						});
+						};
 						s.calcAvg = function () {
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
@@ -265,20 +273,28 @@
 								}
 							}
 						};
-						s.applyCrit = once(function () {
-							var chance = (s.cc * 
+						s.getCritChance = function () {
+							return s.cc * 
 									(1 + userInput.incrCritChance / 100 +
 										s.incrCcFromQuality * s.qualityLvl +
-										(s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0))),
-								mult = (chance > 1 ? 1 : chance) * (s.cd + userInput.incrCritDmg / 100);
+										(s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0));
+						};
+						s.getCritDmg = function () {
+							return s.cd + userInput.incrCritDmg / 100;
+						};
+						s.applyCrit = function () {
+							var chance = s.getCritChance(),
+								mult = 1 + (chance > 1 ? 1 : chance) * s.getCritDmg();
 							for (i = 0; i < 100; i += 1) {
 								for (type in s.dmg[i]) {
-									s.dmg[i][type].min += s.dmg[i][type].min * mult;
-									s.dmg[i][type].max += s.dmg[i][type].max * mult;
+									if ('phys' !== type || !userInput.enableMonsterDef) {
+										s.dmg[i][type].min *= mult;
+										s.dmg[i][type].max *= mult;
+									}
 								}
 							}
-						});
-						s.applyBurn = once(function () {
+						};
+						s.applyBurn = function () {
 							//todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
 							var additionalIgniteChance = (s.igniteChanceFromQuality * s.qualityLvl) +
 								((userInput.chanceToIgnite + userInput.monsterChanceToIgnite) / 100),
@@ -292,7 +308,7 @@
 								s.dmg[i].fire.min += apply(s.dmg[i].fire.min);
 								s.dmg[i].fire.max += apply(s.dmg[i].fire.max);
 							}
-						});
+						};
 						s.applyDmgMultiplier = function (mult) {
 							var i;
 							for (i = 0; i < 100; i += 1) {
@@ -309,7 +325,7 @@
 								s.dmg[i][type].max *= mult;
 							}
 						};
-						s.applyShock = once(function () {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
+						s.applyShock = function () {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
 							var hits = 1,
 								shockStage = function (stage) {
 									var m = 0.3 * Math.pow(s.cc, stage) * hits;
@@ -323,7 +339,7 @@
 									}
 								}
 							}
-						});
+						};
 						s.sumDmgLvl = function (dmgLvl) {
 							var sum = 0;
 							for (type in dmgLvl) {
@@ -413,7 +429,7 @@
 						};
 						
 						s.getCombatTime = function (lvl) {
-							var life = 1000,//todo: get life from mosnter data
+							var life = lvl * lvl,//todo: get life from mosnter data
 								castTime = s.getCastTime(),
 								dps = s.totalDmg(lvl);
 							if (dps > 0 && castTime > 0) {
@@ -424,7 +440,7 @@
 							}
 						};
 						
-						s.calcDmg = once(function () {
+						s.calcDmg = function () {
 							var lastDmg = 0, support, key, type, j, lvl;
 							s.stages = [];
 							for (i = 0; i < 100; i += 1) {
@@ -514,7 +530,7 @@
 							}
 							s.hasDmg = s.totalDmg(40) > 0;
 							s.draw = s.hasDmg;
-						});
+						};
 						
 						
 						s.clone = function (newName) {
