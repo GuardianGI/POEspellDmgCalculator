@@ -85,28 +85,27 @@
 						}
 						return lvls;
 					}()),
-					getRawSkillDmgAtLvl = function (rawSkill, lvl, additionalLvl, maxLvl) {
+					getRawSkillDmgAtLvl = function (rawSkill, lvl, additionalLvl, maxLvl, tmp) {
 						var lastLvl = -1, i, dmgLvl = -1, dmgKey, type;
 						lvl += 1;//lvl to 1 based index for comparison to wiki tables.
 						for (i = 0; i < rawSkill.dmg.length; i += 1) {
-							dmgLvl = rawSkill.dmg[i].lvl - 0;
-							if (dmgLvl < 0) {
+							dmgLvl = rawSkill.dmg[i].lvl | 0;
+							if (dmgLvl <= 0) {
 								dmgLvl = lastLvl;
 							}
 							if (lastLvl === dmgLvl) {
 								while (dmgLvl < lvl && i < rawSkill.dmg.length) {
-									lvl -= 2;
+									lvl -= 2;//after stage 20 no new lvl req. added. plot out over 2 lvls per stage.
 									i += 1;
 								}
-								dmgKey = i - 1;
 								break;
 							}
-							if (dmgLvl === 0 || isNaN(dmgLvl) || dmgLvl > lvl) {
-								dmgKey = i - 1;
+							if (dmgLvl > lvl) {
 								break;
 							}
 							lastLvl = dmgLvl;
 						}
+						dmgKey = i - 1;
 						if (dmgKey >= 0) {
 							dmgKey = dmgKey > maxLvl ? maxLvl : dmgKey;
 							dmgKey += additionalLvl;
@@ -515,7 +514,7 @@
 										}
 										break;
 									default:
-										console.log(['default for', support.type, support.name]);
+										//console.log(['default for', support.type, support.name]);
 										break;
 									}
 								});
@@ -664,7 +663,6 @@
 								for (reType in modRegexes) {
 									matches = s.modifiers[i].match(modRegexes[reType])
 									if (null != matches) {
-										for (column in s.stageStats[0]) {
 											res[sName].types.push(reType);
 											switch (reType) {
 											case 'less':
@@ -693,11 +691,9 @@
 											case 'aditional'://lmp, gmp and?
 												switch (translateMatch(matches[2])) {
 												case 'projectile':
-													res[sName].isApplicable = (function () {
-														return function (skill) {
-															return skill.keywords.indexOf('projectile') >= 0;
-														}
-													})();
+													res[sName].isApplicable = function (skill) {
+														return skill.keywords.indexOf('projectile') >= 0;
+													};
 													res[sName].applyBefore.push((function (additionalProjectiles) {
 														return function (supportStage, skillLvl, skill) {
 															skill.projectiles[skillLvl].base += additionalProjectiles;
@@ -709,37 +705,11 @@
 													break;
 												}
 												break;
-											case 'incrDmg':
-												res[sName].incrDmg = {};
-												for (stage in s.stageStats) {
-													for (column in s.stageStats[stage]) {
-														if (column.match('increased.*?' + translateMatch(matches[1]) + '.*?damage')) {
-															var matchedPct = s.stageStats[stage][column].match(/(\d+%)/i);
-															if (matchedPct) {
-																res[sName].incrDmg[stage] = parsePercent(matchedPct[1]);
-															} else {
-																res[sName].incrDmg[stage] = 0;
-															}
-														}
-													}
-												}
-												res[sName].applyAfter.push((function (type, support) {
-													return function (supportStage, skillLvl, skill) {
-														var mult = support.incrDmg[supportStage] || 0;
-														if ('' === type || skill.keywords.indexOf(type) >= 0) {
-															for (dmgType in skill.dmg[i]) {
-																skill.dmg[skillLvl][dmgType].min *= 1 + mult;
-																skill.dmg[skillLvl][dmgType].max *= 1 + mult;
-															}
-														}
-													}
-												})(translateMatch(matches[1]), res[sName]));
-												break;
 											}
+										for (column in s.stageStats[0]) {
 											if (column.indexOf(matches[1]) > -1) {//column matching modifier (to describe an x or some other variable in the modifier)
 												if (column.indexOf('damage') > -1) {
 													res[sName].types.push(reType);
-													//console.log([reType, 'matched for', sName])
 													switch (reType) {
 													case 'addedDmg':
 														res[sName].dmg = [];
@@ -824,10 +794,47 @@
 																}
 															}
 														}
+														break;
+													case 'incrDmg':
+														res[sName].incrDmg = {};
+														for (stage in s.stageStats) {
+															for (column in s.stageStats[stage]) {
+																if (column.match('increased.*?' + translateMatch(matches[1]) + '.*?damage')) {
+																	var matchedPct = s.stageStats[stage][column].match(/(\d+%)/i);
+																	if (matchedPct) {
+																		res[sName].incrDmg[stage] = parsePercent(matchedPct[1]);
+																	} else {
+																		res[sName].incrDmg[stage] = 0;
+																	}
+																}
+															}
+														}
+														res[sName].applyAfter.push((function (type, support) {
+															return function (supportStage, skillLvl, skill) {
+																var mult = support.incrDmg[supportStage] || 0, dmgType;
+																if ('faster projectiles' === support.name.toLowerCase()) {
+																	console.log([skill.keywords, type, mult]);
+																}
+																console.log([skill.name, support.name, skill.keywords, type]);
+																if ('' === type || skill.keywords.indexOf(type) >= 0) {
+																	for (dmgType in skill.dmg[i]) {
+																		skill.dmg[skillLvl][dmgType].min *= 1 + mult;
+																		skill.dmg[skillLvl][dmgType].max *= 1 + mult;
+																		skill.dmg[skillLvl][dmgType].avg *= 1 + mult;
+																	}
+																}
+															}
+														})(translateMatch(matches[1]), res[sName]));
 														
+														if ('faster projectiles' === sName.toLowerCase()) {
+															console.log(res[sName].incrDmg);
+															res[sName].isApplicable = function (skill) {
+																return skill.keywords.indexOf('projectile') >= 0;
+															};
+														}
 														break;
 													default:
-														//console.log(['no case added for', reType, column]);
+														console.log(['no case added for', reType, column, sName]);
 														break;
 													}
 												}// else console.log(['not applied', column, sName]);
@@ -1207,6 +1214,9 @@
 								s = drawSkills[name];
 								first = true;
 								s.calcDmg();//recalc dmg.
+								if ('shockwave totem' === s.name.toLowerCase()) {
+									console.log([s.dmg[66], s.dmg[67]]);
+								}
 								ctx.beginPath();
 								for (lvl in s.dmg) {
 									//if (s.dmg[lvl].phys > 0) alert(name);
