@@ -190,45 +190,45 @@
 							var reIncr = /(\d+[.]?\d*)%\s*increased\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
 								reChance = /(\d+[.]?\d*)%\s*chance\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
 								matches = s.qualityBonus.match(reIncr), i, value, effect;
-								if (null != matches && matches.length > 2) {
-									value = matches[1] | 0;
-									if (matches.length > 3) {
-										switch (matches[3]) {
-										case 'damage':
-											s.qualityEffects.push(function () {
-												s.applyDmgMultiplier(1 + value * s.qualityLvl / 100);
-											});
-											break;
+							if (null != matches && matches.length > 2) {
+								value = matches[1] - 0;
+								if (matches.length > 3) {
+									switch (matches[3]) {
+									case 'damage':
+										s.qualityEffects.push(function () {
+											s.applyDmgMultiplier(1 + value * s.qualityLvl / 100);
+										});
+										break;
+									}
+									switch (matches[2] + ' ' + matches[3]) {
+									case 'projectile speed':
+										//ignore, adds no damage, only range/kill speed.
+										break;
+									case 'cast speed':
+										s.incrCastSpeedFromQuality = value / 100;
+										break;
+									case 'critical strike':
+										if ('chance' === matches[4]) {
+											s.incrCcFromQuality = value / 100;
 										}
-										switch (matches[2] + ' ' + matches[3]) {
-										case 'projectile speed':
-											//ignore, adds no damage, only range/kill speed.
-											break;
-										case 'cast speed':
-											s.incrCastSpeedFromQuality = value / 100;
-											break;
-										case 'critical strike':
-											if ('chance' === matches[4]) {
-												s.incrCcFromQuality = value / 100;
-											}
-											break;
-										}
-									} else {
-										if ("damage" == matches[2]) {
-											s.qualityEffects.push(function () {
-												s.applyDmgMultiplier(1 + value * s.qualityLvl / 100);
-											});
-										}
+										break;
 									}
 								} else {
-									matches = s.qualityBonus.match(reChance);
-									if (null != matches && matches.length > 4) {
-										value = matches[1] | 0;
-										if ("ignite" == matches[3]) {
-											s.igniteChanceFromQuality = value / 100;
-										}//todo: add shock and freeze.
+									if ("damage" == matches[2]) {
+										s.qualityEffects.push(function () {
+											s.applyDmgMultiplier(1 + value * s.qualityLvl / 100);
+										});
 									}
 								}
+							} else {
+								matches = s.qualityBonus.match(reChance);
+								if (null != matches && matches.length > 4) {
+									value = matches[1] | 0;
+									if ("ignite" == matches[3]) {
+										s.igniteChanceFromQuality = value / 100;
+									}//todo: add shock and freeze.
+								}
+							}
 						};
 						s.parseQualityBonus();
 						
@@ -710,14 +710,11 @@
 												}
 												break;
 											case 'incrDmg':
-												if ('chain' === sName.toLowerCase()) {console.log(matches);}
 												res[sName].incrDmg = {};
 												for (stage in s.stageStats) {
 													for (column in s.stageStats[stage]) {
 														if (column.match('increased.*?' + translateMatch(matches[1]) + '.*?damage')) {
 															var matchedPct = s.stageStats[stage][column].match(/(\d+%)/i);
-															if ('chain' === sName.toLowerCase()) {console.log(matchedPct);}
-															else {console.log(sName)}
 															if (matchedPct) {
 																res[sName].incrDmg[stage] = parsePercent(matchedPct[1]);
 															} else {
