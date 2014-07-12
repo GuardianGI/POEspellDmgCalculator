@@ -10,7 +10,7 @@ skills = []
 def printErr(*objs):
 	print(*objs, file=sys.stderr)
 
-def ignore_exception(IgnoreException=Exception,DefaultVal=None):
+def ignore_exception(IgnoreException=Exception, DefaultVal=None):
 	""" Decorator for ignoring exception from a function
 	e.g.   @ignore_exception(DivideByZero)
 	e.g.2. ignore_exception(DivideByZero)(Divide)(2/0)
@@ -26,6 +26,9 @@ def ignore_exception(IgnoreException=Exception,DefaultVal=None):
 
 sint = ignore_exception(ValueError)(int)
 
+def strToFloat(s):
+	return float(re.search("([\d.]*)", s).group(1))
+		
 def getNodeVal(node):
 	return re.search("(<?\<.*?\>)(.*?)\<\/", node.toxml().lower()).group(2).strip()
 
@@ -50,7 +53,7 @@ class dmg:
 	
 	def setDmg(self, stage, typeStr, dmgStr):
 		if re.match("\s?\d+?\s*-\s*\d+?\s?", dmgStr):
-			dmgVal = list(int(n.replace('*', '')) for n in dmgStr.split("-"))
+			dmgVal = list(int(strToFloat(n)) for n in dmgStr.split("-"))
 		elif re.match("\s?\d+.*", dmgStr):
 			try:
 				val = float(dmgStr.replace(",", ""))

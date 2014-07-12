@@ -820,7 +820,6 @@
 																if ('faster projectiles' === support.name.toLowerCase()) {
 																	console.log([skill.keywords, type, mult]);
 																}
-																console.log([skill.name, support.name, skill.keywords, type]);
 																if ('' === type || skill.keywords.indexOf(type) >= 0) {
 																	skill.dmg.multiply({'mult': 1 + mult, 'lvl': skillLvl});
 																}
@@ -873,13 +872,14 @@
 								for (j in indexLines) {
 									if (name == indexLines[j].getElementsByTagName("button")[0].innerHTML) {
 										indexLines[j].style.backgroundColor = skills[name].color;
+										console.log([name, skills[name].color, indexLines[j].style.backgroundColor]);
 										break;
 									}
 								}
 							}
-							i += 1;
+							i += beginColor;
 						}
-						beginColor += 3;
+						beginColor += 1;
 						redraw();
 					};
 				})();
@@ -915,8 +915,10 @@
 					index.innerHTML = '';
 					for (name in skills) {
 						if (skills[name].hasDmg) {
-							skills[name].color = getColor(i);
-							i += 1;
+							if (!skills[name].color) {
+								skills[name].color = getColor(i);
+								i += 1;
+							}
 							indexLine = document.createElement("span");
 							indexLine.style.backgroundColor = skills[name].color;
 							indexLine.className = "spellIndexLine";
@@ -1377,7 +1379,7 @@
 						}
 					})();
 					
-					drawSkillIndex();
+					//drawSkillIndex();
 				};
 				redraw();
 				for (name in rawSupports) {//draw all support data (testing/dev purposses only...)
