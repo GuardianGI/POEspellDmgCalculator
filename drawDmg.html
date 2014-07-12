@@ -481,6 +481,9 @@
 							for (key in s.supports) {
 								support = s.supports[key];
 								
+								support.applyFirst.forEach(function (apply) {
+									s.applySupportStage(support, apply);
+								});
 								support.applyBefore.forEach(function (apply) {
 									s.applySupportStage(support, apply);
 								});
@@ -564,20 +567,6 @@
 							}
 							
 							for (key in s.supports) {
-								support = s.supports[key];
-								support.types.forEach(function (type) {
-									switch(type) {
-									case 'moreDmg':
-										if (support.isApplicable(s)) {
-											s.applySupportStage(support, function (stage, lvl) {
-												if (stage > -1) {
-													s.dmg.multiply({'mult': support.multipliers[stage], 'lvl': lvl});
-												}
-											});
-										}
-										break;
-									}
-								});
 								support.applyAfter.forEach(function (apply) {
 									s.applySupportStage(support, apply);
 								});
@@ -645,8 +634,9 @@
 							res[sName].maxLvl = 20;
 							res[sName].name = sName;
 							res[sName].stages = s.stages;
-							res[sName].applyBefore = [];
-							res[sName].applyAfter = [];
+							res[sName].applyFirst = [];//apply on raw skill data
+							res[sName].applyBefore = [];//apply before monster def. shock, etc.
+							res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
 							res[sName].types = [];
 							res[sName].isApplicable = (function () {
 								return function () {
@@ -679,7 +669,7 @@
 														return skill.keywords.indexOf('projectile') >= 0;
 													}
 												})();
-												res[sName].applyBefore.push(function (supportStage, skillLvl, skill) {
+												res[sName].applyFirst.push(function (supportStage, skillLvl, skill) {
 													skill.projectiles[skillLvl].multiplier += 2;
 												});
 												break;
@@ -689,7 +679,7 @@
 													res[sName].isApplicable = function (skill) {
 														return skill.keywords.indexOf('projectile') >= 0;
 													};
-													res[sName].applyBefore.push((function (additionalProjectiles) {
+													res[sName].applyFirst.push((function (additionalProjectiles) {
 														return function (supportStage, skillLvl, skill) {
 															skill.projectiles[skillLvl].base += additionalProjectiles;
 														}
@@ -709,6 +699,7 @@
 													case 'addedDmg':
 														res[sName].dmg = [];
 														res[sName].isApplicable = function (skill) {return true;};
+														res[sName].dmgStages = [];
 														for (stage in s.stageStats) {
 															d = {};
 															d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").
@@ -716,8 +707,22 @@
 																	d[0 === d.min ? 'min' : 'max'] = val | 0;
 																	return d;
 																}, {min: 0, max: 0});
-															res[sName].dmg.push(d);
+															res[sName].dmgStages.push(d);
 														}
+														
+														res[sName].applyFirst.push((function (s) {
+															return function (supportStage, skillLvl, skill) {
+																var type;
+																if (supportStage >= 0) {
+																	for (type in s.dmgStages[supportStage]) {
+																			skill.dmg[skillLvl][type].min += 
+																				s.dmgStages[supportStage][type].min;
+																			skill.dmg[skillLvl][type].max += 
+																				s.dmgStages[supportStage][type].max;
+																	}
+																}
+															};
+														})(res[sName]));
 														break;
 													case 'moreDmg':
 														if (matches[1].length == 0) {
@@ -745,7 +750,7 @@
 														}
 														res[sName].applyBefore.push((function(support) {
 															return function (supportStage, skillLvl, skill) {
-																skill[skillLvl].dmg *= support.multipliers[supportStage];
+																skill.dmg.multiply({mult: support.multipliers[supportStage], lvl: skillLvl});
 															};
 														})(res[sName]));
 														break;
@@ -764,7 +769,7 @@
 																}
 															}
 														}
-														res[sName].applyBefore.push((function (s) {
+														res[sName].applyFirst.push((function (s) {
 															return function (supportStage, skillLvl, skill) {
 																if (supportStage >= 0) {
 																	dmgLvls.forEach(function (dmgLvl) {
