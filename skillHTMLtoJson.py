@@ -50,7 +50,7 @@ class dmg:
 	
 	def setDmg(self, stage, typeStr, dmgStr):
 		if re.match("\s?\d+?\s*-\s*\d+?\s?", dmgStr):
-			dmgVal = list(int(n) for n in dmgStr.split("-"))
+			dmgVal = list(int(n.replace('*', '')) for n in dmgStr.split("-"))
 		elif re.match("\s?\d+.*", dmgStr):
 			try:
 				val = float(dmgStr.replace(",", ""))
@@ -127,10 +127,13 @@ class skill:
 				content += byte.decode("utf-8", "ignore")
 			byte = f_spell.read(1)
 		f_spell.close()
-		content = content.replace("&#8211;", "-").replace("\r", "").replace("\n", "")
+		content = self.fixUnclosedTags(content.replace("&#8211;", "-").replace("\r", "").replace("\n", ""))
 		self.content = content.lower()
 		self.getDmgTable(content)
 		self.parseMetadata()
+		
+	def fixUnclosedTags(self, content):
+		return re.sub('(\<img [^>]*?)/?\>', '\g<1> />', content).replace('<br>', '<br />')
 		
 	def getDmgTable(self, content):
 		tableString = re.search('\<table [^>]*?class="[^"]*?GemLevelTable', content)
@@ -147,7 +150,11 @@ class skill:
 			innerTable = content.find(tblOpen, innerTable + tblOpen.__len__())
 			if innerTable > closing:
 				openTables = 0
-		table = parseString(content[offset:closing]).getElementsByTagName("table")[0]
+		try:
+			table = parseString(content[offset:closing]).getElementsByTagName("table")[0]
+		except Exception:
+			print(content[offset:closing])
+			table = parseString(content[offset:closing]).getElementsByTagName("table")[0]
 		if "GemLevelTable" in table.attributes["class"].value :
 			self.parseDmg(table)
 
