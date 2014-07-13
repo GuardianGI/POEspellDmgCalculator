@@ -1388,6 +1388,9 @@
 					b.innerHTML = name;
 					div = document.createElement("div");
 					div.appendChild(b);
+					div.style.float = 'left';
+					div.style.padding = '5px';
+					div.style.border = '1px solid #000';
 					spellDetails.appendChild(div)
 					for (key in s.modifiers) {
 						b = document.createElement("span");
@@ -1417,8 +1420,11 @@
 			span {
 				background-color: #ccc;
 			}
-			#indexContainer, #canvas, .misc, .canvasContainer {
+			#indexContainer, #canvas, .canvasContainer, .indexAndCanvas {
 				float: left;
+			}
+			.misc {
+				float: right;
 			}
 			.misc label, .monster h2 {
 				display: block;
@@ -1441,15 +1447,18 @@
 				border: 1px solid #000;
 			}
 			.canvasContainer {
-				width: 1080px;
+				width: 1024px;
 				height: 100%;
 				overflow: auto;
 			}
+			#indexContainer {
+				width: 200px;
+			}
 			#spellDetails {
-				position: absolute;
-				top: 950px;
-				left: 5px;
-				width: 100%;
+				/*position: absolute;*/
+				/*top: 950px;*/
+				/*left: 5px;
+				width: 100%;*/
 			}
 			.spellDetails {
 				position: relative;
@@ -1475,13 +1484,15 @@
 		</style>
 	</head>
 	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'))">
-		<div id="indexContainer">
-			<span>Toggle all <input type="checkbox" checked onclick="toggleCheckAll(this)" /></span>
-			<div id="index">
+		<div class="indexAndCanvas">
+			<div id="indexContainer">
+				<span>Toggle all <input type="checkbox" checked onclick="toggleCheckAll(this)" /></span>
+				<div id="index">
+				</div>
 			</div>
-		</div>
-		<div class="canvasContainer">
-			<canvas id="canvas"></canvas>
+			<div class="canvasContainer">
+				<canvas id="canvas"></canvas>
+			</div>
 		</div>
 		<div class="misc">
 			<div>

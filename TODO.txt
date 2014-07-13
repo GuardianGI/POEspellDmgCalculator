@@ -8,7 +8,7 @@ todo:
 	apply APS to minion DPS
 	apply cast time & duration to max DPS for SRS
 	correctly apply correct increases: does desecrate benefit from spell damage, searing bond from burning dmg? etc.
-	half decent interface on "any" resolution (minimum of 1024px or maybe down to 800px width)
+	half decent interface on "any" resolution (minimum of 1024px or maybe down to 800px width) (now looks fine on 1280 width and handles other resulotuions decently.)
 	Aura support (anger & wrath for minions, haste for cast speed, etc.)
 		?total mana reserved
 	mana per second usage
