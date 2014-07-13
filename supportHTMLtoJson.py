@@ -34,6 +34,9 @@ def tryGetTitle(node):
 	except Exception:
 		nodeTitle = node;
 	return nodeTitle
+
+def fixUnclosedTags(content):
+	return re.sub('(\<img [^>]*?)/?\>', '\g<1> />', content).replace('<br>', '<br />')
 	
 class support:
 	def __init__(self, fileName):
@@ -59,7 +62,7 @@ class support:
 			byte = f.read(1)
 		f.close()
 		
-		content = content.replace("&#8211;", "-").replace("\r", "").replace("\n", "")
+		content = fixUnclosedTags(content.replace("&#8211;", "-").replace("\r", "").replace("\n", ""))
 		self.content = content.lower()
 		
 		self.getStatTable(content)

@@ -108,6 +108,9 @@ def tryGetTitle(node):
 	except Exception:
 		nodeTitle = node;
 	return nodeTitle
+
+def fixUnclosedTags(content):
+	return re.sub('(\<img [^>]*?)/?\>', '\g<1> />', content).replace('<br>', '<br />')
 	
 f_escape = open("escape.txt", "rb")
 escape = f_escape.read(1)
@@ -130,13 +133,10 @@ class skill:
 				content += byte.decode("utf-8", "ignore")
 			byte = f_spell.read(1)
 		f_spell.close()
-		content = self.fixUnclosedTags(content.replace("&#8211;", "-").replace("\r", "").replace("\n", ""))
+		content = fixUnclosedTags(content.replace("&#8211;", "-").replace("\r", "").replace("\n", ""))
 		self.content = content.lower()
 		self.getDmgTable(content)
 		self.parseMetadata()
-		
-	def fixUnclosedTags(self, content):
-		return re.sub('(\<img [^>]*?)/?\>', '\g<1> />', content).replace('<br>', '<br />')
 		
 	def getDmgTable(self, content):
 		tableString = re.search('\<table [^>]*?class="[^"]*?GemLevelTable', content)
