@@ -16,7 +16,7 @@
 						res = fn();
 						return res;
 					};
-				},
+				}, publicSkills,
 				startDraw = function (c, index) {
 					var skills = {}, name, i = 0, checkbox, indexLine, zoomLvl = 1, padding = 50,
 						ctx = c.getContext("2d"),
@@ -423,12 +423,22 @@
 							}
 						};
 						
+						s.getIcrDmg = function (type, lvl, keywords) {
+							var incr = 0, typeKey;
+							for (typeKey in s.dmgIncreases[lvl]) {
+								if (typeKey === type || keywords.indexOf(typeKey) >= 0) {
+									incr += s.dmgIncreases[lvl][typeKey];
+								}
+							}
+							return incr;
+						};
+						
 						s.applyDmgIncreases = function () {
 							var dmgTypes = ['fire', 'cold', 'light', 'chaos', 'phys'],
 								eleDmgType = ['fire', 'cold', 'light'],
 								spellTypes = ['aoe', 'projectile'],
-								keywords, generalIncr = 0;
-							s.applyDmgMultiplier(1 + userInput.spellDmgIncr / 100);
+								keywords, generalIncr = 0, lvl;
+							generalIncr += userInput.spellDmgIncr / 100;
 							
 							keywords = s.keywords.filter(function (keyword) {
 								for (key in spellTypes) {
@@ -441,12 +451,17 @@
 							keywords.forEach(function(keyword) {
 								generalIncr += userInput[keyword + 'DmgIncr'] | 0;
 							});
-							dmgTypes.forEach(function (type) {
-								s.applySpecificMultiplier(1 + (generalIncr +
-										((eleDmgType.indexOf(type) > -1) ? userInput.eleDmgIncr | 0 : 0) +
-										(userInput[type + 'DmgIncr'] | 0)) / 100,
-									type);
-							});
+							for (lvl = 0; lvl < 100; lvl += 1) {
+								dmgTypes.forEach(function (type) {
+									s.dmg.multiply({mult: 1 + (
+												generalIncr +
+												((eleDmgType.indexOf(type) > -1) ? userInput.eleDmgIncr | 0 : 0) +
+												(userInput[type + 'DmgIncr'] | 0) 
+											) / 100 +
+											s.getIcrDmg(type, lvl, keywords),
+										'type': type, 'lvl': lvl});
+								});
+							}
 							
 						};
 						
@@ -463,10 +478,14 @@
 						};
 						
 						s.calcDmg = function () {
-							var lastDmg = 0, support, key, type, j, lvl;
+							var lastDmg = 0, support, key, type, j, lvl, getDmgTypes = function () {
+								return {fire: 0, cold: 0, light: 0, chaos: 0, phys: 0, elemental: 0, aoe: 0, projectile: 0};
+							};
 							s.getAdditionalChanceToIgnite = function () { return 0; };
 							
+							s.dmgIncreases = [];
 							for (i = 0; i < 100; i += 1) {
+								s.dmgIncreases[i] = getDmgTypes();
 								s.projectiles[i] = {base: s.isEtherealKnives ? 10 : 1, multiplier: 1};
 							}
 							
@@ -483,27 +502,12 @@
 							for (key in s.supports) {
 								support = s.supports[key];
 								
-								support.applyFirst.forEach(function (apply) {
-									s.applySupportStage(support, apply);
-								});
-								support.applyBefore.forEach(function (apply) {
-									s.applySupportStage(support, apply);
+								support.applyFirst.forEach(function (fn) {
+									s.applySupportStage(support, fn);
 								});
 								
 								support.types.forEach(function (type) {
 									switch (type) {
-									case 'addedDmg':
-										for (type in support.dmg[0]) {
-											s.applySupportStage(support, function (stage, lvl) {
-												if (stage > -1) {
-													s.dmg[lvl][type].min += support.dmg[stage][type].min;
-													s.dmg[lvl][type].max += support.dmg[stage][type].max;
-												}
-											});
-										}
-										break;
-									case 'addedConvertedDmg':
-										break;
 									case 'chanceToStatusAilment':
 										if ('fire' === support.ailmentElement) {
 											s.getAdditionalChanceToIgnite = (function (support) {
@@ -521,6 +525,13 @@
 										//console.log(['default for', support.type, support.name]);
 										break;
 									}
+								});
+							}
+							
+							for (key in s.supports) {
+								support = s.supports[key];
+								support.applyBefore.forEach(function (fn) {
+									s.applySupportStage(support, fn);
 								});
 							}
 							
@@ -653,17 +664,18 @@
 											res[sName].types.push(reType);
 											switch (reType) {
 											case 'less':
-												res[sName].applyBefore.push((function(amount, type) {
+												res[sName].applyBefore.push((function(amount, type, support) {
 													var amountInPct = 1 - parsePercent(amount);
 													return function (supportStage, skillLvl, skill) {
 														var typeKey, minMaxAvgKey;
+														console.log(['less', amountInPct, support.name]);
 														for (typeKey in skill.dmg[skillLvl]) {
 															for (minMaxAvgKey in skill.dmg[skillLvl][typeKey]) {
 																skill.dmg[skillLvl][typeKey][minMaxAvgKey] *= amountInPct;
 															}
 														}
 													};
-												})(matches[1], matches[2]));
+												})(matches[1], matches[2], res[sName]));
 												break;
 											case 'chain':
 												res[sName].isApplicable = (function () {
@@ -683,6 +695,7 @@
 													};
 													res[sName].applyFirst.push((function (additionalProjectiles) {
 														return function (supportStage, skillLvl, skill) {
+															console.log(['additional proj', additionalProjectiles, skill.projectiles[skillLvl].base])
 															skill.projectiles[skillLvl].base += additionalProjectiles;
 														}
 													})(matches[1] | 0));
@@ -719,28 +732,29 @@
 													switch (reType) {
 													case 'addedDmg':
 														res[sName].dmg = [];
-														res[sName].isApplicable = function (skill) {return true;};
-														res[sName].dmgStages = [];
-														for (stage in s.stageStats) {
-															d = {};
-															d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").
-																reduce(function(d, val) {
-																	d[0 === d.min ? 'min' : 'max'] = val | 0;
-																	return d;
-																}, {min: 0, max: 0});
-															res[sName].dmgStages.push(d);
-														}
+														res[sName].isApplicable = function (skill) { return true; };
 														
-														res[sName].applyFirst.push((function (s) {
+														res[sName].applyFirst.push((function (support) {
+															var dmgStages = [];
+															for (stage in s.stageStats) {
+																d = {};
+																d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").
+																	reduce(function(d, val) {
+																		d[0 === d.min ? 'min' : 'max'] = val | 0;
+																		return d;
+																	}, {min: 0, max: 0});
+																dmgStages.push(d);
+															}
 															return function (supportStage, skillLvl, skill) {
 																var type;
-																if (supportStage >= 0) {
-																	for (type in s.dmgStages[supportStage]) {
-																			skill.dmg[skillLvl][type].min += 
-																				s.dmgStages[supportStage][type].min;
-																			skill.dmg[skillLvl][type].max += 
-																				s.dmgStages[supportStage][type].max;
-																	}
+																for (type in dmgStages[supportStage]) {
+																	if (type === 'chaos') console.log(['added dmg', dmgStages[supportStage].chaos.min]);
+																		skill.dmg[skillLvl][type].min += 
+																			dmgStages[supportStage][type].min;
+																		skill.dmg[skillLvl][type].max += 
+																			dmgStages[supportStage][type].max;
+																		skill.dmg[skillLvl][type].avg += 
+																			(dmgStages[supportStage][type].min + dmgStages[supportStage][type].max) / 2;
 																}
 															};
 														})(res[sName]));
@@ -835,17 +849,16 @@
 																}
 															}
 														}
-														res[sName].applyAfter.push((function (type, support) {
+														res[sName].applyFirst.push((function (type, support) {
 															return function (supportStage, skillLvl, skill) {
-																var mult = support.incrDmg[supportStage] || 0, dmgType;
+																var mult = support.incrDmg[supportStage] || 0;
 																if ('' === type || skill.keywords.indexOf(type) >= 0) {
-																	skill.dmg.multiply({'mult': 1 + mult, 'lvl': skillLvl});
+																	skill.dmgIncreases[skillLvl][type] += mult;
 																}
 															}
 														})(translateMatch(matches[1]), res[sName]));
 														
 														if ('faster projectiles' === sName.toLowerCase()) {
-															console.log(res[sName].incrDmg);
 															res[sName].isApplicable = function (skill) {
 																return skill.keywords.indexOf('projectile') >= 0;
 															};
@@ -868,6 +881,7 @@
 				for (name in rawSkills) {
 					skills[name] = skill(rawSkills[name], name);
 				}
+				publicSkills = skills;
 				document.getElementById("btnZoomReset").onclick = function () {
 					zoomLvl = 1;
 					redraw();
