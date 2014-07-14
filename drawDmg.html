@@ -990,7 +990,7 @@
 											var clone = skill.clone();
 											clone.supports.splice(supportIndex, 1);
 											clone.calcDmg();
-											return clone.totalDmg(70) / skill.totalDmg(70);
+											return clone.totalDmg(userInput.playerLvlForSuggestions) / skill.totalDmg(userInput.playerLvlForSuggestions);
 										},
 										drawContent = function () {
 											details.innerHTML = '';
@@ -1119,10 +1119,10 @@
 										for (supportName in supports) {
 											if (s.supports.indexOf(supports[supportName]) < 0 && supports[supportName].isApplicable(s)) {
 												s.calcDmg();
-												dmgPrev = s.totalDmg(70);
+												dmgPrev = s.totalDmg(userInput.playerLvlForSuggestions);
 												s.supports.push(supports[supportName]);//temp add support
 												s.calcDmg();
-												dmgAfter = s.totalDmg(70);
+												dmgAfter = s.totalDmg(userInput.playerLvlForSuggestions);
 												s.supports.splice(s.supports.indexOf(supports[supportName]), 1);//remove support
 												dmgMulti = dmgAfter / dmgPrev;
 												
@@ -1566,6 +1566,7 @@
 				<label>Enable monster res/armour: <input checked="true" class="userInput" type="checkbox" id="enableMonsterDef" /></label>
 				<label title="disable to see dmg per cast or for cast on crit builds">Enable cast speed <input checked="true" class="userInput" type="checkbox" id="enableCastSpeed" /></label>
 				<label title="for multi projectile attacks, includes chain and fork">Assume shotgun <input class="userInput" type="checkbox" id="assumeShotgun" /></label>
+				<label title="Assume player level for support effect estimates and such">Player lvl for suggestions<input class="userInput" value="70" type="text" id="playerLvlForSuggestions" /></label>
 			</div>
 			<div>
 				<h2>Skill specifics.</h2>
