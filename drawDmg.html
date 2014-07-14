@@ -470,7 +470,7 @@
 								castTime = s.getCastTime(),
 								dps = s.totalDmg(lvl);
 							if (dps > 0 && castTime > 0) {
-								console.log(Math.ceil(life / s.totalDmg(lvl) / castTime) * castTime, dps, castTime);
+								//console.log(Math.ceil(life / s.totalDmg(lvl) / castTime) * castTime, dps, castTime);
 								return Math.ceil(life / dps / castTime) * castTime;
 							} else {
 								return -1;
@@ -668,7 +668,6 @@
 													var amountInPct = 1 - parsePercent(amount);
 													return function (supportStage, skillLvl, skill) {
 														var typeKey, minMaxAvgKey;
-														console.log(['less', amountInPct, support.name]);
 														for (typeKey in skill.dmg[skillLvl]) {
 															for (minMaxAvgKey in skill.dmg[skillLvl][typeKey]) {
 																skill.dmg[skillLvl][typeKey][minMaxAvgKey] *= amountInPct;
@@ -695,7 +694,6 @@
 													};
 													res[sName].applyFirst.push((function (additionalProjectiles) {
 														return function (supportStage, skillLvl, skill) {
-															console.log(['additional proj', additionalProjectiles, skill.projectiles[skillLvl].base])
 															skill.projectiles[skillLvl].base += additionalProjectiles;
 														}
 													})(matches[1] | 0));
@@ -706,7 +704,6 @@
 												}
 												break;
 											case 'echo':
-												console.log(res[sName]);
 												res[sName].isApplicable = function () { return true; };
 												res[sName].applyAfter.push((function (support, rawSupport) {
 													var stageStats = {},
@@ -748,13 +745,12 @@
 															return function (supportStage, skillLvl, skill) {
 																var type;
 																for (type in dmgStages[supportStage]) {
-																	if (type === 'chaos') console.log(['added dmg', dmgStages[supportStage].chaos.min]);
-																		skill.dmg[skillLvl][type].min += 
+																	skill.dmg[skillLvl][type].min += 
 																			dmgStages[supportStage][type].min;
-																		skill.dmg[skillLvl][type].max += 
-																			dmgStages[supportStage][type].max;
-																		skill.dmg[skillLvl][type].avg += 
-																			(dmgStages[supportStage][type].min + dmgStages[supportStage][type].max) / 2;
+																	skill.dmg[skillLvl][type].max += 
+																		dmgStages[supportStage][type].max;
+																	skill.dmg[skillLvl][type].avg += 
+																		(dmgStages[supportStage][type].min + dmgStages[supportStage][type].max) / 2;
 																}
 															};
 														})(res[sName]));
@@ -897,19 +893,25 @@
 				document.getElementById("shuffleColors").onclick = (function () {
 					var beginColor = 1;
 					return function () {
-						var name, j, i = beginColor, indexLines = document.getElementsByClassName("spellIndexLine");
+						var name, j, i = beginColor, indexLines = document.getElementsByClassName("spellIndexLine"),
+							spellCount = 0;
+						for (name in skills) {
+							if (skills[name].draw) {
+								spellCount += 1;
+							}
+						}
+						console.log(spellCount);
 						for (name in skills) {
 							if (skills[name].draw) {
 								skills[name].color = getColor(i);
 								for (j in indexLines) {
 									if (name == indexLines[j].getElementsByTagName("button")[0].innerHTML) {
 										indexLines[j].style.backgroundColor = skills[name].color;
-										console.log([name, skills[name].color, indexLines[j].style.backgroundColor]);
 										break;
 									}
 								}
+								i += spellCount % 16;
 							}
-							i += 1;
 						}
 						beginColor += 1;
 						redraw();
