@@ -580,8 +580,9 @@
 							}
 							
 							for (key in s.supports) {
-								support.applyAfter.forEach(function (apply) {
-									s.applySupportStage(support, apply);
+								support = s.supports[key];
+								support.applyAfter.forEach(function (fn) {
+									s.applySupportStage(support, fn);
 								});
 							}
 							
@@ -598,7 +599,7 @@
 							for (key in s.supports) {
 								clone.supports.push(s.supports[key]);
 							}
-							clone.name = newName + ' : ' + s.name;
+							clone.name = newName/* + ' : ' + s.name*/;
 							clone.calcDmg();
 							return clone;
 						}
@@ -651,9 +652,9 @@
 							res[sName].applyBefore = [];//apply before monster def. shock, etc.
 							res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
 							res[sName].types = [];
-							res[sName].isApplicable = (function () {
+							res[sName].isApplicable = (function (supportName) {
 								return function () {
-									console.log('default is applicable was called.');
+									console.log('default is applicable was called for '+ supportName);
 									return false;
 								};
 							})(sName);
@@ -728,7 +729,6 @@
 													res[sName].types.push(reType);
 													switch (reType) {
 													case 'addedDmg':
-														res[sName].dmg = [];
 														res[sName].isApplicable = function (skill) { return true; };
 														
 														res[sName].applyFirst.push((function (support) {
@@ -832,22 +832,23 @@
 														}
 														break;
 													case 'incrDmg':
-														res[sName].incrDmg = {};
-														for (stage in s.stageStats) {
-															for (column in s.stageStats[stage]) {
-																if (column.match('increased.*?' + translateMatch(matches[1]) + '.*?damage')) {
-																	var matchedPct = s.stageStats[stage][column].match(/(\d+%)/i);
-																	if (matchedPct) {
-																		res[sName].incrDmg[stage] = parsePercent(matchedPct[1]);
-																	} else {
-																		res[sName].incrDmg[stage] = 0;
+														res[sName].applyFirst.push((function (type, support) {
+															var incrDmg = {};
+															for (stage in s.stageStats) {
+																for (column in s.stageStats[stage]) {
+																	if (column.match('increased.*?' + translateMatch(matches[1]) + '.*?damage')) {
+																		var matchedPct = s.stageStats[stage][column].match(/(\d+%)/i);
+																		if (matchedPct) {
+																			incrDmg[stage] = parsePercent(matchedPct[1]);
+																		} else {
+																			incrDmg[stage] = 0;
+																		}
 																	}
 																}
 															}
-														}
-														res[sName].applyFirst.push((function (type, support) {
+														
 															return function (supportStage, skillLvl, skill) {
-																var mult = support.incrDmg[supportStage] || 0;
+																var mult = incrDmg[supportStage] || 0;
 																if ('' === type || skill.keywords.indexOf(type) >= 0) {
 																	skill.dmgIncreases[skillLvl][type] += mult;
 																}
@@ -989,7 +990,7 @@
 											fieldset.appendChild(legend);
 										},
 										getSupportRemovedDiff = function (skill, supportIndex) {
-											var clone = skill.clone();
+											var clone = skill.clone('tmpClone');
 											clone.supports.splice(supportIndex, 1);
 											clone.calcDmg();
 											return clone.totalDmg(userInput.playerLvlForSuggestions) / skill.totalDmg(userInput.playerLvlForSuggestions);
@@ -1116,16 +1117,19 @@
 											})(inputNew, s);
 										};
 									getSupportsDropDown = function () {
-										var select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti;//todo: calclate dmgDiff
+										var select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti, tmpClone;//todo: calclate dmgDiff
 										select = document.createElement('select');
 										for (supportName in supports) {
 											if (s.supports.indexOf(supports[supportName]) < 0 && supports[supportName].isApplicable(s)) {
+												tmpClone = s.clone('tmpClone');
+												tmpClone.supports.push(supports[supportName]);//temp add support
+												
 												s.calcDmg();
+												tmpClone.calcDmg();
+												
 												dmgPrev = s.totalDmg(userInput.playerLvlForSuggestions);
-												s.supports.push(supports[supportName]);//temp add support
-												s.calcDmg();
-												dmgAfter = s.totalDmg(userInput.playerLvlForSuggestions);
-												s.supports.splice(s.supports.indexOf(supports[supportName]), 1);//remove support
+												dmgAfter = tmpClone.totalDmg(userInput.playerLvlForSuggestions);
+												
 												dmgMulti = dmgAfter / dmgPrev;
 												
 												option = document.createElement('option');
@@ -1251,9 +1255,7 @@
 								s = drawSkills[name];
 								first = true;
 								s.calcDmg();//recalc dmg.
-								if ('shockwave totem' === s.name.toLowerCase()) {
-									console.log([s.dmg[66], s.dmg[67]]);
-								}
+								
 								ctx.beginPath();
 								for (lvl in s.dmg) {
 									//if (s.dmg[lvl].phys > 0) alert(name);
