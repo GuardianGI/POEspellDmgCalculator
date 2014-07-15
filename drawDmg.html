@@ -162,7 +162,7 @@
 						s.additionalLvl = 0
 						s.maxLvl = 30;
 						s.name = name;
-						s.keywords = rawSkill.keywords;
+						s.keywords = rawSkill.keywords.splice(0);
 						s.qualityBonus = rawSkill.qualityBonus;
 						s.qualityLvl = 20;
 						s.qualityEffects = [];
@@ -483,6 +483,8 @@
 							};
 							s.getAdditionalChanceToIgnite = function () { return 0; };
 							
+							s.keywords = rawSkill.keywords.splice(0);//reset keywords, may be modified by supports.
+							
 							s.dmgIncreases = [];
 							for (i = 0; i < 100; i += 1) {
 								s.dmgIncreases[i] = getDmgTypes();
@@ -497,6 +499,13 @@
 									lastDmg = s.sumDmgLvl(s.dmg[i]);
 								}
 								s.mana[i] = getRawSkillDmgAtLvl(rawSkill, i, s.additionalLvl, s.maxLvl).mana;
+							}
+							
+							for (key in s.supports) {
+								support = s.supports[key];
+								support.initFunctions.forEach(function (fn) {
+									fn(s);
+								});
 							}
 							
 							for (key in s.supports) {
@@ -648,6 +657,7 @@
 							res[sName].maxLvl = 20;
 							res[sName].name = sName;
 							res[sName].stages = s.stages;
+							res[sName].initFunctions = [];
 							res[sName].applyFirst = [];//apply on raw skill data
 							res[sName].applyBefore = [];//apply before monster def. shock, etc.
 							res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
@@ -664,18 +674,29 @@
 									if (null != matches) {
 											res[sName].types.push(reType);
 											switch (reType) {
+											case 'totem':
+												res[sName].isApplicable = (function () {
+													return function (skill) {
+														return skill.keywords.indexOf('totem') < 0;
+													}
+												})();
+												res[sName].initFunctions.push(function (skill) {
+													skill.keywords.push('totem');
+												});
+												break;
 											case 'less':
-												res[sName].applyBefore.push((function(amount, type, support) {
-													var amountInPct = 1 - parsePercent(amount);
-													return function (supportStage, skillLvl, skill) {
-														var typeKey, minMaxAvgKey;
-														for (typeKey in skill.dmg[skillLvl]) {
-															for (minMaxAvgKey in skill.dmg[skillLvl][typeKey]) {
-																skill.dmg[skillLvl][typeKey][minMaxAvgKey] *= amountInPct;
+												res[sName][('cast' === matches[2] ? 'applyAfter' : 'applyBefore')]
+													.push((function(amount, type, support) {
+														var amountInPct = 1 - parsePercent(amount);
+														return function (supportStage, skillLvl, skill) {
+															var typeKey, minMaxAvgKey;
+															for (typeKey in skill.dmg[skillLvl]) {
+																for (minMaxAvgKey in skill.dmg[skillLvl][typeKey]) {
+																	skill.dmg[skillLvl][typeKey][minMaxAvgKey] *= amountInPct;
+																}
 															}
-														}
-													};
-												})(matches[1], matches[2], res[sName]));
+														};
+													})(matches[1], matches[2], res[sName]));
 												break;
 											case 'chain':
 												res[sName].isApplicable = (function () {
@@ -705,7 +726,7 @@
 												}
 												break;
 											case 'echo':
-												res[sName].isApplicable = function () { return true; };
+												res[sName].isApplicable = function (skill) { return skill.keywords.indexOf('totem') < 0; };
 												res[sName].applyAfter.push((function (support, rawSupport) {
 													var stageStats = {},
 														column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {

@@ -19,6 +19,9 @@ todo:
 			crit: where cc (crit chance) is 0.05 for 5% and cd (crit multiplier) is 1 by default for 100% more dmg
 				divergence /= cc
 
+bugs:
+	apply spell echo, then spell totem: spell echo still allowed. spell totem takes presedence and spell echo should get removed.
+
 cool to have:
 	curse cast speed
 		avg. combat time (using monster life expectations & curse cast recomendations)
