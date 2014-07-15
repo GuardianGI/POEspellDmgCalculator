@@ -61,10 +61,10 @@
 						calcPhysDmg = function (rawDmg, armour) {
 							return (rawDmg * rawDmg) / (rawDmg + (armour / 12));
 						},
-						calcAvgPhysDmg = function (s, min, max, armour) {
+						calcAvgPhysDmg = function (s, min, max, armour, lvl) {
 							var calcPhysIntergral = function (arm) {//defined intergral for dmg ^ 2 / (dmg - armour) over min to max
 								return ((((arm * arm) * (-Math.log(arm + min))) + (arm * arm) * Math.log(arm + max)) - ((max - min) * arm)) + (((max * max) - (min * min)) / 2);
-							}, count = max - min, totalDmg, cc = s.getCritChance(), cd = s.getCritDmg();
+							}, count = max - min, totalDmg, cc = s.getCritChance(lvl), cd = s.getCritDmg(lvl);
 							armour /= 12;//just the way armour is applied in POE...
 							totalDmg = calcPhysIntergral(armour);
 							if (userInput.enableCrit) {
@@ -273,7 +273,7 @@
 									switch (type) {
 									case 'phys':
 										if (s.dmg[i][type].min > 0 && s.dmg[i][type].max > 0) {
-											s.dmg[i][type].avg = calcAvgPhysDmg(s, s.dmg[i][type].min, s.dmg[i][type].max, monster.armour);
+											s.dmg[i][type].avg = calcAvgPhysDmg(s, s.dmg[i][type].min, s.dmg[i][type].max, monster.armour, i);
 											s.dmg[i][type].min = calcPhysDmg(s.dmg[i][type].min * morePhysDmg, monster.armour);
 											s.dmg[i][type].max = calcPhysDmg(s.dmg[i][type].max * morePhysDmg, monster.armour);
 										}
@@ -299,21 +299,27 @@
 								}
 							}
 						};
-						s.getCritChance = function () {
+						s.additionalCC = [];
+						s.getCritChance = function (lvl) {
 							return s.cc * 
 									(1 + userInput.incrCritChance / 100 +
+										s.additionalCC[lvl] +
 										s.incrCcFromQuality * s.qualityLvl +
 										(s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0));
 						};
-						s.getCritDmg = function () {
-							return s.cd + userInput.incrCritDmg / 100;
+						s.additionalCD = [];
+						s.getCritDmg = function (lvl) {
+							return s.cd + userInput.incrCritDmg / 100 + s.additionalCD[lvl];
 						};
 						s.applyCrit = function () {
-							var chance = s.getCritChance(),
-								mult = 1 + (chance > 1 ? 1 : chance) * s.getCritDmg();
-							for (type in s.dmg[0]) {
-								if ('phys' !== type || !userInput.enableMonsterDef) {//crit is applied when applying mosnter def for phys dmg
-									s.dmg.multiply({'mult': mult, 'type': type});
+							var chance, mult, lvl;
+							for (lvl = 0; lvl < 100; lvl += 1) {
+								chance = s.getCritChance(lvl);
+								mult = 1 + (chance > 1 ? 1 : chance) * s.getCritDmg(lvl);
+								for (type in s.dmg[0]) {
+									if ('phys' !== type || !userInput.enableMonsterDef) {//crit is applied when applying mosnter def for phys dmg
+										s.dmg.multiply({'mult': mult, 'type': type, 'lvl': lvl});
+									}
 								}
 							}
 						};
@@ -498,6 +504,8 @@
 							
 							s.stages = [];
 							s.otherIncrCastSpeed = [];
+							s.additionalCC = [];
+							s.additionalCD = [];
 							for (i = 0; i < 100; i += 1) {
 								s.dmg[i] = skillDmg(rawSkill, i, s.additionalLvl, s.maxLvl);
 								if (s.sumDmgLvl(s.dmg[i]) > lastDmg) {
@@ -506,6 +514,8 @@
 								}
 								s.mana[i] = getRawSkillDmgAtLvl(rawSkill, i, s.additionalLvl, s.maxLvl).mana;
 								s.otherIncrCastSpeed[i] = 0;
+								s.additionalCC[i] = 0;
+								s.additionalCD[i] = 0;
 							}
 							
 							//begin applying supports.
@@ -683,6 +693,25 @@
 									if (null != matches) {
 											res[sName].types.push(reType);
 											switch (reType) {
+											case 'incrCrit':
+												res[sName].isApplicable = function (skill) { return skill.cc > 0; };
+												
+												res[sName].applyFirst.push((function (support, rawSupport, type) {
+													var stageStats = {}, selector,
+														column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+															key = key.toLowerCase();
+															return key.indexOf('crit') >= 0 && key.indexOf(type) >= 0;
+														})[0];
+													console.log([rawSupport.stageStats[0], column, matches]);
+													for (stage in support.stages) {
+														stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+													}
+													selector = 'chance' === type ? 'additionalCC' : 'additionalCD';
+													return function (supportStage, skillLvl, skill) {
+														skill[selector][skillLvl] += stageStats[supportStage];
+													};
+												})(res[sName], s, matches[1]));
+												break;
 											case 'incrCast':
 												res[sName].isApplicable = function (skill) { return true; };
 												res[sName].applyFirst.push((function (support, rawSupport) {
