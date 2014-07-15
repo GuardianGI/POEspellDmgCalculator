@@ -179,6 +179,7 @@
 						s.otherIncrCastSpeed = [];
 						s.castTime = rawSkill.castTime;
 						s.projectiles = [];
+						s.resPen = [];
 						
 						s.dmg.multiply = function (poperties) {
 							var d, lvl, apply = poperties.hasOwnProperty('type') ? function () {
@@ -283,7 +284,8 @@
 										break;
 									default:
 										pen = userInput.reducedEleRes;//penetrate and res reduction for the element.
-										pen = pen > monster[type] ? monster[type] : pen;
+										//pen = pen > monster[type] ? monster[type] : pen;//allow negative resist with pen?
+										pen += s.resPen[i][type];
 										pen = monster[type] - pen > 100 ? monster[type] - 100 : pen;
 										s.dmg.multiply({'mult': 1 - ((monster[type] - pen) / 100), 'type': type, 'lvl': i});
 										s.dmg[i][type].avg = (s.dmg[i][type].min + s.dmg[i][type].max) / 2;
@@ -506,6 +508,7 @@
 							s.otherIncrCastSpeed = [];
 							s.additionalCC = [];
 							s.additionalCD = [];
+							s.resPen = [];
 							for (i = 0; i < 100; i += 1) {
 								s.dmg[i] = skillDmg(rawSkill, i, s.additionalLvl, s.maxLvl);
 								if (s.sumDmgLvl(s.dmg[i]) > lastDmg) {
@@ -516,6 +519,7 @@
 								s.otherIncrCastSpeed[i] = 0;
 								s.additionalCC[i] = 0;
 								s.additionalCD[i] = 0;
+								s.resPen[i] = getDmgTypes();
 							}
 							
 							//begin applying supports.
@@ -693,6 +697,28 @@
 									if (null != matches) {
 											res[sName].types.push(reType);
 											switch (reType) {
+											case 'penetrateRes':
+												res[sName].isApplicable = (function (dmgType) {
+													return function (skill) {//has correct elemental dmg at selected level?
+														return skill.dmg[userInput.playerLvlForSuggestions][dmgType].min > 0;
+													};
+												})(translateMatch(matches[1]));
+												
+												res[sName].applyFirst.push((function (support, rawSupport, type) {
+													var stageStats = {}, selector,
+														column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+															key = key.toLowerCase();
+															return key.indexOf('resistance') >= 0 && key.indexOf(type) >= 0;
+														})[0];
+													
+													for (stage in support.stages) {
+														stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+													}
+													return function (supportStage, skillLvl, skill) {
+														skill.resPen[skillLvl][type] += stageStats[supportStage];
+													};
+												})(res[sName], s, translateMatch(matches[1])));
+												break;
 											case 'incrCrit':
 												res[sName].isApplicable = function (skill) { return skill.cc > 0; };
 												
@@ -702,7 +728,7 @@
 															key = key.toLowerCase();
 															return key.indexOf('crit') >= 0 && key.indexOf(type) >= 0;
 														})[0];
-													console.log([rawSupport.stageStats[0], column, matches]);
+														
 													for (stage in support.stages) {
 														stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
 													}
