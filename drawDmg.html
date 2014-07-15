@@ -176,6 +176,7 @@
 						s.incrCastSpeedFromQuality = 0;
 						s.incrCcFromQuality = 0;
 						s.igniteChanceFromQuality = 0;
+						s.otherIncrCastSpeed = [];
 						s.castTime = rawSkill.castTime;
 						s.projectiles = [];
 						
@@ -206,8 +207,9 @@
 						s.getProjectiles = function (lvl) {
 							return s.projectiles[lvl].base * s.projectiles[lvl].multiplier;
 						};
-						s.getCastTime = function () {
-							return s.castTime / (1 + (userInput.incrCastSpeed / 100 +
+						s.getCastTime = function (lvl) {
+							return s.castTime / (1 + (s.otherIncrCastSpeed[lvl] +
+								userInput.incrCastSpeed / 100 +
 								s.incrCastSpeedFromQuality * s.qualityLvl));
 						};
 						s.parseQualityBonus = function () {
@@ -257,8 +259,11 @@
 						s.parseQualityBonus();
 						
 						s.applyCastTime = function () {
-							var castTimeMultiplier = 1 / (s.getCastTime() * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage));
-							s.dmg.multiply({'mult': castTimeMultiplier});
+							var lvl, castTimeMultiplier;
+							for (lvl = 0; lvl < 100; lvl += 1) {
+								castTimeMultiplier = 1 / (s.getCastTime(lvl) * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage))
+								s.dmg.multiply({'mult': castTimeMultiplier, 'lvl': lvl});
+							}
 						};
 						s.applyDefense = function () {
 							var pen, monster, morePhysDmg = 1 + userInput.morePhysDmg / 100;
@@ -368,9 +373,9 @@
 						};
 						
 						s.applyIncinerateStage = function () {
-							var lvl, apply = function (dmg) {
-								var time = 0, total = 0, stage = 1, repetition = 0;
-								for (; time + s.getCastTime() <= userInput.incinerateCastDuration; time += s.getCastTime()) {
+							var lvl, apply = function (dmg, lvl) {
+								var time = 0, total = 0, stage = 1, repetition = 0, castTime = s.getCastTime(lvl);
+								for (; time + castTime <= userInput.incinerateCastDuration; time += castTime) {
 									total += dmg * stage;
 									if (stage < 4 && repetition == 4) {
 										stage += 1;
@@ -383,8 +388,8 @@
 							
 							for (lvl = 0; lvl < 100; lvl += 1) {
 								for (type in s.dmg[lvl]) {
-									s.dmg[lvl][type].min = apply(s.dmg[lvl][type].min);
-									s.dmg[lvl][type].max = apply(s.dmg[lvl][type].max);
+									s.dmg[lvl][type].min = apply(s.dmg[lvl][type].min, lvl);
+									s.dmg[lvl][type].max = apply(s.dmg[lvl][type].max, lvl);
 								}
 							}
 						};
@@ -467,7 +472,7 @@
 						
 						s.getCombatTime = function (lvl) {
 							var life = lvl * lvl,//todo: get life from mosnter data
-								castTime = s.getCastTime(),
+								castTime = s.getCastTime(lvl),
 								dps = s.totalDmg(lvl);
 							if (dps > 0 && castTime > 0) {
 								//console.log(Math.ceil(life / s.totalDmg(lvl) / castTime) * castTime, dps, castTime);
@@ -481,10 +486,10 @@
 							var lastDmg = 0, support, key, type, j, lvl, getDmgTypes = function () {
 								return {fire: 0, cold: 0, light: 0, chaos: 0, phys: 0, elemental: 0, aoe: 0, projectile: 0};
 							};
+							//reset things that may or may not get edited every calcDmg by supports and such.
 							s.getAdditionalChanceToIgnite = function () { return 0; };
 							
 							s.keywords = rawSkill.keywords.slice(0);//reset keywords, may be modified by supports.
-							
 							s.dmgIncreases = [];
 							for (i = 0; i < 100; i += 1) {
 								s.dmgIncreases[i] = getDmgTypes();
@@ -492,6 +497,7 @@
 							}
 							
 							s.stages = [];
+							s.otherIncrCastSpeed = [];
 							for (i = 0; i < 100; i += 1) {
 								s.dmg[i] = skillDmg(rawSkill, i, s.additionalLvl, s.maxLvl);
 								if (s.sumDmgLvl(s.dmg[i]) > lastDmg) {
@@ -499,8 +505,10 @@
 									lastDmg = s.sumDmgLvl(s.dmg[i]);
 								}
 								s.mana[i] = getRawSkillDmgAtLvl(rawSkill, i, s.additionalLvl, s.maxLvl).mana;
+								s.otherIncrCastSpeed[i] = 0;
 							}
 							
+							//begin applying supports.
 							for (key in s.supports) {
 								support = s.supports[key];
 								support.initFunctions.forEach(function (fn) {
@@ -635,6 +643,7 @@
 								ironWill: /damage bonus applies to spell damage/i,
 								totem: /summons a totem which uses this skill/i,
 								echo: /x% more cast speed/i,
+								incrCast: /x% increased.*?cast.*?speed/i,
 							}, matches, match, dmgLvls = ['min', 'max'],
 							parsePercent = function (str) {
 								return ((str.match(/(\d+)%/i)[1] | 0) / 100);
@@ -674,6 +683,22 @@
 									if (null != matches) {
 											res[sName].types.push(reType);
 											switch (reType) {
+											case 'incrCast':
+												res[sName].isApplicable = function (skill) { return true; };
+												res[sName].applyFirst.push((function (support, rawSupport) {
+													var stageStats = {},
+														column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+															key = key.toLowerCase();
+															return key.indexOf('increased') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
+														})[0];
+													for (stage in support.stages) {
+														stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+													}
+													return function (supportStage, skillLvl, skill) {
+														skill.otherIncrCastSpeed[skillLvl] += stageStats[supportStage];
+													};
+												})(res[sName], s));
+												break;
 											case 'totem':
 												res[sName].isApplicable = (function () {
 													return function (skill) {
