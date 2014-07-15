@@ -162,7 +162,7 @@
 						s.additionalLvl = 0
 						s.maxLvl = 30;
 						s.name = name;
-						s.keywords = rawSkill.keywords.splice(0);
+						s.keywords = rawSkill.keywords.slice(0);
 						s.qualityBonus = rawSkill.qualityBonus;
 						s.qualityLvl = 20;
 						s.qualityEffects = [];
@@ -483,7 +483,7 @@
 							};
 							s.getAdditionalChanceToIgnite = function () { return 0; };
 							
-							s.keywords = rawSkill.keywords.splice(0);//reset keywords, may be modified by supports.
+							s.keywords = rawSkill.keywords.slice(0);//reset keywords, may be modified by supports.
 							
 							s.dmgIncreases = [];
 							for (i = 0; i < 100; i += 1) {
@@ -791,25 +791,28 @@
 																	return skill.keywords.indexOf('mine') < 0;
 																};														
 															} else {
+																console.log([sName, dmgType]);
 																return function (skill) {
+																	console.log(skill.keywords);
 																	return skill.keywords.indexOf(dmgType) > -1;
 																};
 															}
 														})(translateMatch(matches[1]));
-														res[sName].multipliers = [];
-														for (stage in s.stageStats) {
-															res[sName].multipliers.push(parsePercent(s.stageStats[stage][column]) + 1);
-														}
+														
 														res[sName].applyBefore.push((function(support) {
+															var multipliers = [];
+															for (stage in s.stageStats) {
+																multipliers.push(parsePercent(s.stageStats[stage][column]) + 1);
+															}
 															return function (supportStage, skillLvl, skill) {
-																skill.dmg.multiply({mult: support.multipliers[supportStage], lvl: skillLvl});
+																skill.dmg.multiply({mult: multipliers[supportStage], lvl: skillLvl});
 															};
 														})(res[sName]));
 														break;
 													case 'addedConvertedDmg':
 														res[sName].isApplicable = (function (dmgType) {
-															return function (skill) {
-																return skill.dmg[40].phys.min > 0;//has phys dmg (at lvl 40)
+															return function (skill) {//has phys dmg at selected level?
+																return skill.dmg[userInput.playerLvlForSuggestions].phys.min > 0;
 															};
 														})(translateMatch(matches[1]));
 														
@@ -1138,7 +1141,7 @@
 											})(inputNew, s);
 										};
 									getSupportsDropDown = function () {
-										var select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti, tmpClone;//todo: calclate dmgDiff
+										var nonProblematicSupports, stillApplicable = true, select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti, tmpClone;//todo: calclate dmgDiff
 										select = document.createElement('select');
 										for (supportName in supports) {
 											if (s.supports.indexOf(supports[supportName]) < 0 && supports[supportName].isApplicable(s)) {
@@ -1147,6 +1150,19 @@
 												
 												s.calcDmg();
 												tmpClone.calcDmg();
+												
+												nonProblematicSupports = s.supports.filter(function (support) { return support.isApplicable(s); });
+												stillApplicable = true;
+												//test applicability of current supports.
+												tmpClone.supports.forEach(function (support) {
+													if (!support.isApplicable(tmpClone) && nonProblematicSupports.indexOf(support) >= 0 && supports[supportName] !== support) {
+														stillApplicable = false;
+													}
+												});
+												if (!stillApplicable) {
+													continue;
+												}
+												
 												
 												dmgPrev = s.totalDmg(userInput.playerLvlForSuggestions);
 												dmgAfter = tmpClone.totalDmg(userInput.playerLvlForSuggestions);

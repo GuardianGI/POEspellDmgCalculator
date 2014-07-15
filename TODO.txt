@@ -20,7 +20,7 @@ todo:
 				divergence /= cc
 
 bugs:
-	apply spell echo, then spell totem: spell echo still allowed. spell totem takes presedence and spell echo should get removed.
+	none?
 
 cool to have:
 	curse cast speed
