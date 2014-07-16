@@ -52,7 +52,7 @@ def getNodeVal(node):
 	return re.search("(\<[^>]*\>)?(.*)", re.search("(<?\<.*?\>)(.*?)\<\/", node.toxml().lower()).group(2).strip()).group(2).strip()
 
 monsters = []
-columns = {1: "area", 2: "level", 3: "name", 4: "normal xp", 5: "magic xp", 6: "rare/unique xp", 7: "fire res", 8: "cold res", 9: "light res", 10: "chaos res"}
+columns = {1: "area", 2: "lvl", 3: "name", 4: "normal xp", 5: "magic xp", 6: "rare/unique xp", 7: "fire res", 8: "cold res", 9: "light res", 10: "chaos res"}
 def parseTable(t):
 	skipColumnForRows = {}
 	for row in t.getElementsByTagName("tr"):
@@ -99,6 +99,6 @@ getTables(content, parseTable)
 f = open('monsterStats.json', 'w')
 lines = []
 for monster in monsters:
-	lines.append('{{{}}}'.format(', '.join(['"{}": "{}"'.format(key, monster.stats[key]) for key in monster.stats])))
+	lines.append('{{{}}}'.format(', '.join([('"{}": {}' if 'xp' in key or 'lvl' in key or 'res' in key else '"{}": "{}"').format(key, monster.stats[key]) for key in monster.stats])))
 
 f.write('[{}]'.format(', '.join(lines)))

@@ -1,5 +1,5 @@
 todo:
-	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience
+	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience (got data, applied as resists, need to add selection options and visulaization)
 	monster life = 2 * xp / lvl (seems about right on driping dead & brittle thiefs & Oozeback Bloom)
 	finish support gems
 	quality bonus for support gems
