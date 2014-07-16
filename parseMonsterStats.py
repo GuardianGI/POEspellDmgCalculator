@@ -99,6 +99,6 @@ getTables(content, parseTable)
 f = open('monsterStats.json', 'w')
 lines = []
 for monster in monsters:
-	lines.append('{{{}}}'.format(', '.join(["'{}': '{}'".format(key, monster.stats[key]) for key in monster.stats])))
+	lines.append('{{{}}}'.format(', '.join(['"{}": "{}"'.format(key, monster.stats[key]) for key in monster.stats])))
 
 f.write('[{}]'.format(', '.join(lines)))
