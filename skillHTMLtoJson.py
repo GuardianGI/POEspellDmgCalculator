@@ -270,9 +270,9 @@ f.close()
 def printMinMaxDmg(dmg):
 	return "{{'min': {}, 'max': {}}}".format(dmg[0], dmg[1])
 
-s = "{"
+skillStrs = []
 for skill in skills:
-	s += "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'hasAPS': {}, 'dmg': [".format(
+	skillStr = "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'hasAPS': {}, 'dmg': [".format(
 		skill.name,
 		skill.dmg.crit,
 		skill.dmg.effectiveness,
@@ -281,9 +281,10 @@ for skill in skills:
 		', '.join(["'{}'".format(word) for word in skill.keywords]),
 		'true' if skill.dmg.hasAPS else 'false')
 	i = 1
+	dmgStrs = []
 	for lvl in skill.dmg.lvlStages:
-		s += "{"
-		s += "'lvl': '{}', 'dps': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}, 'APS': {}".format(
+		dmgStr = "{"
+		dmgStr += "'lvl': '{}', 'dps': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}, 'APS': {}".format(
 			lvl, skill.dmg.getAvgDmg(i),
 			printMinMaxDmg(skill.dmg.phys[i]),
 			printMinMaxDmg(skill.dmg.fire[i]),
@@ -293,11 +294,14 @@ for skill in skills:
 			skill.dmg.mana[i],
 			skill.dmg.APS[i])
 			
-		s += "}, ";
+		dmgStr += "}";
+		dmgStrs.append(dmgStr)
 		i += 1
-	s += "]}, "
+	skillStr += ', '.join(dmgStrs)
+	skillStr += "]}"
+	skillStrs.append(skillStr)
 	
-f = open("skillDmgGraph.json", "w")
-f.write(s + "}")
+f = open(dir + "..\\skillDmgGraph.json", "w")
+f.write('{' + (', '.join(skillStrs)) + '}')
 f.close()
 	
