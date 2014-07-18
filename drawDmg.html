@@ -95,7 +95,7 @@
 							}
 							return monster;
 						},
-						monsters = (function () {//TODO: http://pathofexile.gamepedia.com/Monster_Experience
+						monsters = (function () {
 							var i, lvls = [], res, armour, monster;
 							for (i = 0; i < 100; i += 1) {
 								armour = armourValues[i] || armour;
@@ -433,6 +433,7 @@
 						s.isIceSpear = s.name.indexOf("Ice Spear") > -1;
 						s.isFireStorm = s.name.indexOf("Firestorm") > -1;
 						s.isEtherealKnives = s.name.indexOf("Ethereal Knives") > -1;
+						s.isSpark = s.name.indexOf("Spark") > -1;
 												
 						if (s.isFireStorm) {
 							s.qualityEffects.push(function () {
@@ -493,7 +494,7 @@
 						s.applyDmgIncreases = function () {
 							var dmgTypes = ['fire', 'cold', 'light', 'chaos', 'phys'],
 								eleDmgType = ['fire', 'cold', 'light'],
-								spellTypes = ['aoe', 'projectile'],
+								spellTypes = ['aoe', 'projectile', 'spell'],
 								keywords, generalIncr = 0, lvl;
 							generalIncr += userInput.spellDmgIncr / 100;
 							
@@ -545,7 +546,7 @@
 							s.dmgIncreases = [];
 							for (i = 0; i < 100; i += 1) {
 								s.dmgIncreases[i] = getDmgTypes();
-								s.projectiles[i] = {base: s.isEtherealKnives ? 10 : 1, multiplier: 1};
+								s.projectiles[i] = {base: s.isEtherealKnives ? 10 : s.isSpark ? 3 : 1, multiplier: 1};
 							}
 							
 							s.stages = [];
@@ -752,6 +753,31 @@
 									if (null != matches) {
 											res[sName].types.push(reType);
 											switch (reType) {
+											case 'ironWill':
+												res[sName].isApplicable = function () { return true; };
+												res[sName].applyBefore.push((function () {
+													return function (supportStage, skillLvl, skill) {
+														if (!skill.dmgIncreases[skillLvl].hasOwnProperty('spell')) {
+															skill.dmgIncreases[skillLvl]['spell'] = 0;
+														}
+														skill.dmgIncreases[skillLvl]['spell'] += ((userInput.str / 5) | 0) / 100;
+													};
+												})());
+												res[sName].applyFirst.push((function (support, rawSupport) {
+													var stageStats = {},
+														column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+															key = key.toLowerCase();
+															return key.indexOf('reduced') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
+														})[0];
+													
+													for (stage in support.stages) {
+														stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+													}
+													return function (supportStage, skillLvl, skill) {
+														skill.otherIncrCastSpeed[skillLvl] -= stageStats[supportStage];
+													};
+												})(res[sName], s));
+												break;
 											case 'penetrateRes':
 												res[sName].isApplicable = (function (dmgType) {
 													return function (skill) {//has correct elemental dmg at selected level?
@@ -760,7 +786,7 @@
 												})(translateMatch(matches[1]));
 												
 												res[sName].applyFirst.push((function (support, rawSupport, type) {
-													var stageStats = {}, selector,
+													var stageStats = {},
 														column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
 															key = key.toLowerCase();
 															return key.indexOf('resistance') >= 0 && key.indexOf(type) >= 0;
