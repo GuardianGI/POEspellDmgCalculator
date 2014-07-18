@@ -434,7 +434,10 @@
 						s.isFireStorm = s.name.indexOf("Firestorm") > -1;
 						s.isEtherealKnives = s.name.indexOf("Ethereal Knives") > -1;
 						s.isSpark = s.name.indexOf("Spark") > -1;
-												
+						s.isDesecrate = s.name.indexOf("Desecrate") > -1;
+						s.isShockwaveTotem = s.name.indexOf("Shockwave Totem") > -1;
+						s.isBearTrap = s.name.indexOf("Bear Trap") > -1;
+						
 						if (s.isFireStorm) {
 							s.qualityEffects.push(function () {
 								s.applyDmgMultiplier(1 / (0.1 - s.qualityLvl / 1000));
@@ -543,6 +546,9 @@
 							s.getAdditionalChanceToIgnite = function () { return 0; };
 							
 							s.keywords = rawSkill.keywords.slice(0);//reset keywords, may be modified by supports.
+							if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap || s.isMinion) {
+								s.keywords.splice(s.keywords.indexOf('spell'), 1);//these may be spells, they are not affected by for instance increased spell dmg.
+							}
 							s.dmgIncreases = [];
 							for (i = 0; i < 100; i += 1) {
 								s.dmgIncreases[i] = getDmgTypes();
