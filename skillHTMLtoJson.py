@@ -41,6 +41,8 @@ class dmg:
 		self.phys = list([0, 0] for i in range(0, 35))
 		self.chaos = list([0, 0] for i in range(0, 35))
 		self.mana = list(1 for i in range(0, 35))
+		self.APS = list(1 for i in range(0, 35))
+		self.hasAPS = False
 		self.crit = 0
 		self.effectiveness = 1
 		self.castTime = 1
@@ -74,6 +76,9 @@ class dmg:
 			self.phys[stage] = dmgVal
 		elif "mana" in typeStr:
 			self.mana[stage] = dmgVal[0]
+		elif "APS" in typeStr:
+			self.APS[stage] = dmgVal[0]
+			self.hasAPS = True
 		#else:
 			#print("rejected dmg type {}:{}".format(typeStr, dmgStr))
 	def hatred(self, mult=0.36):
@@ -178,6 +183,8 @@ class skill:
 							dmgColumnNames[i - 1] = tdTxt
 					elif "cost" in tdTxt:
 						dmgColumnNames[i - 1] = tdTxt
+					elif 'aps' in tdTxt.lower():
+						dmgColumnNames[i - 1] = 'APS'
 					i += 1
 			else:
 				for td in row.getElementsByTagName("td"):
@@ -265,24 +272,26 @@ def printMinMaxDmg(dmg):
 
 s = "{"
 for skill in skills:
-	s += "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'dmg': [".format(
+	s += "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'hasAPS': {}, 'dmg': [".format(
 		skill.name,
 		skill.dmg.crit,
 		skill.dmg.effectiveness,
 		skill.dmg.castTime,
 		skill.qualityBonus,
-		', '.join(["'{}'".format(word) for word in skill.keywords]))
+		', '.join(["'{}'".format(word) for word in skill.keywords]),
+		'true' if skill.dmg.hasAPS else 'false')
 	i = 1
 	for lvl in skill.dmg.lvlStages:
 		s += "{"
-		s += "'lvl': '{}', 'dps': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}".format(
+		s += "'lvl': '{}', 'dps': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}, 'APS': {}".format(
 			lvl, skill.dmg.getAvgDmg(i),
 			printMinMaxDmg(skill.dmg.phys[i]),
 			printMinMaxDmg(skill.dmg.fire[i]),
 			printMinMaxDmg(skill.dmg.cold[i]),
 			printMinMaxDmg(skill.dmg.light[i]),
 			printMinMaxDmg(skill.dmg.chaos[i]),
-			skill.dmg.mana[i])
+			skill.dmg.mana[i],
+			skill.dmg.APS[i])
 			
 		s += "}, ";
 		i += 1
