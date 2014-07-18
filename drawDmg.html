@@ -1616,23 +1616,6 @@
 					//drawSkillIndex();
 				};
 				redraw();
-				for (name in rawSupports) {//draw all support data (testing/dev purposses only...)
-					s = rawSupports[name];
-					b = document.createElement("h2");
-					b.innerHTML = name;
-					div = document.createElement("div");
-					div.appendChild(b);
-					div.style.float = 'left';
-					div.style.padding = '5px';
-					div.style.border = '1px solid #000';
-					div.style.display = 'inline-block';
-					spellDetails.appendChild(div)
-					for (key in s.modifiers) {
-						b = document.createElement("span");
-						b.innerHTML = s.modifiers[key];
-						div.appendChild(b);
-					}
-				}
 			},
 			toggleCheckAll = function (cb) {
 				var i, allCb = document.getElementsByClassName('drawSkill');
