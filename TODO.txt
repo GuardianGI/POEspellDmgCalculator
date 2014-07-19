@@ -1,10 +1,15 @@
 todo:
 	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience (got data, applied as resists, need to add selection options and visulaization)
 	monster life = 2 * xp / lvl (seems about right on driping dead & brittle thiefs & Oozeback Bloom)
-	finish support gems
 	quality bonus for support gems
 	support gem applicability matrix
 	apply cast time & duration to max DPS for SRS
+	universal DPS comparison
+		AOE range
+		pack spread size & monster count (where the fuck am I gonna get data on this...)
+		apply chain/fork/(g/l)mp & possible shotgun to pack
+		apply AOE of chaining fireballs to pack.
+		get width and range for FP (& then apply projectile speed)
 	correctly apply correct increases: does desecrate benefit from spell damage, searing bond from burning dmg? etc.
 	half decent interface on "any" resolution (minimum of 1024px or maybe down to 800px width) (now looks fine on 1280 width and handles other resulotuions decently.)
 	Aura support (anger & wrath for minions, haste for cast speed, etc.)
