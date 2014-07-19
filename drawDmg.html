@@ -437,6 +437,7 @@
 						s.isDesecrate = s.name.indexOf("Desecrate") > -1;
 						s.isShockwaveTotem = s.name.indexOf("Shockwave Totem") > -1;
 						s.isBearTrap = s.name.indexOf("Bear Trap") > -1;
+						s.isBallLightning = s.name.indexOf("Ball Lightning") > -1;
 						
 						if (s.isFireStorm) {
 							s.qualityEffects.push(function () {
@@ -490,7 +491,11 @@
 									}
 								};
 							} else {
-								return function () {};
+								return function () {
+									if (s.isBallLightning) {
+										s.dmg.multiply({'mult': 5});
+									}
+								};
 							}
 						})();
 						
@@ -678,7 +683,7 @@
 								s.applyCastTime();
 							}
 							
-							if (s.isMinion && userInput.applyAPS) {
+							if (userInput.applyAPS) {
 								s.applyAPS();
 							}
 							
