@@ -198,7 +198,7 @@
 					skill = function (rawSkill, name) {
 						var s = {}, i, type;
 						s.additionalLvl = 0
-						s.maxLvl = 30;
+						s.maxLvl = userInput.maxSpellLvl;
 						s.name = name;
 						s.keywords = rawSkill.keywords.slice(0);
 						s.qualityBonus = rawSkill.qualityBonus;
@@ -1149,6 +1149,15 @@
 						redraw();
 					};
 				})();
+				(function () {
+					var txtMaxSpellLvl = document.getElementById('maxSpellLvl');
+					txtMaxSpellLvl.executeOnChange.push(function () {
+						var i;
+						for (i in skills) {
+							skills[i].maxLvl = txtMaxSpellLvl.value | 0;
+						}
+					});
+				})()
 				document.getElementById("elementalColors").executeOnChange.push((function () {
 					var enableLogDmgScale = document.getElementById("enableLogDmgScale"),
 						elementalColors = document.getElementById("elementalColors"),
@@ -1376,7 +1385,7 @@
 											lblNew.appendChild(document.createTextNode('Max lvl: '));
 											inputNew.type = "text";
 											lblNew.appendChild(inputNew);
-											inputNew.value = s.maxLvl + 1;
+											inputNew.value = s.maxLvl;
 											inputNew.onchange = (function (self, s) {
 												return function () {
 													s.maxLvl = (self.value | 0) - 1;
@@ -1842,11 +1851,13 @@
 			<div>
 				<h2>Skill specifics.</h2>
 				<label>Assume burning for Flame Surge: <input class="userInput" type="checkbox" id="enableFlameSurgeBurn" /></label>
+				<label>Assume stage 2 for Ice Spear<input class="userInput" type="checkbox" id="assumeStageTwoIceSpear" /></label>
 				<label>Flame blast stage: <input class="userInput" type="text" id="flameBlastStage" value="10" /></label>
 				<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input class="userInput" type="text" id="incinerateCastDuration" value="5" /></label>
 				<label title="overides all skill quality lvls and sets them to the given value.">Quality lvl for all skills<input class="userInput" type="text" value="20" id="qualityLvlAll" /></label>
 				<label>Quality lvl for all supports<input class="userInput" type="text" value="20" id="qualityLvlAllSupports" /></label>
-				<label>Assume stage 2 for Ice Spear<input class="userInput" type="checkbox" id="assumeStageTwoIceSpear" /></label>
+				<label>Max spell lvl<input class="userInput" type="text" value="20" id="maxSpellLvl" /></label>
+				
 			</div>
 			<div>
 				<h2>Player stats. (values are in %)</h2>
