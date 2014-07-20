@@ -1708,6 +1708,47 @@
 					//drawSkillIndex();
 				};
 				redraw();
+				
+				
+				c.onmousemove = (function () {
+					var tmp = document.getElementById('tmp'),
+						findPos = function (obj) {
+							var curleft = 0, curtop = 0;
+							if (obj.offsetParent) {
+								do {
+									curleft += obj.offsetLeft;
+									curtop += obj.offsetTop;
+								} while (obj = obj.offsetParent);
+								return { x: curleft, y: curtop };
+							}
+							return undefined;
+						},
+						rgbToHex = function (r, g, b) {
+							if (r > 255 || g > 255 || b > 255)
+								throw "Invalid color component";
+							return ((r << 16) | (g << 8) | b).toString(16);
+						};
+					return function(e) {
+						var pos = findPos(this),
+							x = e.pageX - pos.x,
+							y = e.pageY - pos.y,
+							coord = "x=" + x + ", y=" + y,
+							c = this.getContext('2d'),
+							p = c.getImageData(x, y, 1, 1).data,
+							hex = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6),
+							matchedSkills = [], key, s;
+						for (key in skills) {
+							s = skills[key];
+							if (s.color === hex && s.draw) {
+								matchedSkills.push(s);
+							}
+						}
+						if (matchedSkills.length > 0) {
+							tmp.value = matchedSkills.reduce(function (str, s) { return str + '|'+s.name+'|'}, '');
+						}
+					};
+				})();
+				
 			},
 			toggleCheckAll = function (cb) {
 				var i, allCb = document.getElementsByClassName('drawSkill');
@@ -1794,6 +1835,7 @@
 		</style>
 	</head>
 	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'))">
+		<input id="tmp" />
 		<div class="indexAndCanvas">
 			<div id="indexContainer">
 				<span>Toggle all <input type="checkbox" checked onclick="toggleCheckAll(this)" /></span>
