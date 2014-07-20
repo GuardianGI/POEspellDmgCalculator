@@ -21,6 +21,9 @@
 				startDraw = function (c, index) {
 					var skills = {}, name, i = 0, checkbox, indexLine, zoomLvl = 1, padding = 50,
 						ctx = c.getContext("2d"),
+						roundForDisplay = function (n) {//avoid bugs with to fixed.
+							return (Math.round(n * 100) / 100).toFixed(2);
+						},
 						userInput = (function () {
 							var key, inputs, input;
 							userInput = {};
@@ -105,7 +108,7 @@
 								}
 							}
 							for (key in monster) {
-								monster[key] = (monster[key] / count).toFixed(2);
+								monster[key] = roundForDisplay(monster[key] / count);
 							}
 							return monster;
 						},
@@ -199,7 +202,7 @@
 						s.name = name;
 						s.keywords = rawSkill.keywords.slice(0);
 						s.qualityBonus = rawSkill.qualityBonus;
-						s.qualityLvl = 20;
+						s.qualityLvl = userInput.qualityLvlAll;
 						s.qualityEffects = [];
 						s.cc = rawSkill.crit;
 						s.eff = rawSkill.eff;
@@ -448,6 +451,7 @@
 							}
 						};
 						
+						//todo: make sure these names are intact for spell coppies.
 						s.isFlameSurge = s.name.indexOf("Flame Surge") > -1;
 						s.isFlameBlast = s.name.indexOf("Flameblast") > -1;
 						s.isIncinerate = s.name.indexOf("Incinerate") > -1;
@@ -461,6 +465,7 @@
 						s.isShockwaveTotem = s.name.indexOf("Shockwave Totem") > -1;
 						s.isBearTrap = s.name.indexOf("Bear Trap") > -1;
 						s.isBallLightning = s.name.indexOf("Ball Lightning") > -1;
+						s.isGlacialCascade = s.name.indexOf("Glacial Cascade") > -1;
 						
 						s.getSupportStage = function (support, lvl) {
 							var stage;
@@ -512,6 +517,8 @@
 								return function () {
 									if (s.isBallLightning) {
 										s.dmg.multiply({'mult': 5});
+									} else if (s.isGlacialCascade) {
+										s.dmg.multiply({'mult': 2});
 									}
 								};
 							}
@@ -725,7 +732,7 @@
 							for (key in s.supports) {
 								clone.supports.push(s.supports[key]);
 							}
-							clone.name = newName/* + ' : ' + s.name*/;
+							clone.name = newName + ' : ' + s.name;
 							clone.calcDmg();
 							return clone;
 						}
@@ -1087,7 +1094,6 @@
 							res[sName].applyBefore = [];//apply before monster def. shock, etc.
 							res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
 							res[sName].types = [];
-							//res[sName].qualityBonus = (function (name) { return function () { console.log('no quality bonus for ' + name); };})(sName);
 							res[sName].isApplicable = (function (supportName) {
 								return function () {
 									console.log('default is applicable was called for '+ supportName);
@@ -1097,7 +1103,7 @@
 							for (i in s.modifiers) {
 								applyRegexes(s.modifiers[i]);
 							}
-							res[sName].qualityBonus = s.qualityBonus
+							res[sName].qualityBonus = s.qualityBonus;
 						}
 						return res;
 					})();
@@ -1165,7 +1171,7 @@
 					return function () {
 						var name;
 						for (name in skills) {
-							skills[name].qualityLvl = qualityLvlAll.value - 0;
+							skills[name].qualityLvl = qualityLvlAll.value | 0;
 						}
 					};
 				})());
@@ -1296,7 +1302,7 @@
 												r['Quality lvl'] = inputNew;
 												
 												r['Remove mult.'] = document.createTextNode(
-													getSupportRemovedDiff(s, k).toFixed(2))
+													roundForDisplay(getSupportRemovedDiff(s, k)))
 												
 												checkbox = document.createElement('input');
 												checkbox.type = 'button';
@@ -1408,7 +1414,7 @@
 												dmgMulti = dmgAfter / dmgPrev;
 												
 												option = document.createElement('option');
-												option.innerHTML = supportName + ' | ' + dmgMulti.toFixed(2);
+												option.innerHTML = supportName + ' | ' + roundForDisplay(dmgMulti);
 												option.apply = (function (self, s, innerSupport) {
 													return function () {
 														s.supports.push(innerSupport);
