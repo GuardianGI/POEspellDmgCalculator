@@ -2,6 +2,7 @@ todo:
 	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience (got data, applied as resists, need to add selection options and visulaization)
 	monster life = 2 * xp / lvl (seems about right on driping dead & brittle thiefs & Oozeback Bloom)
 	quality bonus for support gems
+	get a better armour value refference (9k is most likely way too high)
 	support gem applicability matrix
 	apply cast time & duration to max DPS for SRS
 	universal DPS comparison
@@ -23,7 +24,6 @@ todo:
 				divergence /= cc
 
 bugs:
-	none?
 
 cool to have:
 	curse cast speed

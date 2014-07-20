@@ -143,26 +143,28 @@ class skill:
 		self.getDmgTable(content)
 		self.parseMetadata()
 		
+	def matchClosingTag(self, content, reStart, open, close):
+		openStr = re.search(reStart, content)
+		offset = content.find(openStr.group(0))
+		innerTag = content.find(open, offset + open.__len__())
+		closing = content.find(close, offset) + close.__len__()
+		openTags = 0
+		if innerTag < closing:
+			openTags = 1
+		while openTags > 0:
+			closing = content.find(close, closing) + close.__len__()
+			innerTag = content.find(open, innerTag + open.__len__())
+			if innerTag > closing:
+				openTags = 0
+		return content[offset:closing]
+		
 	def getDmgTable(self, content):
-		tableString = re.search('\<table [^>]*?class="[^"]*?GemLevelTable', content)
-		offset = content.find(tableString.group(0))
-		tblClose = "</table>"
-		tblOpen = "<table"
-		innerTable = content.find(tblOpen, offset + tblOpen.__len__())
-		closing = content.find(tblClose, offset) + tblClose.__len__()
-		openTables = 0
-		if innerTable < closing:
-			openTables = 1
-		while openTables > 0:
-			closing = content.find(tblClose, closing) + tblClose.__len__()
-			innerTable = content.find(tblOpen, innerTable + tblOpen.__len__())
-			if innerTable > closing:
-				openTables = 0
+		tableStr = self.matchClosingTag(content, '\<table [^>]*?class="[^"]*?GemLevelTable', "<table", "</table>")
 		try:
-			table = parseString(content[offset:closing]).getElementsByTagName("table")[0]
+			table = parseString(tableStr).getElementsByTagName("table")[0]
 		except Exception:
-			print(content[offset:closing])
-			table = parseString(content[offset:closing]).getElementsByTagName("table")[0]
+			print(tableStr)
+			table = parseString(tableStr).getElementsByTagName("table")[0]
 		if "GemLevelTable" in table.attributes["class"].value :
 			self.parseDmg(table)
 
@@ -201,6 +203,7 @@ class skill:
 	def parseMetadata(self):
 		eff = "100%"
 		crit = "0%"
+		self.metaString = self.matchClosingTag(self.content, '\<table [^>]*?class="[^"]*?GemInfoboxContainer'.lower(), "<table", "</table>")
 		try:
 			eff = self.getMeta("effectiveness")
 			self.dmg.effectiveness = self.percentToFloat(eff)
@@ -235,7 +238,7 @@ class skill:
 		regexStr = ("\<tr\>\s*\<td\>.*?" +
 				name.lower() +
 				".*?\<\/td\>\s*\<td\>\s*(.*?)\<\/td\>")
-		return re.search(regexStr, self.content).group(1).strip()
+		return re.search(regexStr, self.metaString).group(1).strip()
 
 for file in os.listdir(dir):
 	newSkill = skill(file)
