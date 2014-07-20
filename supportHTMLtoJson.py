@@ -38,6 +38,21 @@ def tryGetTitle(node):
 def fixUnclosedTags(content):
 	return re.sub('(\<img [^>]*?)/?\>', '\g<1> />', content).replace('<br>', '<br />')
 	
+def matchClosingTag(content, reStart, open, close):
+		openStr = re.search(reStart, content)
+		offset = content.find(openStr.group(0))
+		innerTag = content.find(open, offset + open.__len__())
+		closing = content.find(close, offset) + close.__len__()
+		openTags = 0
+		if innerTag < closing:
+			openTags = 1
+		while openTags > 0:
+			closing = content.find(close, closing) + close.__len__()
+			innerTag = content.find(open, innerTag + open.__len__())
+			if innerTag > closing:
+				openTags = 0
+		return content[offset:closing]
+		
 class support:
 	def __init__(self, fileName):
 		print(fileName)
@@ -48,6 +63,7 @@ class support:
 		self.manaMultiplier = 1
 		self.values = []
 		self.modifiers = []
+		
 		
 		f = open(dir + file, "rb")
 		content = ""
@@ -65,6 +81,7 @@ class support:
 		content = fixUnclosedTags(content.replace("&#8211;", "-").replace("\r", "").replace("\n", ""))
 		self.content = content.lower()
 		
+		self.metaString = matchClosingTag(self.content, '\<table [^>]*?class="[^"]*?GemInfoboxContainer'.lower(), "<table", "</table>")
 		self.getStatTable(content)
 		
 	def getStatTable(self, content):
@@ -157,7 +174,7 @@ class support:
 		regexStr = ("\<tr\>\s*\<td\>.*?" +
 				name.lower() +
 				".*?\<\/td\>\s*\<td\>\s*(.*?)\<\/td\>")
-		return re.search(regexStr, self.content).group(1).strip()
+		return re.search(regexStr, self.metaString).group(1).strip()
 
 
 skills = []
@@ -165,9 +182,9 @@ for file in os.listdir(dir):
 	newSkill = support(file)
 	skills.append(newSkill)
 
-s = "{"
+supports = []
 for skill in skills:
-	s += "'{}': {{'manaMultiplier': {}, 'keywords': [{}], 'modifiers': [{}], 'qualityBonus': '{}', 'stages': [".format(
+	s = "'{}': {{'manaMultiplier': {}, 'keywords': [{}], 'modifiers': [{}], 'qualityBonus': '{}', 'stages': [".format(
 		skill.name,
 		skill.manaMultiplier,
 		', '.join(["'{}'".format(word) for word in skill.keywords]),
@@ -176,16 +193,19 @@ for skill in skills:
 	
 	for lvl in skill.lvlStages:
 		s += "{}, ".format(lvl)
+	
 	s += "], 'stageStats': ["
-	i = 1
+	stages = []
 	for lvl in skill.lvlStages:
-		s += "{"
+		columns = []
 		for collName in skill.values[lvl].keys():
-			s += "'{}': '{}', ".format(tryGetTitle(collName), skill.values[lvl][collName])
-		s += "}, ";
-		i += 1
-	s += "]}, "
+			columns.append("'{}': '{}'".format(tryGetTitle(collName), skill.values[lvl][collName]))
+		stages.append('{' + ', '.join(columns) + '}')
+	s += ', '.join(stages)
+	
+	s += "]}"
+	supports.append(s)
 	
 f = open("supports.json", "w")
-f.write(s + "}")
+f.write("{" + ", ".join(supports) + "}")
 f.close()

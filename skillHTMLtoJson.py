@@ -117,6 +117,20 @@ def tryGetTitle(node):
 def fixUnclosedTags(content):
 	return re.sub('(\<img [^>]*?)/?\>', '\g<1> />', content).replace('<br>', '<br />')
 	
+def matchClosingTag(content, reStart, open, close):
+		openStr = re.search(reStart, content)
+		offset = content.find(openStr.group(0))
+		innerTag = content.find(open, offset + open.__len__())
+		closing = content.find(close, offset) + close.__len__()
+		openTags = 0
+		if innerTag < closing:
+			openTags = 1
+		while openTags > 0:
+			closing = content.find(close, closing) + close.__len__()
+			innerTag = content.find(open, innerTag + open.__len__())
+			if innerTag > closing:
+				openTags = 0
+		return content[offset:closing]
 f_escape = open("escape.txt", "rb")
 escape = f_escape.read(1)
 class skill:
@@ -143,23 +157,8 @@ class skill:
 		self.getDmgTable(content)
 		self.parseMetadata()
 		
-	def matchClosingTag(self, content, reStart, open, close):
-		openStr = re.search(reStart, content)
-		offset = content.find(openStr.group(0))
-		innerTag = content.find(open, offset + open.__len__())
-		closing = content.find(close, offset) + close.__len__()
-		openTags = 0
-		if innerTag < closing:
-			openTags = 1
-		while openTags > 0:
-			closing = content.find(close, closing) + close.__len__()
-			innerTag = content.find(open, innerTag + open.__len__())
-			if innerTag > closing:
-				openTags = 0
-		return content[offset:closing]
-		
 	def getDmgTable(self, content):
-		tableStr = self.matchClosingTag(content, '\<table [^>]*?class="[^"]*?GemLevelTable', "<table", "</table>")
+		tableStr = matchClosingTag(content, '\<table [^>]*?class="[^"]*?GemLevelTable', "<table", "</table>")
 		try:
 			table = parseString(tableStr).getElementsByTagName("table")[0]
 		except Exception:
@@ -203,7 +202,7 @@ class skill:
 	def parseMetadata(self):
 		eff = "100%"
 		crit = "0%"
-		self.metaString = self.matchClosingTag(self.content, '\<table [^>]*?class="[^"]*?GemInfoboxContainer'.lower(), "<table", "</table>")
+		self.metaString = matchClosingTag(self.content, '\<table [^>]*?class="[^"]*?GemInfoboxContainer'.lower(), "<table", "</table>")
 		try:
 			eff = self.getMeta("effectiveness")
 			self.dmg.effectiveness = self.percentToFloat(eff)
