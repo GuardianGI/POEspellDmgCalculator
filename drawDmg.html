@@ -47,12 +47,15 @@
 								}(input));
 							}
 							
-							document.getElementById('qualityLvlAllSupports').onchange = (function () {
-								var self = document.getElementById('qualityLvlAllSupports');
-								self.onChangeFns = []
-								return function () {
+							(function () {
+								var i, self = document.getElementById('qualityLvlAllSupports');
+								self.onChangeFns = [];
+								
+								self.onchange = function () {
 									userInput.qualityLvlAllSupports = self.value | 0;
-									self.onChangeFns.forEach(function (fn) { fn(); });
+									for (i in self.onChangeFns) {
+										self.onChangeFns[i]();
+									}
 									redraw();
 								}
 							})();
@@ -215,11 +218,11 @@
 						s.isMinion = rawSkill.hasAPS;
 						s.supportQualityLvl = {}
 						
-						document.getElementById('qualityLvlAllSupports').onChangeFns.push = function () {
+						document.getElementById('qualityLvlAllSupports').onChangeFns.push(function () {
 							for (i in supports) {
 								s.supportQualityLvl[supports[i].name] = userInput.qualityLvlAllSupports;
 							}
-						};
+						});
 						for (i in supports) {
 							s.supportQualityLvl[supports[i].name] = userInput.qualityLvlAllSupports;
 						}
@@ -1124,7 +1127,6 @@
 								spellCount += 1;
 							}
 						}
-						console.log(spellCount);
 						for (name in skills) {
 							if (skills[name].draw) {
 								skills[name].color = getColor(i);
@@ -1293,11 +1295,9 @@
 												})(inputNew, s.supports[k], s);
 												r['Quality lvl'] = inputNew;
 												
-												console.log(r);
 												r['Remove mult.'] = document.createTextNode(
 													getSupportRemovedDiff(s, k).toFixed(2))
 												
-												console.log(r);
 												checkbox = document.createElement('input');
 												checkbox.type = 'button';
 												checkbox.value = 'X';
@@ -1311,10 +1311,8 @@
 													}
 												})(checkbox, s.supports[k]);
 												r['Remove'] = checkbox;
-												console.log(r);
 												rows.push(r)
 											}
-											console.log(rows);
 											drawTable(tbl, rows);
 											
 											fieldset.appendChild(getSupportsDropDown());
