@@ -1716,7 +1716,7 @@
 				
 				(function () {
 					var mouseX, mouseY, findPos = function (obj) {
-							var curleft = 0, curtop = 0;
+							var curleft = -obj.parentNode.scrollLeft, curtop = 0;
 							if (obj.offsetParent) {
 								do {
 									curleft += obj.offsetLeft;
