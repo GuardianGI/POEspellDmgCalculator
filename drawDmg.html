@@ -199,6 +199,11 @@
 							}
 							return dmg | 0;
 						},
+						pxPerLvl = 10,
+						ctxPxToLvl = function (px) {
+							var lvl = ((px - (c.width + padding)) / pxPerLvl) + 100;
+							return lvl | 0;
+						},
 					skill = function (rawSkill, name) {
 						var s = {}, i, type;
 						s.additionalLvl = 0
@@ -1480,10 +1485,10 @@
 							
 							ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
 							for (i = 10; i <= 100; i += 10) {//char/mosnter lvl on axis.
-								ctx.fillText(i, padding - 5 + i * 10, c.height - 30);
+								ctx.fillText(i, padding - 5 + i * pxPerLvl, c.height - 30);
 								ctx.beginPath();
-								ctx.moveTo(padding + i * 10, c.height - padding);
-								ctx.lineTo(padding + i * 10, 0);
+								ctx.moveTo(padding + i * pxPerLvl, c.height - padding);
+								ctx.lineTo(padding + i * pxPerLvl, 0);
 								ctx.stroke();
 							}
 						},
@@ -1556,7 +1561,7 @@
 									dmg = s.totalDmg(lvl);
 									if (dmg > 0) {
 										//start drawing:
-										ctx[first ? 'moveTo': 'lineTo'](padding + lvl * 10, dmgToCtx(dmg));
+										ctx[first ? 'moveTo': 'lineTo'](padding + lvl * pxPerLvl, dmgToCtx(dmg));
 										first = false;
 									}
 								}
@@ -1740,7 +1745,8 @@
 					lblName.onmouseout = function () { ignoreOut = false; };
 					
 					c.onmousemove = function(e) {
-						var pos = findPos(this),
+						var s, lvl,
+							pos = findPos(this),
 							x = e.pageX - pos.x,
 							y = e.pageY - pos.y,
 							coord = "x=" + x + ", y=" + y,
@@ -1757,10 +1763,16 @@
 							}
 						}
 						if (matchedSkills.length > 0) {
+							s = matchedSkills[0];
 							lblName.style.display = 'block';
 							lblName.style.top = mouseY - 10 + 'px';
 							lblName.style.left = mouseX + 5 + 'px';
-							lblName.innerHTML = matchedSkills.reduce(function (str, s) { return str + s.name}, '');
+							
+							lvl = ctxPxToLvl(x);
+							if (0 >= lvl) {
+								lvl = 1;
+							}
+							lblName.innerHTML = s.name + '<br />Lvl: ' + lvl + ', Dmg: ' + roundForDisplay(s.totalDmg(lvl));
 						}
 					};
 					c.onmouseout = function (e) {
