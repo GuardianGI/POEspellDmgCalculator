@@ -18,7 +18,7 @@
 						return res;
 					};
 				}, publicSkills,
-				startDraw = function (c, index) {
+				startDraw = function (c, index, body) {
 					var skills = {}, name, i = 0, checkbox, indexLine, zoomLvl = 1, padding = 50,
 						ctx = c.getContext("2d"),
 						roundForDisplay = function (n) {//avoid bugs with to fixed.
@@ -67,7 +67,11 @@
 						})(),
 						getColor = function (n) {
 							var color = "#",
-								colors = ['00', '88', 'FF'];
+								//extra color data to make sure all skills have a distingushable color for the on hover name display.
+								c1 = (n % 16).toString(16).toUpperCase(),
+								c2 = ((n + 5) % 16).toString(16).toUpperCase(),
+								c3 = ((n + 10) % 16).toString(16).toUpperCase(),
+								colors = ['0' + c3, '8' + c2, 'F' + c1];
 							n %= Math.pow(3, 3);
 							color += colors[n % 3];
 							n = Math.floor(n / 3);
@@ -1557,7 +1561,7 @@
 									}
 								}
 								ctx.strokeStyle = s.color;
-								ctx.lineWidth = 2;
+								ctx.lineWidth = userInput.lineWidth;
 								ctx.stroke();
 							}
 							drawLvlOnYAxis();
@@ -1710,9 +1714,8 @@
 				redraw();
 				
 				
-				c.onmousemove = (function () {
-					var tmp = document.getElementById('tmp'),
-						findPos = function (obj) {
+				(function () {
+					var mouseX, mouseY, findPos = function (obj) {
 							var curleft = 0, curtop = 0;
 							if (obj.offsetParent) {
 								do {
@@ -1726,9 +1729,17 @@
 						rgbToHex = function (r, g, b) {
 							if (r > 255 || g > 255 || b > 255)
 								throw "Invalid color component";
-							return ((r << 16) | (g << 8) | b).toString(16);
-						};
-					return function(e) {
+							return ((r << 16) | (g << 8) | b).toString(16).toUpperCase();
+						}, lblName = document.createElement('label'), ignoreOut = false;
+					
+					lblName.style.display = 'none';
+					lblName.className = 'lblSkillHover';
+					body.appendChild(lblName);
+					
+					lblName.onmouseover = function () { ignoreOut = true; };
+					lblName.onmouseout = function () { ignoreOut = false; };
+					
+					c.onmousemove = function(e) {
 						var pos = findPos(this),
 							x = e.pageX - pos.x,
 							y = e.pageY - pos.y,
@@ -1737,6 +1748,8 @@
 							p = c.getImageData(x, y, 1, 1).data,
 							hex = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6),
 							matchedSkills = [], key, s;
+						mouseX = e.pageX;
+						mouseY = e.pageY;
 						for (key in skills) {
 							s = skills[key];
 							if (s.color === hex && s.draw) {
@@ -1744,8 +1757,18 @@
 							}
 						}
 						if (matchedSkills.length > 0) {
-							tmp.value = matchedSkills.reduce(function (str, s) { return str + '|'+s.name+'|'}, '');
+							lblName.style.display = 'block';
+							lblName.style.top = mouseY - 10 + 'px';
+							lblName.style.left = mouseX + 5 + 'px';
+							lblName.innerHTML = matchedSkills.reduce(function (str, s) { return str + s.name}, '');
 						}
+					};
+					c.onmouseout = function (e) {
+						setTimeout(function () {
+							if (!ignoreOut) {
+								lblName.style.display = 'none';
+							}
+						}, 0);
 					};
 				})();
 				
@@ -1832,10 +1855,15 @@
 				display: block;
 				clear: right;
 			}
+			.lblSkillHover {
+				border: 1px solid #000;
+				background: rgba(255, 255, 255, 0.7);
+				position: absolute;
+				padding: 3px;
+			}
 		</style>
 	</head>
-	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'))">
-		<input id="tmp" />
+	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'), document.getElementsByTagName('body')[0])">
 		<div class="indexAndCanvas">
 			<div id="indexContainer">
 				<span>Toggle all <input type="checkbox" checked onclick="toggleCheckAll(this)" /></span>
@@ -1851,8 +1879,9 @@
 				<h2>graph options</h2>
 				<fieldset>
 					<legend>Scaling.</legend>
-					<label>Zoom: <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
-					<label>Logarithmic vertical scale: <input checked="true" class="userInput" type="checkbox" id="enableLogDmgScale" /></label>
+					<label>Zoom <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></label>
+					<label>Logarithmic vertical scale <input checked="true" class="userInput" type="checkbox" id="enableLogDmgScale" /></label>
+					<label>Line Width <input class="userInput" type="text" value="2" id="lineWidth" /></label>
 				</fieldset>
 				<fieldset>
 					<legend><label>Use bar graph: <input class="userInput" type="checkbox" id="useBarGraph" /></label></legend>
