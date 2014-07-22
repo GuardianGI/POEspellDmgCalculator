@@ -367,7 +367,6 @@
 								m = rawSkill.modifiers[key].toLowerCase();
 								for (reKey in re) {
 									matches = m.match(re[reKey]);
-									console.log(matches);
 									if (null != matches && matches.length > 1) {
 										switch (reKey) {
 											case 'additionalProjectiles':
