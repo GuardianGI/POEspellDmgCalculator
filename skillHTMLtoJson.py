@@ -28,9 +28,13 @@ sint = ignore_exception(ValueError)(int)
 
 def strToFloat(s):
 	return float(re.search("([\d.]*)", s).group(1))
-		
+
+def getXmlVal(s):
+	return re.search("(<?\<.*?\>)(.*?)\<\/", s.lower()).group(2).strip()
+
 def getNodeVal(node):
-	return re.search("(<?\<.*?\>)(.*?)\<\/", node.toxml().lower()).group(2).strip()
+	return getXmlVal(node.toxml())
+
 
 class dmg:	
 	def __init__(self):
@@ -124,6 +128,8 @@ def fixUnclosedTags(content):
 	
 def matchClosingTag(content, reStart, open, close):
 		openStr = re.search(reStart, content)
+		if not openStr:
+			return False
 		offset = content.find(openStr.group(0))
 		innerTag = content.find(open, offset + open.__len__())
 		closing = content.find(close, offset) + close.__len__()
@@ -144,6 +150,7 @@ class skill:
 		self.name = fileName.split(".")[0]
 		self.dmg = dmg()
 		self.keywords = []
+		self.modifiers = []
 		self.qualityBonus = ""
 		f_spell = open(dir + file, "rb")
 		content = ""
@@ -231,6 +238,18 @@ class skill:
 			self.keywords = [tryGetTitle(word) for word in keywords.split(',')]
 		except Exception: pass
 		
+		modifiers = []
+		offset = 1
+		while offset > 0:
+			modifier = matchClosingTag(self.metaString[offset + 1:], '\<div [^>]*?class="[^"]*?GemInfoboxModifier'.lower(), "<div", "</div>")
+			if not modifier:
+				offset = -1
+			else:
+				offset += 1 + self.metaString[offset + 1:].find(modifier)
+				modifiers.append(getXmlVal(modifier))
+		self.modifiers = [modifier.replace("'", "") for modifier in modifiers]
+		
+		
 	def getBonus(self, s):
 		return s
 	
@@ -281,13 +300,14 @@ def printMinMaxDmg(dmg):
 
 skillStrs = []
 for skill in skills:
-	skillStr = "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'hasAPS': {}, 'chains': {}, 'dmg': [".format(
+	skillStr = "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'modifiers': [{}], 'hasAPS': {}, 'chains': {}, 'dmg': [".format(
 		skill.name,
 		skill.dmg.crit,
 		skill.dmg.effectiveness,
 		skill.dmg.castTime,
 		skill.qualityBonus,
 		', '.join(["'{}'".format(word) for word in skill.keywords]),
+		', '.join(["'{}'".format(modifier) for modifier in skill.modifiers]),
 		'true' if skill.dmg.hasAPS else 'false',
 		'true' if skill.dmg.hasChain else 'false')
 	i = 1
