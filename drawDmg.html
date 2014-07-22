@@ -924,7 +924,9 @@
 											case 'totem':
 												res[sName].isApplicable = (function () {
 													return function (skill) {
-														return skill.keywords.indexOf('totem') < 0;
+														return skill.keywords.indexOf('totem') < 0 &&
+															skill.keywords.indexOf('mine') < 0 &&
+															skill.keywords.indexOf('traps') < 0;
 													}
 												})();
 												res[sName].initFunctions.push(function (skill) {
@@ -973,7 +975,11 @@
 												}
 												break;
 											case 'echo':
-												res[sName].isApplicable = function (skill) { return skill.keywords.indexOf('totem') < 0; };
+												res[sName].isApplicable = function (skill) {
+													return skill.keywords.indexOf('totem') < 0 &&
+														skill.keywords.indexOf('traps') < 0 &&
+														skill.keywords.indexOf('mine') < 0;
+												};
 												res[sName].applyAfter.push((function (support, rawSupport) {
 													var stageStats = {},
 														column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
@@ -1029,13 +1035,21 @@
 														}
 														res[sName].isApplicable = (function (dmgType) {
 															if (sName.toLowerCase().indexOf('trap') > -1) {
+																res[sName].initFunctions.push(function (skill) {
+																	skill.keywords.push('traps');
+																});
 																return function (skill) {
 																	return skill.keywords.indexOf('traps') < 0 &&
-																		skill.keywords.indexOf('mine') < 0;
+																		skill.keywords.indexOf('totem') < 0 &&
+																		(skill.keywords.indexOf('mine') < 0 ||
+																			skill.supports.indexOf(res['Remote Mine']) >= 0);
 																};														
 															} else if (sName.toLowerCase().indexOf('mine') > -1) {
+																res[sName].initFunctions.push(function (skill) {
+																	skill.keywords.push('mine');
+																});
 																return function (skill) {
-																	return skill.keywords.indexOf('mine') < 0;
+																	return skill.keywords.indexOf('mine') < 0 && skill.keywords.indexOf('totem') < 0;
 																};														
 															} else {
 																return function (skill) {
