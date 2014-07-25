@@ -272,7 +272,7 @@
 						s.isMinion = rawSkill.hasAPS;
 						s.chains = rawSkill.chains;
 						s.supportQualityLvl = {};
-						
+												
 						document.getElementById('qualityLvlAllSupports').onChangeFns.push(function () {
 							for (i in supports) {
 								s.supportQualityLvl[supports[i].name] = userInput.qualityLvlAllSupports;
@@ -283,7 +283,7 @@
 						}
 						
 						s.dmg.multiply = function (poperties) {
-							var d, lvl, apply = poperties.hasOwnProperty('type') ? function () {
+							var d, lvl, apply = (poperties.hasOwnProperty('type') ? function () {
 									d[poperties.type].min *= poperties.mult;
 									d[poperties.type].max *= poperties.mult;
 									d[poperties.type].avg *= poperties.mult;
@@ -294,7 +294,7 @@
 										d[type].max *= poperties.mult;
 										d[type].avg *= poperties.mult;
 									}
-								};
+								});
 							if (poperties.hasOwnProperty('lvl')) {
 								d = s.dmg[poperties.lvl];
 								apply();
@@ -575,9 +575,17 @@
 						};
 						
 						s.getIcrDmg = function (type, lvl, keywords) {
-							var incr = 0, typeKey;
+							var incr = 0, typeKey, typeKeys, applicable = true, innerKey;
 							for (typeKey in s.dmgIncreases[lvl]) {
-								if (typeKey === type || keywords.indexOf(typeKey) >= 0) {
+								typeKeys = typeKey.split(', ');
+								applicable = true;
+								for (innerKey in typeKeys) {
+									if (!(typeKey === type || keywords.indexOf(typeKey) >= 0 || 'all' === typeKey)) {
+										applicable = false;
+										break;
+									}									
+								}
+								if (applicable) {
 									incr += s.dmgIncreases[lvl][typeKey];
 								}
 							}
@@ -666,6 +674,11 @@
 							if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap || s.isMinion) {
 								s.keywords.splice(s.keywords.indexOf('spell'), 1);//these may be spells, they are not affected by for instance increased spell dmg.
 							}
+							
+							if (s.isMinion) {//assume all minions are melee, up to the user to decide if this will be the case...
+								s.keywords.push('melee');
+							}
+							
 							s.dmgIncreases = [];
 							s.empower = [];
 							s.additionalQuality = [];
@@ -871,7 +884,13 @@
 								totem: /summons a totem which uses this skill/i,
 								echo: /x% more cast speed/i,
 								incrCast: /x% increased.*?cast.*?speed/i,
+								
+								moreSomethingDmg: /x% more\s(\S+)\s(\S+) damage/i,
 							}, matches, match, dmgLvls = ['min', 'max'],
+							dmgTypes = ['fire', 'cold', 'light', 'phys', 'chaos'],
+							isDmgType = function (type) {
+								return dmgTypes.indexOf(type) >= 0;
+							},
 							parsePercent = function (str) {
 								return ((str.match(/(\d+)%/i)[1] | 0) / 100);
 							},
@@ -892,6 +911,7 @@
 									if (null != matches) {
 											res[sName].types.push(reType);
 											switch (reType) {
+											
 											case 'empower':
 												res[sName].isApplicable = function () { return true; };
 												res[sName].beforeDmgStages.push((function (support, rawSupport) {
@@ -1089,6 +1109,26 @@
 												if (column.indexOf('damage') > -1) {
 													res[sName].types.push(reType);
 													switch (reType) {
+													case 'moreSomethingDmg':
+														res[sName].isApplicable = (function (tmpName, type) {
+															return function (skill) {
+																return skill.keywords.indexOf(type) >= 0;
+															};
+														})(sName, translateMatch(matches[1]));
+														res[sName].applyBefore.push((function (rawSupport, support, dmgMod, dmgType) {
+															var stageStats = {};
+															for (stage in support.stages) {
+																stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) + 1;
+															}
+															return function (supportStage, skillLvl, skill) {
+																if (isDmgType(dmgType)) {
+																	skill.dmg.multiply({mult: stageStats[supportStage], lvl: skillLvl, type: dmgType});
+																} else {
+																	skill.dmg.multiply({mult: stageStats[supportStage], lvl: skillLvl});
+																}
+															}
+														})(s, res[sName], translateMatch(matches[1]), translateMatch(matches[2])))
+														break;
 													case 'addedDmg':
 														res[sName].isApplicable = function (skill) { return true; };
 														
@@ -1118,7 +1158,7 @@
 														break;
 													case 'moreDmg':
 														if (matches[1].length == 0) {
-															matches[1] = 'spell';
+															matches[1] = 'all';
 														}
 														res[sName].isApplicable = (function (dmgType) {
 															if (sName.toLowerCase().indexOf('trap') > -1) {
