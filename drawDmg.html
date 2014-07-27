@@ -45,12 +45,12 @@
 								dmgMultForSupports = [];
 							for (key in supports) {
 								support = supports[key];
-								if (s.supports.indexOf(support) < 0 && support.isApplicable(s)) {
+								if (s.supports.indexOf(support) < 0 && !s.supports.some(function (sup) { return sup.name === support.name; }) && support.isApplicable(s)) {
 									tmpClone = s.clone('tmpClone');
 									tmpClone.supports.push(support);//temp add support
 									
 									//s.calcDmg();//should not need recalc?
-									tmpClone.calcDmg();
+									dmgAfter = tmpClone.calcDmg(userInput.playerLvlForSuggestions);
 									
 									nonProblematicSupports = s.supports.filter(function (support) { return support.isApplicable(s); });
 									stillApplicable = true;
@@ -67,7 +67,6 @@
 									}
 									
 									dmgPrev = s.totalDmg(userInput.playerLvlForSuggestions);
-									dmgAfter = tmpClone.totalDmg(userInput.playerLvlForSuggestions);
 									
 									dmgMultForSupports.push({mult: dmgAfter / dmgPrev, support: support});
 								}
@@ -102,6 +101,9 @@
 										self.apply();
 										for (i in self.executeOnChange) {
 											self.executeOnChange[i]();
+										}
+										for (i in skills) {
+											skills[i].setNeedsRecalc();
 										}
 										redraw();
 									};
@@ -364,7 +366,7 @@
 									case 'damage':
 										s.qualityEffects.push(function () {
 											s.applyForLvls(function (i) {
-												s.setIncrDmg(value * getQualityLvl(i) / 100, translateMatch(matches[3]), i);
+												s.setIncrDmg(value * getQualityLvl(i) / 100, translateMatch(matches[2]), i);
 											}, lvl);
 										});
 										break;
@@ -494,7 +496,7 @@
 						};
 						s.applyBurn = function (lvl) {
 							//todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
-							var apply = function (dmg, lvl) {
+							var d, apply = function (dmg, lvl) {
 								var additionalIgniteChance = s.additionalChanceToIgnite[lvl] +
 											((userInput.chanceToIgnite + userInput.monsterChanceToIgnite) / 100) +
 											s.getAdditionalChanceToIgnite(lvl),
@@ -505,8 +507,10 @@
 								};
 							
 							s.applyForLvls(function (i) {
-								s.dmg[i].fire.min += apply(s.dmg[i].fire.min, i);
-								s.dmg[i].fire.max += apply(s.dmg[i].fire.max, i);
+								d = s.getFireDmg(i);
+								s.dmg[i].fire.min += apply(d.min, i);
+								s.dmg[i].fire.max += apply(d.max, i);
+								s.dmg[i].fire.avg += apply(d.avg, i);
 							}, lvl);
 						};
 						
@@ -521,7 +525,7 @@
 						s.applyShock = function (lvl) {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
 							var hits = 1, shockStage, mult;
 							s.applyForLvls(function (i) {
-								if (s.dmg[i].light.max > 0) {
+								if (s.getLightDmg(i).max > 0) {
 									hits = s.getProjectiles(i);
 									shockStage = function (stage) {
 										var m = 0.3 * Math.pow(s.cc, stage) * hits;
@@ -604,27 +608,28 @@
 							return stage - 1;//to 0 based index
 						};
 						s.applySupportStage = function (support, fn, lvl) {
-							var end = 100;
-							if (undefined === lvl) {
-								lvl = s.stages[0];
-							}
-							if (lvl >= s.stages[0]) {
-								s.applyForLvls(function (i) {
-									var stage = s.getSupportStage(support, i);
-									if (stage >= 0) {
-										fn(stage, i, s);
-									}
-								}, lvl, end);
-							}
+							s.applyForLvls(function (i) {
+								var stage = s.getSupportStage(support, i);
+								if (stage >= 0) {
+									fn(stage, i, s);
+								}
+							}, lvl);
 						};
 						
 						s.setIncrDmg = function (incr, type, lvl) {
 							var apply = function () {
+								if (undefined === s.dmgIncreases[lvl]) {
+									s.dmgIncreases[lvl] = {};
+									console.log('no object added tot dmg increases for lvl ' + lvl);
+								}
 								if (!s.dmgIncreases[lvl].hasOwnProperty(type)) {
 									s.dmgIncreases[lvl][type] = 0;
 								}
 								s.dmgIncreases[lvl][type] += incr;
 							};
+							if (undefined === type || '' === type) {
+								type = 'all';
+							}
 							if (undefined !== lvl) {
 								apply();
 							} else {
@@ -737,7 +742,7 @@
 						s.applyForLvls = function (fn, start, end) {
 							var lvl;
 							if (undefined === start) {
-								start = 0;
+								start = s.stages[0] || 0;
 								end = 100;
 							} else if (undefined === end) {
 								end = start + 1;
@@ -745,6 +750,34 @@
 							for (lvl = start; lvl < end; lvl += 1) {
 								fn(lvl);
 							}
+						};
+						
+						s.getDmg = function (type, lvl) {
+							var key, dmgKey, dmg = {min: 0, max: 0, avg: 0};
+							for (key in s.dmg[lvl]) {
+								if (0 === key.indexOf(type)) {
+									for (dmgKey in dmg) {
+										dmg[dmgKey] += s.dmg[lvl][key][dmgKey];
+									}
+								}
+							}
+							return dmg;
+						};
+						
+						s.getFireDmg = function (lvl) {
+							return s.getDmg('fire', lvl);
+						};
+						s.getPhysDmg = function (lvl) {
+							return s.getDmg('phys', lvl);
+						};
+						s.getLightDmg = function (lvl) {
+							return s.getDmg('light', lvl);
+						};
+						s.getColdDmg = function (lvl) {
+							return s.getDmg('cold', lvl);
+						};
+						s.getChaosDmg = function (lvl) {
+							return s.getDmg('chaos', lvl);
 						};
 						
 						s.calcDmg = (function () {
@@ -951,8 +984,9 @@
 						s.clone = function (newName) {
 							var key, clone = skill(rawSkill, name);
 							for (key in s.supports) {
-								clone.supports.push(s.supports[key]);
+								clone.supports.push(s.supports[key].clone());
 							}
+							clone.setNeedsRecalc();
 							clone.name = newName + ' : ' + s.name;
 							return clone;
 						}
@@ -1036,10 +1070,7 @@
 												res[sName].isApplicable = function () { return true; };
 												res[sName].applyBefore.push((function () {
 													return function (supportStage, skillLvl, skill) {
-														if (!skill.dmgIncreases[skillLvl].hasOwnProperty('spell')) {
-															skill.dmgIncreases[skillLvl]['spell'] = 0;
-														}
-														skill.dmgIncreases[skillLvl]['spell'] += ((userInput.str / 5) | 0) / 100;
+														skill.setIncrDmg(((userInput.str / 5) | 0) / 100, 'spell', skillLvl);
 													};
 												})());
 												res[sName].applyFirst.push((function (support, rawSupport) {
@@ -1378,10 +1409,7 @@
 															}
 														
 															return function (supportStage, skillLvl, skill) {
-																var mult = incrDmg[supportStage] || 0;
-																if ('' === type || skill.keywords.indexOf(type) >= 0) {
-																	skill.dmgIncreases[skillLvl][type] += mult;
-																}
+																skill.setIncrDmg(incrDmg[supportStage] || 0, type, skillLvl);
 															}
 														})(translateMatch(matches[1]), res[sName]));
 														
@@ -1424,6 +1452,15 @@
 								applyRegexes(s.modifiers[i]);
 							}
 							res[sName].qualityBonus = s.qualityBonus;
+							res[sName].clone = (function (self) {
+								return function () {
+									var clone = {}, key;
+									for (key in self) {
+										clone[key] = self[key];
+									}
+									return clone;
+								};
+							})(res[sName]);
 						}
 						return res;
 					})();
@@ -1436,11 +1473,11 @@
 					redraw();
 				};
 				document.getElementById("btnZoomIn").onclick = function () {
-					zoomLvl *= 2;
+					zoomLvl *= 1.2;
 					redraw();
 				};
 				document.getElementById("btnZoomOut").onclick = function () {
-					zoomLvl /= 2;
+					zoomLvl /= 1.2;
 					redraw();
 				};
 				document.getElementById("shuffleColors").onclick = (function () {
@@ -1604,12 +1641,13 @@
 												inputNew.type = 'text';
 												inputNew.value = s.supports[k].maxLvl;
 												inputNew.title = 'max lvl';
-												inputNew.onchange = (function (self, support) {
+												inputNew.onchange = (function (self, support, skill) {
 													return function () {
 														support.maxLvl = self.value | 0;
+														skill.setNeedsRecalc();
 														redraw();
 													};
-												})(inputNew, s.supports[k]);
+												})(inputNew, s.supports[k], s);
 												r['Max gem lvl'] = inputNew;
 												
 												inputNew = document.createElement('input');
@@ -1619,6 +1657,7 @@
 												inputNew.onchange = (function (self, support, skill) {
 													return function () {
 														skill.supportQualityLvl[support.name] = self.value | 0;
+														skill.setNeedsRecalc();
 														redraw();
 													};
 												})(inputNew, s.supports[k], s);
@@ -1635,6 +1674,7 @@
 														var i = s.supports.indexOf(support);
 														if (i > -1) {
 															s.supports.splice(i, 1);
+															s.setNeedsRecalc();
 														}
 														redraw();
 													}
@@ -1662,6 +1702,9 @@
 												};
 											})(s, name);
 											
+											lblNew = document.createElement('label');
+											fieldset.appendChild(lblNew);
+											lblNew.innerHTML = s.totalDmg(userInput.playerLvlForSuggestions);
 											
 											newFieldset('Quality/Level');
 											
@@ -1675,6 +1718,7 @@
 											inputNew.onchange = (function (self) {
 												return function () {
 													s.qualityLvl = self.value - 0;
+													s.setNeedsRecalc();
 													redraw();
 												};
 											})(inputNew);
@@ -1689,6 +1733,7 @@
 											inputNew.onchange = (function (self, s) {
 												return function () {
 													s.additionalLvl = self.value - 0;
+													s.setNeedsRecalc();
 													redraw();
 												};
 											})(inputNew, s);
@@ -1703,6 +1748,7 @@
 											inputNew.onchange = (function (self, s) {
 												return function () {
 													s.maxLvl = (self.value | 0) - 1;
+													s.setNeedsRecalc();
 													redraw();
 												};
 											})(inputNew, s);
@@ -1718,7 +1764,8 @@
 											option.innerHTML = supportName + ' | ' + roundForDisplay(dmgMulti);
 											option.apply = (function (self, s, innerSupport) {
 												return function () {
-													s.supports.push(innerSupport);
+													s.supports.push(innerSupport.clone());
+													s.setNeedsRecalc();
 													redraw();
 												};
 											})(option, s, supports[supportName]);
@@ -2077,7 +2124,8 @@
 							if (s.draw) {
 								dmgMultForSupports = getSortedSupports(s);
 								if (dmgMultForSupports.length > 0) {
-									s.supports.push(dmgMultForSupports[0].support);
+									s.supports.push(dmgMultForSupports[0].support.clone());
+									s.setNeedsRecalc();
 								}
 							}
 						}
@@ -2099,6 +2147,7 @@
 								}
 								if (worstSupportKey >= 0) {
 									s.supports.splice(worstSupportKey, 1);
+									s.setNeedsRecalc();
 								}
 							}
 						}
