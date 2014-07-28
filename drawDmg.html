@@ -306,7 +306,7 @@
 									return s.keywords.indexOf(t) >= 0;
 								}, apply = (poperties.hasOwnProperty('type') ? function () {
 										var type;
-										if (poperties.hasOwnProperty('isDefense')) {
+										if (poperties.hasOwnProperty('isDefense')) {//in case of defence only the final dmg type after conversions is applied (and the multiplier should be <= 1)
 											for (type in d) {
 												if (0 === type.indexOf(poperties.type) || isApplicable(poperties.type)) {
 													d[type].min *= poperties.mult;
@@ -355,55 +355,58 @@
 								userInput.incrCastSpeed / 100 +
 								s.incrCastSpeedFromQuality * s.getQualityLvl(lvl)));
 						};
-						s.parseQualityBonus = function (qualityBonusStr, getQualityLvl, lvl) {
-							var reIncr = /(\d+[.]?\d*)%\s*increased\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
-								reChance = /(\d+[.]?\d*)%\s*chance\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
-								matches = qualityBonusStr.match(reIncr), i, value, effect;
-							if (null != matches && matches.length > 2) {
-								value = matches[1] - 0;
-								if (matches.length > 3) {
-									switch (matches[3]) {
-									case 'damage':
-										s.qualityEffects.push(function () {
-											s.applyForLvls(function (i) {
-												s.setIncrDmg(value * getQualityLvl(i) / 100, translateMatch(matches[2]), i);
-											}, lvl);
-										});
-										break;
-									}
-									switch (matches[2] + ' ' + matches[3]) {
-									case 'projectile speed':
-										//ignore, adds no damage, only range/kill speed.
-										break;
-									case 'cast speed':
-										s.incrCastSpeedFromQuality = value / 100;
-										break;
-									case 'critical strike':
-										if ('chance' === matches[4]) {
-											s.incrCcFromQuality = value / 100;
+						s.parseQualityBonus = function (rawQualityBonusStr, getQualityLvl, lvl) {
+							var parse = function (qualityBonusStr) {
+								var reIncr = /(\d+[.]?\d*)%\s*increased\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
+									reChance = /(\d+[.]?\d*)%\s*chance\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
+									matches = qualityBonusStr.match(reIncr), i, value, effect;
+								if (null != matches && matches.length > 2) {
+									value = matches[1] - 0;
+									if (matches.length > 3) {
+										switch (matches[3]) {
+										case 'damage':
+											s.qualityEffects.push(function () {
+												s.applyForLvls(function (i) {
+													s.setIncrDmg(value * getQualityLvl(i) / 100, translateMatch(matches[2]), i);
+												}, lvl);
+											});
+											break;
 										}
-										break;
+										switch (matches[2] + ' ' + matches[3]) {
+										case 'projectile speed':
+											//ignore, adds no damage, only range/kill speed.
+											break;
+										case 'cast speed':
+											s.incrCastSpeedFromQuality = value / 100;
+											break;
+										case 'critical strike':
+											if ('chance' === matches[4]) {
+												s.incrCcFromQuality = value / 100;
+											}
+											break;
+										}
+									} else {
+										if ("damage" == matches[2]) {
+											s.qualityEffects.push(function () {
+												s.applyForLvls(function (i) {
+													s.setIncrDmg(value * getQualityLvl(i) / 100, 'all', i);
+												}, lvl);
+											});
+										}
 									}
 								} else {
-									if ("damage" == matches[2]) {
-										s.qualityEffects.push(function () {
+									matches = qualityBonusStr.match(reChance);
+									if (null != matches && matches.length > 4) {
+										value = matches[1] | 0;
+										if ("ignite" == matches[3]) {
 											s.applyForLvls(function (i) {
-												s.setIncrDmg(value * getQualityLvl(i) / 100, 'all', i);
+												s.additionalChanceToIgnite[i] += (value / 100) * getQualityLvl(i);
 											}, lvl);
-										});
+										}//todo: add shock and freeze.
 									}
 								}
-							} else {
-								matches = qualityBonusStr.match(reChance);
-								if (null != matches && matches.length > 4) {
-									value = matches[1] | 0;
-									if ("ignite" == matches[3]) {
-										s.applyForLvls(function (i) {
-											s.additionalChanceToIgnite[i] += (value / 100) * getQualityLvl(i);
-										}, lvl);
-									}//todo: add shock and freeze.
-								}
-							}
+							};
+							rawQualityBonusStr.split('<br />').forEach(parse);
 						};
 						
 						s.parseModifiers = function (lvl) {
@@ -487,7 +490,7 @@
 							s.applyForLvls(function (i) {
 								chance = s.getCritChance(i);
 								mult = 1 + (chance > 1 ? 1 : chance) * s.getCritDmg(i);
-								for (type in s.dmg[0]) {
+								for (type in dmgTypes) {
 									if ('phys' !== type || !userInput.enableMonsterDef) {//crit is applied when applying mosnter def for phys dmg
 										s.dmg.multiply({'mult': mult, 'type': type, 'lvl': i});
 									}
@@ -546,9 +549,6 @@
 							var sum = 0;
 							for (type in dmgLvl) {
 								sum += dmgLvl[type].avg;
-								if (isNaN(sum)) {
-									console.log([s.name, type, dmgLvl[type]]);
-								}
 							}
 							return sum;
 						};
@@ -620,7 +620,6 @@
 							var apply = function () {
 								if (undefined === s.dmgIncreases[lvl]) {
 									s.dmgIncreases[lvl] = {};
-									console.log('no object added tot dmg increases for lvl ' + lvl);
 								}
 								if (!s.dmgIncreases[lvl].hasOwnProperty(type)) {
 									s.dmgIncreases[lvl][type] = 0;
@@ -645,7 +644,8 @@
 								typeKeys = typeKey.split(', ');
 								applicable = true;
 								for (innerKey in typeKeys) {
-									if (!(typeKey === type || keywords.indexOf(typeKey) >= 0 || 'all' === typeKey)) {
+									innerKey = typeKeys[innerKey];
+									if (!(innerKey === type || keywords.indexOf(innerKey) >= 0 || 'all' === innerKey)) {
 										applicable = false;
 										break;
 									}									
@@ -715,15 +715,24 @@
 								generalIncr += userInput[keyword + 'DmgIncr'] | 0;
 							});
 							s.applyForLvls(function (i) {
-								dmgTypes.forEach(function (type) {
-									s.dmg.multiply({mult: 1 + (
-												generalIncr +
-												((eleDmgTypes.indexOf(type) > -1) ? userInput.eleDmgIncr | 0 : 0) +
-												(userInput[type + 'DmgIncr'] | 0) 
-											) / 100 +
-											s.getIcrDmg(type, i, keywords),
-										'type': type, 'lvl': i});
-								});
+								var types, type, typesArr, incr, appliedGeneralEleDmg;
+								for (types in s.dmg[i]) {
+									incr = 1 + generalIncr / 100;
+									appliedGeneralEleDmg = false
+									typesArr = types.split(' from ');
+									for (type in typesArr) {//usually just one, could be more.
+										type = typesArr[type];//get val, not key...
+										if (!appliedGeneralEleDmg && eleDmgTypes.indexOf(type) > -1) {
+											appliedGeneralEleDmg = true;
+											incr += userInput.eleDmgIncr / 100;
+										}
+										incr += userInput[type + 'DmgIncr'] / 100;
+										incr += s.getIcrDmg(type, i, keywords);//already in percent format....
+									}
+									['min', 'max', 'avg'].forEach(function (key) {
+										s.dmg[i][types][key] *= incr;
+									});
+								}
 							}, lvl);
 						};
 						
@@ -802,6 +811,8 @@
 									s.keywords.push('melee');
 								}
 								
+								s.incrCastSpeedFromQuality = 0;
+								s.incrCcFromQuality = 0;
 								s.dmgIncreases = [];
 								s.empower = [];
 								s.additionalQuality = [];
@@ -871,7 +882,9 @@
 										fn(s);
 									});
 									s.parseQualityBonus(support.qualityBonus,
-										function () { return s.supportQualityLvl[support.name];},
+										(function (supportName) {
+											return function () { return s.supportQualityLvl[supportName];}
+										})(support.name),
 										lvl);
 								}
 								
@@ -934,15 +947,15 @@
 									s.applyDmgMultiplier(1 + 1.1 * userInput.flameBlastStage, lvl);
 								}
 								
+								for (i in s.qualityEffects) {
+									s.qualityEffects[i]();
+								}
+								
 								s.applyDmgMultiplier(s.eff);
 								s.applyDmgIncreases();
 								
 								if (s.isSearingBond) {
 									s.applySpecificMultiplier(1 + userInput.incrBurnDmg / 100, 'fire', lvl);
-								}
-								
-								for (i in s.qualityEffects) {
-									s.qualityEffects[i]();
 								}
 								
 								if (userInput.enableMonsterDef) {
