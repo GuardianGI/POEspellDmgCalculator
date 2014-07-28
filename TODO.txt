@@ -1,8 +1,7 @@
 todo:
 	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience (got data, applied as resists, need to add selection options and visulaization)
 	monster life = 2 * xp / lvl (seems about right on driping dead & brittle thiefs & Oozeback Bloom)
-	add cold to fire support gem (dificult since the dmg needs to scale of cold scaling and fire scaling, the way things are set up now makes that imposible)
-	get a better armour value refference (9k is most likely way too high)
+	get a better armour value refference (9k is most likely way too high, for now simply dividing by 10....)
 	support gem applicability matrix
 	apply cast time & duration to max DPS for SRS
 	universal DPS comparison

@@ -316,7 +316,8 @@
 											}
 										} else {
 											for (type in d) {
-												if (0 <= type.indexOf(poperties.type) || isApplicable(poperties.type)) {
+												if ((poperties.hasOwnProperty('applicable') && poperties.applicable(type))
+														|| 0 <= type.indexOf(poperties.type) || isApplicable(poperties.type)) {
 													d[type].min *= poperties.mult;
 													d[type].max *= poperties.mult;
 													d[type].avg *= poperties.mult;
@@ -490,11 +491,10 @@
 							s.applyForLvls(function (i) {
 								chance = s.getCritChance(i);
 								mult = 1 + (chance > 1 ? 1 : chance) * s.getCritDmg(i);
-								for (type in dmgTypes) {
-									if ('phys' !== type || !userInput.enableMonsterDef) {//crit is applied when applying mosnter def for phys dmg
-										s.dmg.multiply({'mult': mult, 'type': type, 'lvl': i});
-									}
-								}
+								s.dmg.multiply({'mult': mult,
+									'applicable':function(type) {//crit is applied when applying mosnter def for phys dmg
+										return 'phys' !== type || !userInput.enableMonsterDef; },
+									'lvl': i});
 							}, lvl);
 						};
 						s.applyBurn = function (lvl) {
