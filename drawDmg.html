@@ -999,6 +999,9 @@
 							for (key in s.supports) {
 								clone.supports.push(s.supports[key].clone());
 							}
+							for (key in s.supportQualityLvl) {
+								clone.supportQualityLvl[key] = s.supportQualityLvl[key];
+							}
 							clone.setNeedsRecalc();
 							clone.name = newName + ' : ' + s.name;
 							return clone;
