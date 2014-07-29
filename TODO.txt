@@ -6,10 +6,10 @@ todo:
 	apply cast time & duration to max DPS for SRS
 	universal DPS comparison
 		AOE range
-		pack spread size & monster count (where the fuck am I gonna get data on this...)
-		apply chain/fork/(g/l)mp & possible shotgun to pack
-		apply AOE of chaining fireballs to pack.
-		get width and range for FP (& then apply projectile speed)
+		pack spread, size & monster count (where the fuck am I gonna get data on this...)
+		apply chain/fork/(g/l)mp & possibility shotgun to pack
+		apply AOE of chaining fireballs/arctic breath to pack.
+		get width and range for FP (& then apply projectile speed for the dmg reduction over time of FP)
 	correctly apply correct increases: does desecrate benefit from spell damage, searing bond from burning dmg? etc.
 	half decent interface on "any" resolution (minimum of 1024px or maybe down to 800px width) (now looks fine on 1280 width and handles other resulotuions decently.)
 	Aura support (anger & wrath for minions, haste for cast speed, etc.)
@@ -17,10 +17,12 @@ todo:
 	mana per second usage
 		?mana per second recovered (maybe not worth the effort w/o passive tree support)
 		dps with mana regen, assuming empty mana pool.
-	dps reliability/divergency (crit chance, min v.s. max dmg, cast speed)
+	dps reliability/divergence (crit chance, min v.s. max dmg, cast speed)
 		idea: divergence = (max dmg - min dmg) / casts per second
 			crit: where cc (crit chance) is 0.05 for 5% and cd (crit multiplier) is 1 by default for 100% more dmg
 				divergence /= cc
+				or: divergence = (max dmg * cd - min dmg) / (casts per second * cc)
+				
 
 bugs:
 

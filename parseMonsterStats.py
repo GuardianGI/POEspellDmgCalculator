@@ -67,10 +67,12 @@ def parseTable(t):
 			for cell in row.getElementsByTagName("td"):
 				while columnId in skipColumnForRows and skipColumnForRows[columnId]["count"] > 0:
 					skipColumnForRows[columnId]["count"] -= 1
+					newMonster.stats[columns[columnId + 1]] = skipColumnForRows[columnId]['nodeVal']
 					columnId += 1
 				
 				if cell.getAttributeNode("rowspan"):
-					skipColumnForRows[columnId] = {"count": int(cell.getAttributeNode("rowspan").nodeValue) - 1}
+					skipColumnForRows[columnId] = {"count": int(cell.getAttributeNode("rowspan").nodeValue) - 1,
+						"nodeVal": getNodeVal(cell)}
 				if cell.getAttributeNode("colspan"):
 					columnId += int(cell.getAttributeNode("colspan").nodeValue)
 				else:
@@ -95,10 +97,13 @@ f.close()
 content = fixUnclosedTags(content.replace("&#8211;", "-").replace("\r", "").replace("\n", ""))
 
 getTables(content, parseTable)
-	
+
+def keyIsInt(key):
+	return 'xp' in key or 'lvl' in key or 'res' in key
+
 f = open('monsterStats.json', 'w')
 lines = []
 for monster in monsters:
-	lines.append('{{{}}}'.format(', '.join([('"{}": {}' if 'xp' in key or 'lvl' in key or 'res' in key else '"{}": "{}"').format(key, monster.stats[key]) for key in monster.stats])))
+	lines.append('{{{}}}'.format(', '.join([('"{}": {}' if keyIsInt(key) else '"{}": "{}"').format(key, monster.stats[key]) for key in monster.stats])))
 
 f.write('[{}]'.format(', '.join(lines)))
