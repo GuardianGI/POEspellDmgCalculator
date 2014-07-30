@@ -238,13 +238,13 @@
 							if (userInput.enableLogDmgScale) {
 								dmg = Math.log(1 + dmg) * 100;
 							}
-							return dmg * zoomLvl;
+							return dmg //* zoomLvl;
 						},
 						dmgToCtx = function (dmg) {
 							return parseInt(c.height - dmgToPx(dmg)) - padding;
 						},
 						pxToDmg = function (px) {
-							var dmg = px / zoomLvl;
+							var dmg = px /// zoomLvl;
 							if (userInput.enableLogDmgScale) {
 								dmg /= 100;
 								dmg = Math.pow(Math.E, dmg) - 1;
@@ -2220,7 +2220,7 @@
 					console.log(getAreas());
 					(function () {
 						var i, sum, count, key, difName, areaName, monsterName, monsterStats = getAreas(), m,
-							fieldset, lblNew, table, tr, td, th, header, monsterData = document.getElementById('monsterData'),
+							fieldset, lblNew, table, tr, td, th, header, monsterData = document.getElementById('spellDetails'/*'monsterData'*/),
 							newFieldset = function (title) {
 								var legend;
 								fieldset = document.createElement("fieldset");
