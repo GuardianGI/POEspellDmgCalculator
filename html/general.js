@@ -1,7 +1,7 @@
 var executeOnLoad = [],
     dmgTypes = ['fire', 'cold', 'light', 'chaos', 'phys'],
     eleDmgTypes = ['fire', 'cold', 'light'],
-    translateMatch = function(str) {
+    translateMatch = function (str) {
         switch (str) {
         case 'lightning':
             return 'light';
@@ -25,12 +25,14 @@ var executeOnLoad = [],
             res = fn();
             return res;
         };
-    }, publicSkills, skills = {},
+    },
+    publicSkills,
+    skills = {},
     roundForDisplay = function (n) {//avoid bugs with to fixed.
         return (Math.round(n * 100) / 100).toFixed(2);
     },
     userInput,
-    getRawSkillDmgAtLvl = function (rawSkill, lvl, additionalLvl, maxLvl, tmp) {
+    getRawSkillDmgAtLvl = function (rawSkill, lvl, additionalLvl, maxLvl) {
         var lastLvl = -1, i, dmgLvl = -1, dmgKey, type;
         lvl += 1;//lvl to 1 based index for comparison to wiki tables.
         for (i = 0; i < rawSkill.dmg.length; i += 1) {
@@ -77,17 +79,17 @@ var executeOnLoad = [],
         }
         return totalDmg / count;
     };
- executeOnLoad.push(function () {
+executeOnLoad.push(function () {
     var key, inputs, input;
     userInput = {};
     inputs = document.getElementsByClassName("userInput");
     for (key in inputs) {
         input = inputs[key];
-        userInput[input.id] = (("checkbox" == input.type) ? input.checked : (input.value - 0));
-        
+        userInput[input.id] = (("checkbox" === input.type) ? input.checked : (input.value - 0));
+
         input.apply = (function (self) {
             return function () {
-                userInput[self.id] = (("checkbox" == self.type) ? self.checked : (self.value - 0));
+                userInput[self.id] = (("checkbox" === self.type) ? self.checked : (self.value - 0));
             };
         }(input));
         input.executeOnChange = [];
@@ -106,17 +108,17 @@ var executeOnLoad = [],
         }(input));
     }
     
-   (function () {
+    (function () {
         var i, self = document.getElementById('qualityLvlAllSupports');
         self.onChangeFns = [];
-        
+
         self.onchange = function () {
             userInput.qualityLvlAllSupports = self.value | 0;
             for (i in self.onChangeFns) {
                 self.onChangeFns[i]();
             }
             redraw();
-        }
+        };
     })();
 
     return userInput;

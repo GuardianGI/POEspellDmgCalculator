@@ -19,8 +19,7 @@ var supports = (function () {
             totem: /summons a totem which uses this skill/i,
             echo: /x% more cast speed/i,
             incrCast: /x% increased.*?cast.*?speed/i,
-            
-            moreSomethingDmg: /x% more\s(\S+)\s(\S+) damage/i,
+            moreSomethingDmg: /x% more\s(\S+)\s(\S+) damage/i
         }, matches, match, dmgLvls = ['min', 'max', 'avg'],
         dmgTypes = ['fire', 'cold', 'light', 'phys', 'chaos'],
         isDmgType = function (type) {
@@ -31,261 +30,260 @@ var supports = (function () {
         },
         applyRegexes = function (effectStr) {
             for (reType in modRegexes) {
-                matches = effectStr.match(modRegexes[reType])
-                if (null != matches) {
-                        res[sName].types.push(reType);
-                        switch (reType) {
-                        
-                        case 'empower':
-                            res[sName].isApplicable = function () { return true; };
-                            res[sName].beforeDmgStages.push((function (support, rawSupport) {
-                                var stageStats = {},
-                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
-                                        key = key.toLowerCase();
-                                        return key.indexOf('+x') >= 0 && key.indexOf('level') >= 0;
-                                    })[0];
-                                
-                                for (stage in support.stages) {
-                                    stageStats[stage] = rawSupport.stageStats[stage][column] | 0;
-                                }
-                                return function (supportStage, skillLvl, skill) {
-                                    skill.empower[skillLvl] += stageStats[supportStage];
-                                };
-                            })(res[sName], s));
-                            break;
-                        case 'enhance':
-                            res[sName].isApplicable = function () { return true; };
-                            res[sName].beforeDmgStages.push((function (support, rawSupport) {
-                                var stageStats = {},
-                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
-                                        key = key.toLowerCase();
-                                        return key.indexOf('+x%') >= 0 && key.indexOf('quality') >= 0;
-                                    })[0];
-                                
-                                for (stage in support.stages) {
-                                    stageStats[stage] = rawSupport.stageStats[stage][column] | 0;
-                                }
-                                return function (supportStage, skillLvl, skill) {
-                                    skill.additionalQuality[skillLvl] += stageStats[supportStage];
-                                };
-                            })(res[sName], s));
-                            break;
-                        case 'ironWill':
-                            res[sName].isApplicable = function () { return true; };
-                            res[sName].applyBefore.push((function () {
-                                return function (supportStage, skillLvl, skill) {
-                                    skill.setIncrDmg(((userInput.str / 5) | 0) / 100, 'spell', skillLvl);
-                                };
-                            })());
-                            res[sName].applyFirst.push((function (support, rawSupport) {
-                                var stageStats = {},
-                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
-                                        key = key.toLowerCase();
-                                        return key.indexOf('reduced') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
-                                    })[0];
-                                
-                                for (stage in support.stages) {
-                                    stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
-                                }
-                                return function (supportStage, skillLvl, skill) {
-                                    skill.otherIncrCastSpeed[skillLvl] -= stageStats[supportStage];
-                                };
-                            })(res[sName], s));
-                            break;
-                        case 'penetrateRes':
-                            res[sName].isApplicable = (function (dmgType) {
-                                return function (skill) {//has correct elemental dmg at selected level?
-                                    return skill.dmg[userInput.playerLvlForSuggestions][dmgType].min > 0;
-                                };
-                            })(translateMatch(matches[1]));
+                matches = effectStr.match(modRegexes[reType]);
+                if (null !== matches) {
+                    res[sName].types.push(reType);
+                    switch (reType) {
+                    case 'empower':
+                        res[sName].isApplicable = function () { return true; };
+                        res[sName].beforeDmgStages.push((function (support, rawSupport) {
+                            var stageStats = {},
+                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                    key = key.toLowerCase();
+                                    return key.indexOf('+x') >= 0 && key.indexOf('level') >= 0;
+                                })[0];
                             
-                            res[sName].applyFirst.push((function (support, rawSupport, type) {
-                                var stageStats = {},
-                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
-                                        key = key.toLowerCase();
-                                        return key.indexOf('resistance') >= 0 && key.indexOf(type) >= 0;
-                                    })[0];
-                                
-                                for (stage in support.stages) {
-                                    stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) * 100;
-                                }
-                                return function (supportStage, skillLvl, skill) {
-                                    skill.resPen[skillLvl][type] += stageStats[supportStage];
-                                };
-                            })(res[sName], s, translateMatch(matches[1])));
-                            break;
-                        case 'incrCrit':
-                            res[sName].isApplicable = function (skill) { return skill.cc > 0; };
-                            
-                            res[sName].applyFirst.push((function (support, rawSupport, type) {
-                                var stageStats = {}, selector,
-                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
-                                        key = key.toLowerCase();
-                                        return key.indexOf('crit') >= 0 && key.indexOf(type) >= 0;
-                                    })[0];
-                                    
-                                for (stage in support.stages) {
-                                    stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
-                                }
-                                selector = 'chance' === type ? 'additionalCC' : 'additionalCD';
-                                return function (supportStage, skillLvl, skill) {
-                                    skill[selector][skillLvl] += stageStats[supportStage];
-                                };
-                            })(res[sName], s, matches[1]));
-                            break;
-                        case 'incrCast':
-                            res[sName].isApplicable = function (skill) { return true; };
-                            res[sName].applyFirst.push((function (support, rawSupport) {
-                                var stageStats = {},
-                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
-                                        key = key.toLowerCase();
-                                        return key.indexOf('increased') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
-                                    })[0];
-                                for (stage in support.stages) {
-                                    stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
-                                }
-                                return function (supportStage, skillLvl, skill) {
-                                    skill.otherIncrCastSpeed[skillLvl] += stageStats[supportStage];
-                                };
-                            })(res[sName], s));
-                            break;
-                        case 'totem':
-                            res[sName].isApplicable = (function () {
-                                return function (skill) {
-                                    return skill.keywords.indexOf('totem') < 0 &&
-                                        skill.keywords.indexOf('mine') < 0 &&
-                                        skill.keywords.indexOf('traps') < 0;
-                                }
-                            })();
-                            res[sName].initFunctions.push(function (skill) {
-                                skill.keywords.push('totem');
-                            });
-                            break;
-                        case 'less':
-                            res[sName][('cast' === matches[2] ? 'applyAfter' : 'applyBefore')]
-                                .push((function(amount, type, support) {
-                                    var amountInPct = 1 - parsePercent(amount);
-                                    return function (supportStage, skillLvl, skill) {
-                                        var typeKey, minMaxAvgKey;
-                                        for (typeKey in skill.dmg[skillLvl]) {
-                                            for (minMaxAvgKey in skill.dmg[skillLvl][typeKey]) {
-                                                skill.dmg[skillLvl][typeKey][minMaxAvgKey] *= amountInPct;
-                                            }
-                                        }
-                                    };
-                                })(matches[1], matches[2], res[sName]));
-                            break;
-                        case 'chain':
-                            res[sName].isApplicable = (function () {
-                                return function (skill) {
-                                    return skill.keywords.indexOf('projectile') >= 0 || skill.isArc;
-                                }
-                            })();
-                            res[sName].applyFirst.push(function (supportStage, skillLvl, skill) {
-                                skill.projectiles[skillLvl].multiplier += 2;
-                            });
-                            break;
-                        case 'aditional'://lmp, gmp and?
-                            switch (translateMatch(matches[2])) {
-                            case 'projectile':
-                                res[sName].isApplicable = function (skill) {
-                                    return skill.keywords.indexOf('projectile') >= 0;
-                                };
-                                res[sName].applyFirst.push((function (additionalProjectiles) {
-                                    return function (supportStage, skillLvl, skill) {
-                                        skill.projectiles[skillLvl].base += additionalProjectiles;
-                                    }
-                                })(matches[1] | 0));
-                                break;
-                            default:
-                                console.log(['additional', matches[1], matches[2]]);
-                                break;
+                            for (stage in support.stages) {
+                                stageStats[stage] = rawSupport.stageStats[stage][column] | 0;
                             }
-                            break;
-                        case 'echo':
-                            res[sName].isApplicable = function (skill) {
-                                return skill.keywords.indexOf('totem') < 0 &&
-                                    skill.keywords.indexOf('traps') < 0 &&
-                                    skill.keywords.indexOf('mine') < 0;
+                            return function (supportStage, skillLvl, skill) {
+                                skill.empower[skillLvl] += stageStats[supportStage];
                             };
-                            res[sName].applyAfter.push((function (support, rawSupport) {
-                                var stageStats = {},
-                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
-                                        key = key.toLowerCase();
-                                        return key.indexOf('more') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
-                                    })[0];
-                                for (stage in support.stages) {
-                                    stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) + 1;
-                                }
+                        })(res[sName], s));
+                        break;
+                    case 'enhance':
+                        res[sName].isApplicable = function () { return true; };
+                        res[sName].beforeDmgStages.push((function (support, rawSupport) {
+                            var stageStats = {},
+                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                    key = key.toLowerCase();
+                                    return key.indexOf('+x%') >= 0 && key.indexOf('quality') >= 0;
+                                })[0];
+                            
+                            for (stage in support.stages) {
+                                stageStats[stage] = rawSupport.stageStats[stage][column] | 0;
+                            }
+                            return function (supportStage, skillLvl, skill) {
+                                skill.additionalQuality[skillLvl] += stageStats[supportStage];
+                            };
+                        })(res[sName], s));
+                        break;
+                    case 'ironWill':
+                        res[sName].isApplicable = function () { return true; };
+                        res[sName].applyBefore.push((function () {
+                            return function (supportStage, skillLvl, skill) {
+                                skill.setIncrDmg(((userInput.str / 5) | 0) / 100, 'spell', skillLvl);
+                            };
+                        })());
+                        res[sName].applyFirst.push((function (support, rawSupport) {
+                            var stageStats = {},
+                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                    key = key.toLowerCase();
+                                    return key.indexOf('reduced') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
+                                })[0];
+                            
+                            for (stage in support.stages) {
+                                stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+                            }
+                            return function (supportStage, skillLvl, skill) {
+                                skill.otherIncrCastSpeed[skillLvl] -= stageStats[supportStage];
+                            };
+                        })(res[sName], s));
+                        break;
+                    case 'penetrateRes':
+                        res[sName].isApplicable = (function (dmgType) {
+                            return function (skill) {//has correct elemental dmg at selected level?
+                                return skill.dmg[userInput.playerLvlForSuggestions][dmgType].min > 0;
+                            };
+                        })(translateMatch(matches[1]));
+                        
+                        res[sName].applyFirst.push((function (support, rawSupport, type) {
+                            var stageStats = {},
+                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                    key = key.toLowerCase();
+                                    return key.indexOf('resistance') >= 0 && key.indexOf(type) >= 0;
+                                })[0];
+                            
+                            for (stage in support.stages) {
+                                stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) * 100;
+                            }
+                            return function (supportStage, skillLvl, skill) {
+                                skill.resPen[skillLvl][type] += stageStats[supportStage];
+                            };
+                        })(res[sName], s, translateMatch(matches[1])));
+                        break;
+                    case 'incrCrit':
+                        res[sName].isApplicable = function (skill) { return skill.cc > 0; };
+                        
+                        res[sName].applyFirst.push((function (support, rawSupport, type) {
+                            var stageStats = {}, selector,
+                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                    key = key.toLowerCase();
+                                    return key.indexOf('crit') >= 0 && key.indexOf(type) >= 0;
+                                })[0];
+                                
+                            for (stage in support.stages) {
+                                stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+                            }
+                            selector = 'chance' === type ? 'additionalCC' : 'additionalCD';
+                            return function (supportStage, skillLvl, skill) {
+                                skill[selector][skillLvl] += stageStats[supportStage];
+                            };
+                        })(res[sName], s, matches[1]));
+                        break;
+                    case 'incrCast':
+                        res[sName].isApplicable = function (skill) { return true; };
+                        res[sName].applyFirst.push((function (support, rawSupport) {
+                            var stageStats = {},
+                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                    key = key.toLowerCase();
+                                    return key.indexOf('increased') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
+                                })[0];
+                            for (stage in support.stages) {
+                                stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+                            }
+                            return function (supportStage, skillLvl, skill) {
+                                skill.otherIncrCastSpeed[skillLvl] += stageStats[supportStage];
+                            };
+                        })(res[sName], s));
+                        break;
+                    case 'totem':
+                        res[sName].isApplicable = (function () {
+                            return function (skill) {
+                                return skill.keywords.indexOf('totem') < 0 &&
+                                    skill.keywords.indexOf('mine') < 0 &&
+                                    skill.keywords.indexOf('traps') < 0;
+                            }
+                        })();
+                        res[sName].initFunctions.push(function (skill) {
+                            skill.keywords.push('totem');
+                        });
+                        break;
+                    case 'less':
+                        res[sName][('cast' === matches[2] ? 'applyAfter' : 'applyBefore')]
+                            .push((function(amount, type, support) {
+                                var amountInPct = 1 - parsePercent(amount);
                                 return function (supportStage, skillLvl, skill) {
-                                    if (userInput.enableCastSpeed) {
-                                        skill.dmg.multiply({mult: stageStats[supportStage], lvl: skillLvl});
+                                    var typeKey, minMaxAvgKey;
+                                    for (typeKey in skill.dmg[skillLvl]) {
+                                        for (minMaxAvgKey in skill.dmg[skillLvl][typeKey]) {
+                                            skill.dmg[skillLvl][typeKey][minMaxAvgKey] *= amountInPct;
+                                        }
                                     }
                                 };
-                            })(res[sName], s));
+                            })(matches[1], matches[2], res[sName]));
+                        break;
+                    case 'chain':
+                        res[sName].isApplicable = (function () {
+                            return function (skill) {
+                                return skill.keywords.indexOf('projectile') >= 0 || skill.isArc;
+                            }
+                        })();
+                        res[sName].applyFirst.push(function (supportStage, skillLvl, skill) {
+                            skill.projectiles[skillLvl].multiplier += 2;
+                        });
+                        break;
+                    case 'aditional'://lmp, gmp and?
+                        switch (translateMatch(matches[2])) {
+                        case 'projectile':
+                            res[sName].isApplicable = function (skill) {
+                                return skill.keywords.indexOf('projectile') >= 0;
+                            };
+                            res[sName].applyFirst.push((function (additionalProjectiles) {
+                                return function (supportStage, skillLvl, skill) {
+                                    skill.projectiles[skillLvl].base += additionalProjectiles;
+                                }
+                            })(matches[1] | 0));
                             break;
-                        case 'addedConvertedDmg': case 'dmgConverted':
-                            res[sName].isApplicable = (function (dmgType) {
-                                return function (skill) {//has dmg of converted type at selected level?
-                                    var t;
-                                    for (t in skill.dmg[userInput.playerLvlForSuggestions]) {
-                                        if (0 === t.indexOf(dmgType)) {
-                                            if (skill.dmg[userInput.playerLvlForSuggestions][t].min > 0) {
-                                                return true;
-                                            }
+                        default:
+                            console.log(['additional', matches[1], matches[2]]);
+                            break;
+                        }
+                        break;
+                    case 'echo':
+                        res[sName].isApplicable = function (skill) {
+                            return skill.keywords.indexOf('totem') < 0 &&
+                                skill.keywords.indexOf('traps') < 0 &&
+                                skill.keywords.indexOf('mine') < 0;
+                        };
+                        res[sName].applyAfter.push((function (support, rawSupport) {
+                            var stageStats = {},
+                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                    key = key.toLowerCase();
+                                    return key.indexOf('more') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
+                                })[0];
+                            for (stage in support.stages) {
+                                stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) + 1;
+                            }
+                            return function (supportStage, skillLvl, skill) {
+                                if (userInput.enableCastSpeed) {
+                                    skill.dmg.multiply({mult: stageStats[supportStage], lvl: skillLvl});
+                                }
+                            };
+                        })(res[sName], s));
+                        break;
+                    case 'addedConvertedDmg': case 'dmgConverted':
+                        res[sName].isApplicable = (function (dmgType) {
+                            return function (skill) {//has dmg of converted type at selected level?
+                                var t;
+                                for (t in skill.dmg[userInput.playerLvlForSuggestions]) {
+                                    if (0 === t.indexOf(dmgType)) {
+                                        if (skill.dmg[userInput.playerLvlForSuggestions][t].min > 0) {
+                                            return true;
                                         }
                                     }
-                                    return false;
-                                };
-                            })(translateMatch(matches[1]));
-                            
-                            
-                            res[sName].applyFirst.push((function (from, to, isAdditional) {
-                                var pctConverted = {}, column = false, tmpColumn;
-                                for (stage in s.stageStats) {
-                                    for (tmpColumn in s.stageStats[stage]) {
-                                        if (tmpColumn.indexOf('gain x% of ') >= 0 || tmpColumn.indexOf('converted to') >= 0 ) {
-                                            column = tmpColumn;
-                                            break;
-                                        }
-                                    }
-                                    if (column) {
+                                }
+                                return false;
+                            };
+                        })(translateMatch(matches[1]));
+                        
+                        
+                        res[sName].applyFirst.push((function (from, to, isAdditional) {
+                            var pctConverted = {}, column = false, tmpColumn;
+                            for (stage in s.stageStats) {
+                                for (tmpColumn in s.stageStats[stage]) {
+                                    if (tmpColumn.indexOf('gain x% of ') >= 0 || tmpColumn.indexOf('converted to') >= 0 ) {
+                                        column = tmpColumn;
                                         break;
                                     }
                                 }
-                                for (stage in s.stageStats) {
-                                    pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
+                                if (column) {
+                                    break;
                                 }
-                            
-                                return function (supportStage, skillLvl, skill) {
-                                    if (supportStage >= 0) {
-                                        dmgLvls.forEach(function (dmgLvl) {
-                                            var fromType, addedAs;
-                                            for (fromType in skill.dmg[skillLvl]) {
-                                                if (0 === fromType.indexOf(from) && 0 > fromType.indexOf(to)) {
-                                                    addedAs = to + ' from ' + fromType;
-                                                    if (!skill.dmg[skillLvl].hasOwnProperty(addedAs)) {
-                                                        skill.dmg[skillLvl][addedAs] = {}
-                                                    }
-                                                    if (!skill.dmg[skillLvl][addedAs].hasOwnProperty(dmgLvl)) {
-                                                        skill.dmg[skillLvl][addedAs][dmgLvl] = 0;
-                                                    }
+                            }
+                            for (stage in s.stageStats) {
+                                pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
+                            }
+                        
+                            return function (supportStage, skillLvl, skill) {
+                                if (supportStage >= 0) {
+                                    dmgLvls.forEach(function (dmgLvl) {
+                                        var fromType, addedAs;
+                                        for (fromType in skill.dmg[skillLvl]) {
+                                            if (0 === fromType.indexOf(from) && 0 > fromType.indexOf(to)) {
+                                                addedAs = to + ' from ' + fromType;
+                                                if (!skill.dmg[skillLvl].hasOwnProperty(addedAs)) {
+                                                    skill.dmg[skillLvl][addedAs] = {}
+                                                }
+                                                if (!skill.dmg[skillLvl][addedAs].hasOwnProperty(dmgLvl)) {
+                                                    skill.dmg[skillLvl][addedAs][dmgLvl] = 0;
+                                                }
+                                                
+                                                skill.dmg[skillLvl][addedAs][dmgLvl] +=
+                                                    skill.dmg[skillLvl][fromType][dmgLvl] *
+                                                    pctConverted[supportStage];
                                                     
-                                                    skill.dmg[skillLvl][addedAs][dmgLvl] +=
-                                                        skill.dmg[skillLvl][fromType][dmgLvl] *
-                                                        pctConverted[supportStage];
-                                                        
-                                                    if (!isAdditional) {//dmg is converted not just added.
-                                                        skill.dmg[skillLvl][fromType][dmgLvl] *= 1 - pctConverted[supportStage];
-                                                    }
+                                                if (!isAdditional) {//dmg is converted not just added.
+                                                    skill.dmg[skillLvl][fromType][dmgLvl] *= 1 - pctConverted[supportStage];
                                                 }
                                             }
-                                        });
-                                    }
-                                };
-                            })(translateMatch(matches[1]), translateMatch(matches[2]), 'addedConvertedDmg' === reType));
-                            break;
-                        }
+                                        }
+                                    });
+                                }
+                            };
+                        })(translateMatch(matches[1]), translateMatch(matches[2]), 'addedConvertedDmg' === reType));
+                        break;
+                    }
                     for (column in s.stageStats[0]) {
                         if (column.indexOf(matches[1]) > -1) {//column matching modifier (to describe an x or some other variable in the modifier)
                             if (column.indexOf('damage') > -1) {
@@ -430,7 +428,6 @@ var supports = (function () {
                             }// else console.log(['not applied', column, sName]);
                         }
                     }
-                    
                 }
             }
         };

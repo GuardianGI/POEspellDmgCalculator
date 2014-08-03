@@ -1,5 +1,6 @@
 var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
-        var defaultDmg = function () { return {min: -1, max: -1, avg: -1};},
+        var type,
+            defaultDmg = function () { return {min: -1, max: -1, avg: -1}; },
             d = {phys: defaultDmg(),
                 fire: defaultDmg(),
                 cold: defaultDmg(),
@@ -17,30 +18,30 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
     },
     skill = function (rawSkill, name) {
         var s = {}, i, type;
-            s.additionalLvl = 0
-            s.maxLvl = userInput.maxSpellLvl;
-            s.name = name;
-            s.keywords = rawSkill.keywords.slice(0);
-            s.qualityBonus = rawSkill.qualityBonus;
-            s.qualityLvl = userInput.qualityLvlAll;
-            s.qualityEffects = [];
-            s.cc = rawSkill.crit;
-            s.eff = rawSkill.eff;
-            s.cd = 2;//get from passive tree and inc crit dmg support.
-            s.dmg = [];
-            s.stages = [];
-            s.mana = [];
-            s.supports = [];
-            s.incrCastSpeedFromQuality = 0;
-            s.incrCcFromQuality = 0;
-            s.additionalChanceToIgnite = [];
-            s.otherIncrCastSpeed = [];
-            s.castTime = rawSkill.castTime;
-            s.projectiles = [];
-            s.resPen = [];
-            s.isMinion = rawSkill.hasAPS;
-            s.chains = rawSkill.chains;
-            s.supportQualityLvl = {};
+        s.additionalLvl = 0;
+        s.maxLvl = userInput.maxSpellLvl;
+        s.name = name;
+        s.keywords = rawSkill.keywords.slice(0);
+        s.qualityBonus = rawSkill.qualityBonus;
+        s.qualityLvl = userInput.qualityLvlAll;
+        s.qualityEffects = [];
+        s.cc = rawSkill.crit;
+        s.eff = rawSkill.eff;
+        s.cd = 2;//get from passive tree and inc crit dmg support.
+        s.dmg = [];
+        s.stages = [];
+        s.mana = [];
+        s.supports = [];
+        s.incrCastSpeedFromQuality = 0;
+        s.incrCcFromQuality = 0;
+        s.additionalChanceToIgnite = [];
+        s.otherIncrCastSpeed = [];
+        s.castTime = rawSkill.castTime;
+        s.projectiles = [];
+        s.resPen = [];
+        s.isMinion = rawSkill.hasAPS;
+        s.chains = rawSkill.chains;
+        s.supportQualityLvl = {};
                                     
         document.getElementById('qualityLvlAllSupports').onChangeFns.push(function () {
             for (i in supports) {
@@ -56,33 +57,33 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 var d, lvl, isApplicable = function (t) {
                     return s.keywords.indexOf(t) >= 0;
                 }, apply = (poperties.hasOwnProperty('type') ? function () {
-                        var type;
-                        if (poperties.hasOwnProperty('isDefense')) {//in case of defence only the final dmg type after conversions is applied (and the multiplier should be <= 1)
-                            for (type in d) {
-                                if (0 === type.indexOf(poperties.type) || isApplicable(poperties.type)) {
-                                    d[type].min *= poperties.mult;
-                                    d[type].max *= poperties.mult;
-                                    d[type].avg *= poperties.mult;
-                                }
-                            }
-                        } else {
-                            for (type in d) {
-                                if ((poperties.hasOwnProperty('applicable') && poperties.applicable(type))
-                                        || 0 <= type.indexOf(poperties.type) || isApplicable(poperties.type)) {
-                                    d[type].min *= poperties.mult;
-                                    d[type].max *= poperties.mult;
-                                    d[type].avg *= poperties.mult;
-                                }
-                            }
-                        }
-                    } : function () {
-                        var type;
+                    var type;
+                    if (poperties.hasOwnProperty('isDefense')) {//in case of defence only the final dmg type after conversions is applied (and the multiplier should be <= 1)
                         for (type in d) {
-                            d[type].min *= poperties.mult;
-                            d[type].max *= poperties.mult;
-                            d[type].avg *= poperties.mult;
+                            if (0 === type.indexOf(poperties.type) || isApplicable(poperties.type)) {
+                                d[type].min *= poperties.mult;
+                                d[type].max *= poperties.mult;
+                                d[type].avg *= poperties.mult;
+                            }
                         }
-                    });
+                    } else {
+                        for (type in d) {
+                            if ((poperties.hasOwnProperty('applicable') && poperties.applicable(type))
+                                    || 0 <= type.indexOf(poperties.type) || isApplicable(poperties.type)) {
+                                d[type].min *= poperties.mult;
+                                d[type].max *= poperties.mult;
+                                d[type].avg *= poperties.mult;
+                            }
+                        }
+                    }
+                } : function () {
+                    var type;
+                    for (type in d) {
+                        d[type].min *= poperties.mult;
+                        d[type].max *= poperties.mult;
+                        d[type].avg *= poperties.mult;
+                    }
+                });
                 if (poperties.hasOwnProperty('lvl') && undefined !== poperties.lvl) {
                     d = s.dmg[poperties.lvl];
                     apply();
@@ -94,11 +95,11 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 }
             };
         })();
-        
+
         s.getQualityLvl = function (lvl) {
             return s.qualityLvl + s.additionalQuality[lvl];
         };
-        
+
         s.getProjectiles = function (lvl) {
             return s.projectiles[lvl].base * s.projectiles[lvl].multiplier;
         };
@@ -160,7 +161,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             };
             rawQualityBonusStr.split('<br />').forEach(parse);
         };
-        
+
         s.parseModifiers = function (lvl) {
             var key, i, reKey, m, matches, re = {
                 'additionalProjectiles': /(\d+) additional projectiles/i
@@ -181,14 +182,14 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 }
             }
         };
-        
+
         s.applyCastTime = function (lvl) {
             s.applyForLvls(function (i) {
                 var castTimeMultiplier = 1 / (s.getCastTime(i) * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage));
                 s.dmg.multiply({'mult': castTimeMultiplier, 'lvl': i});
             }, lvl);
         };
-        
+
         s.applyDefense = function (lvl) {
             var pen, key, monster, selectedAvgMonster = {}, count = 0, morePhysDmg = 1 + userInput.morePhysDmg / 100;
             if ((userInput.selectedAreas || []).length > 0) {
