@@ -2314,14 +2314,14 @@ var redraw,
             }
         })();
     })();
-},
-toggleCheckAll = function (cb) {
-    var i, allCb = document.getElementsByClassName('drawSkill');
-    for (i in allCb) {
-        if ("checkbox" == allCb[i].type) {
-            allCb[i].checked = cb.checked;
-            allCb[i].update();
+    },
+    toggleCheckAll = function (cb) {
+        var i, allCb = document.getElementsByClassName('drawSkill');
+        for (i in allCb) {
+            if ("checkbox" == allCb[i].type) {
+                allCb[i].checked = cb.checked;
+                allCb[i].update();
+            }
         }
-    }
-    redraw();
-};
+        redraw();
+    };
