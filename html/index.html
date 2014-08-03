@@ -1,88 +1,16 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<title>POE skill/spell dmg plot/calc</title>
+	
 		<script type="text/javascript" src="rawJsonData.js"></script>
 		<script type="text/javascript" src="general.js"></script>
 		<script type="text/javascript" src="supports.js"></script>
 		<script type="text/javascript" src="monsters.js"></script>
 		<script type="text/javascript" src="skills.js"></script>
 		<script type="text/javascript" src="draw.js"></script>
-		<style type="text/css">
-			#canvas {
-				border: 1px solid #000;
-			}
-			#indexContainer span {
-				display: block;
-				background-color: #ccc;
-			}
-			#indexContainer, #canvas, .canvasContainer, .indexAndCanvas {
-				float: left;
-			}
-			.misc {
-				float: right;
-			}
-			.misc label, .monster h2 {
-				display: block;
-			}
-			.misc label, .misc span {
-				width: 300px;
-				height: 25px;
-				position: relative;
-			}
-			.misc input {
-				right: 0;
-				top: 0;
-				position: absolute;
-				max-width: 50px;
-			}
-			.misc div {
-				display: block;
-				margin-bottom: 10px;
-				padding: 2px;
-				border: 1px solid #000;
-			}
-			.canvasContainer {
-				width: 1024px;
-				height: 920px;
-				overflow: auto;
-			}
-			#indexContainer {
-				width: 200px;
-			}
-			#spellDetails {
-				/*position: absolute;*/
-				/*top: 950px;*/
-				/*left: 5px;
-				width: 100%;*/
-			}
-			.spellDetails {
-				position: relative;
-				display: block;
-				float: left;
-				padding: 5px;
-				margin: 5px;
-				border: 1px solid #000;
-				/*width: 200px;*/
-			}
-			.cornerBtn {
-				position: absolute;
-				right: 0;
-				top: 0;
-			}
-			label.support label {
-				float: right;
-			}
-			label.support {
-				display: block;
-				clear: right;
-			}
-			.lblSkillHover {
-				border: 1px solid #000;
-				background: rgba(255, 255, 255, 0.8);
-				position: absolute;
-				padding: 3px;
-			}
-		</style>
+		
+		<link rel="stylesheet" type="text/css" href="style.css" />
 	</head>
 	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'), document.getElementsByTagName('body')[0])">
 		<div class="indexAndCanvas">
