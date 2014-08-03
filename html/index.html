@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type="text/javascript" src="skills.js"/>
+		<style type="text/css">
+			#canvas {
+				border: 1px solid #000;
+			}
+			#indexContainer span {
+				display: block;
+				background-color: #ccc;
+			}
+			#indexContainer, #canvas, .canvasContainer, .indexAndCanvas {
+				float: left;
+			}
+			.misc {
+				float: right;
+			}
+			.misc label, .monster h2 {
+				display: block;
+			}
+			.misc label, .misc span {
+				width: 300px;
+				height: 25px;
+				position: relative;
+			}
+			.misc input {
+				right: 0;
+				top: 0;
+				position: absolute;
+				max-width: 50px;
+			}
+			.misc div {
+				display: block;
+				margin-bottom: 10px;
+				padding: 2px;
+				border: 1px solid #000;
+			}
+			.canvasContainer {
+				width: 1024px;
+				height: 920px;
+				overflow: auto;
+			}
+			#indexContainer {
+				width: 200px;
+			}
+			#spellDetails {
+				/*position: absolute;*/
+				/*top: 950px;*/
+				/*left: 5px;
+				width: 100%;*/
+			}
+			.spellDetails {
+				position: relative;
+				display: block;
+				float: left;
+				padding: 5px;
+				margin: 5px;
+				border: 1px solid #000;
+				/*width: 200px;*/
+			}
+			.cornerBtn {
+				position: absolute;
+				right: 0;
+				top: 0;
+			}
+			label.support label {
+				float: right;
+			}
+			label.support {
+				display: block;
+				clear: right;
+			}
+			.lblSkillHover {
+				border: 1px solid #000;
+				background: rgba(255, 255, 255, 0.8);
+				position: absolute;
+				padding: 3px;
+			}
+		</style>
+	</head>
+	<body onload="startDraw(document.getElementById('canvas'), document.getElementById('index'), document.getElementsByTagName('body')[0])">
+		<div class="indexAndCanvas">
+			<div id="indexContainer">
+				<span>Toggle all <input type="checkbox" checked onclick="toggleCheckAll(this)" /></span>
+				<div id="index">
+				</div>
+			</div>
+			<div class="canvasContainer">
+				<canvas id="canvas"></canvas>
+			</div>
+		</div>
+		<div class="misc">
+			<div>
+				<h2>graph options</h2>
+				<fieldset>
+					<legend>Scaling.</legend>
+					<span>Zoom <button id="btnZoomReset">reset</button><button id="btnZoomIn">+</button><button id="btnZoomOut">-</button></span>
+					<label>Logarithmic vertical scale <input checked="true" class="userInput" type="checkbox" id="enableLogDmgScale" /></label>
+					<label>Line Width <input class="userInput" type="text" value="2" id="lineWidth" /></label>
+				</fieldset>
+				<fieldset>
+					<legend><label>Use bar graph: <input class="userInput" type="checkbox" id="useBarGraph" /></label></legend>
+					<label>Show elemental colors: <input class="userInput" type="checkbox" id="elementalColors" /></label>
+					<label>bargraph: compare skills by lvl: <input class="userInput" type="checkbox" id="interlaceBarGraph" /></label>
+				</fieldset>
+				<fieldset>
+					<legend><label>Plot combat duration: <input class="userInput" type="checkbox" id="plotCombatDuration" /></label></legend>
+					
+				</fieldset>
+				<fieldset>
+					<legend>Color options.</legend>
+					<label>Use dark background: <input class="userInput" type="checkbox" id="useDarkBg" /></label>
+					<label><button id="shuffleColors">Shuffle graph colors.</button></label>
+				</fieldset>
+			</div>
+			<div id="monsterData">
+				<h2>Monster & area stats.</h2>
+			</div>
+			<div>
+				<h2>Misc.</h2>
+				<label title="(requires lightning dmg)">Enable Shock <input class="userInput" type="checkbox" id="enableShock" /></label>
+				<label>Enable Burn (requires fire dmg) <input checked="true" class="userInput" type="checkbox" id="enableBurn" /></label>
+				<label>Enable crit <input checked="true" class="userInput" type="checkbox" id="enableCrit" /></label>
+				<label>Enable monster res/armour: <input checked="true" class="userInput" type="checkbox" id="enableMonsterDef" /></label>
+				<label title="disable to see dmg per cast or for cast on crit builds">Enable cast speed <input checked="true" class="userInput" type="checkbox" id="enableCastSpeed" /></label>
+				<label title="for multi projectile attacks, includes chain and fork">Assume shotgun <input class="userInput" type="checkbox" id="assumeShotgun" /></label>
+				<label title="Assume player level for support effect estimates and such">Player lvl for suggestions<input class="userInput" value="70" type="text" id="playerLvlForSuggestions" /></label>
+				<label>Apply minion APS<input class="userInput" checked="true" type="checkbox" id="applyAPS" /></label>
+			</div>
+			<div>
+				<h2>Skill specifics.</h2>
+				<fieldset>
+					<legend>Single skill</legend>
+					<label>Assume burning for Flame Surge: <input class="userInput" type="checkbox" id="enableFlameSurgeBurn" /></label>
+					<label>Assume stage 2 for Ice Spear<input class="userInput" type="checkbox" id="assumeStageTwoIceSpear" /></label>
+					<label>Flame blast stage: <input class="userInput" type="text" id="flameBlastStage" value="10" /></label>
+					<label title="gets a dps value over the given time span (to take the stages into account)">Incinerate cast time: <input class="userInput" type="text" id="incinerateCastDuration" value="5" /></label>
+				</fieldset>
+				<fieldset>
+					<legend>Global skills</legend>
+					<label title="overides all skill quality lvls and sets them to the given value.">Quality lvl for all skills<input class="userInput" type="text" value="20" id="qualityLvlAll" /></label>
+					<label>Quality lvl for all supports<input class="userInput" type="text" value="20" id="qualityLvlAllSupports" /></label>
+					<label>Max spell lvl<input class="userInput" type="text" value="20" id="maxSpellLvl" /></label>
+					<button id="btnAddBestSupport" title="Warning, SLOOOW">Add "best" support gem to all (drawn) skills</button><br />
+					<button id="removeWorstSupport">Remove "worst" support gem from all (drawn) skills</button>
+				</fieldset>
+			</div>
+			<div>
+				<h2>Player stats. (values are in %)</h2>
+				<label title="for iron will (not in % ofcourse...)">Strength<input class="userInput" type="text" value="150" id="str" /></label>
+				<label>Cast speed incr.<input class="userInput" type="text" id="incrCastSpeed" value="0" /></label>
+				<label>Crit chance incr.<input class="userInput" type="text" id="incrCritChance" value="0" /></label>
+				<label>Crit dmg incr.<input class="userInput" type="text" id="incrCritDmg" value="0" /></label>
+				<label>incr. spell dmg<input class="userInput" type="text" id="spellDmgIncr" value="0" /></label>
+				<label>incr. elemental dmg<input class="userInput" type="text" id="eleDmgIncr" value="0" /></label>
+				<label>incr. fire dmg<input class="userInput" type="text" id="fireDmgIncr" value="0" /></label>
+				<label>incr. cold dmg<input class="userInput" type="text" id="coldDmgIncr" value="0" /></label>
+				<label>incr. lightning dmg<input class="userInput" type="text" id="lightDmgIncr" value="0" /></label>
+				<label>incr. chaos dmg<input class="userInput" type="text" id="chaosDmgIncr" value="0" /></label>
+				<label>incr. physical dmg<input class="userInput" type="text" id="physDmgIncr" value="0" /></label>
+				<label>incr. AOE dmg<input class="userInput" type="text" id="aoeDmgIncr" value="0" /></label>
+				<label>incr. projectile dmg<input class="userInput" type="text" id="projectileDmgIncr" value="0" /></label>
+				<label>incr. burn dmg<input class="userInput" type="text"  id="incrBurnDmg" value="0" /></label>
+				<label>Chance to shock<input class="userInput" type="text" /></label>
+				<label>Chance to ignite<input class="userInput" type="text" value="0" id="chanceToIgnite" /></label>
+				<label>Chance to freeze?</label>
+			</div>
+			<div>
+				<h2>Curses etc. (values are in %)</h2>
+				<label>(vulnerability)more phys dmg<input class="userInput" type="text" value="0" id="morePhysDmg" /></label>
+				<label>reduced elemental resist<input class="userInput" type="text" value="0" id="reducedEleRes" /></label>
+				<label>reduced fire resist<input class="userInput" type="text" /></label>
+				<label>reduced cold resist<input class="userInput" type="text" /></label>
+				<label>reduced light resist<input class="userInput" type="text" /></label>
+				<label>Chance to shock<input class="userInput" type="text" /></label>
+				<label>Chance to ignite<input class="userInput" type="text" value="0" id="monsterChanceToIgnite" /></label>
+				<label>Chance to freeze?</label>
+				<label>(crit weakness)Additional chance to crit<input class="userInput" type="text" /></label>
+				<label>(crit weakness)Extra crit multiplier<input class="userInput" type="text" /></label>
+				<label>(temp chains)Extra burn duration<input class="userInput" type="text" /></label>
+			</div>
+		</div>
+		<div id="spellDetails"></div>
+	</body>
+</html>

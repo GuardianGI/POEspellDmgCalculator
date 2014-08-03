@@ -21,7 +21,7 @@ todo:
 		idea: divergence = (max dmg - min dmg) / casts per second
 			crit: where cc (crit chance) is 0.05 for 5% and cd (crit multiplier) is 1 by default for 100% more dmg
 				divergence /= cc
-				or: divergence = (max dmg * cd - min dmg) / (casts per second * cc)
+				or: divergence = (max dmg * cd - min dmg) / (casts per second * (1 + cc))
 				
 
 bugs:
