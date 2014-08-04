@@ -42,15 +42,18 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.isMinion = rawSkill.hasAPS;
         s.chains = rawSkill.chains;
         s.supportQualityLvl = {};
-                                    
-        document.getElementById('qualityLvlAllSupports').onChangeFns.push(function () {
+        
+        executeOnLoad.push(function () {
+            var i;
+            document.getElementById('qualityLvlAllSupports').onChangeFns.push(function () {
+                for (i in supports) {
+                    s.supportQualityLvl[supports[i].name] = userInput.qualityLvlAllSupports;
+                }
+            });
             for (i in supports) {
                 s.supportQualityLvl[supports[i].name] = userInput.qualityLvlAllSupports;
             }
         });
-        for (i in supports) {
-            s.supportQualityLvl[supports[i].name] = userInput.qualityLvlAllSupports;
-        }
         
         s.dmg.multiply = (function () {
             return function (poperties) {

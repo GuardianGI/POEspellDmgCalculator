@@ -148,7 +148,8 @@ class support:
 						if not val:
 							val = -1
 						lvl = sint(val)
-						self.lvlStages.append(lvl)
+						if None is not lvl:
+							self.lvlStages.append(lvl)
 						values[lvl] = {}
 					elif i in ColumnNames.keys():
 						values[lvl][ColumnNames[i]] = getNodeVal(td)
@@ -192,8 +193,7 @@ for skill in skills:
 		', '.join(["'{}'".format(word) for word in skill.modifiers]),
 		skill.qualityBonus)
 	
-	for lvl in skill.lvlStages:
-		s += "{}, ".format(lvl)
+	s += ', '.join(str(n) for n in skill.lvlStages)
 	
 	s += "], 'stageStats': ["
 	stages = []

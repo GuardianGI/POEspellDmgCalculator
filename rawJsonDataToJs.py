@@ -1,6 +1,6 @@
 dir = "E:\\programming\\Node\\POESkillTree\\"
 f_skillJson = open(dir + 'skillDmgGraph.json', 'r')
-f_supportJson = open(dir + 'spellSupports.json', 'r')
+f_supportJson = open(dir + 'supports.json', 'r')
 f_monsterJson = open(dir + 'monsterStats.json', 'r')
 
 skills = f_skillJson.read()
