@@ -483,7 +483,6 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.applyDmgIncreases = function (lvl) {
             var spellTypes = ['aoe', 'projectile', 'spell'],
                 keywords, generalIncr = 0, lvl;
-            generalIncr += userInput.spellDmgIncr / 100;
             
             keywords = s.keywords.filter(function (keyword) {
                 for (key in spellTypes) {
