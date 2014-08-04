@@ -4,7 +4,8 @@ import re
 import sys
 from xml.dom.minidom import parseString
 
-dir = "E:\\programming\\Node\\POESkillTree\\skillsHTML\\"
+generalDir = 'E:\\programming\\Node\\POESkillTree\\'
+dir = generalDir + "skillsHTML\\"
 skills = []
 
 def printErr(*objs):
@@ -136,12 +137,13 @@ def matchClosingTag(content, reStart, open, close):
 		openTags = 0
 		if innerTag < closing:
 			openTags = 1
-		while openTags > 0:
+		while innerTag > 0 and openTags > 0:
 			closing = content.find(close, closing) + close.__len__()
 			innerTag = content.find(open, innerTag + open.__len__())
 			if innerTag > closing:
 				openTags = 0
 		return content[offset:closing]
+		
 f_escape = open("escape.txt", "rb")
 escape = f_escape.read(1)
 class skill:
@@ -174,7 +176,7 @@ class skill:
 		try:
 			table = parseString(tableStr).getElementsByTagName("table")[0]
 		except Exception:
-			print(tableStr)
+			print('table str:', tableStr)
 			table = parseString(tableStr).getElementsByTagName("table")[0]
 		if "GemLevelTable" in table.attributes["class"].value :
 			self.parseDmg(table)
@@ -334,7 +336,7 @@ for skill in skills:
 	skillStr += "]}"
 	skillStrs.append(skillStr)
 	
-f = open(dir + "..\\skillDmgGraph.json", "w")
+f = open(generalDir + "skillDmgGraph.json", "w")
 f.write('{' + (', '.join(skillStrs)) + '}')
 f.close()
 	

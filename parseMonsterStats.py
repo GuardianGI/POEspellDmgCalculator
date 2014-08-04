@@ -1,7 +1,7 @@
 import re
 from xml.dom.minidom import parseString
-
-f = open("E:\\programming\\Node\\POESkillTree\\MonsterStats.html", "rb")#html file from http://pathofexile.gamepedia.com/Monster_Experience
+dir = 'E:\\programming\\Node\\POESkillTree\\'
+f = open(dir + "MonsterStats.html", "rb")#html file from http://pathofexile.gamepedia.com/Monster_Experience
 
 def fixUnclosedTags(content):
 	return re.sub('(\<img [^>]*?)/?\>', '\g<1> />', content).replace('<br>', '<br />')
@@ -101,7 +101,7 @@ getTables(content, parseTable)
 def keyIsInt(key):
 	return 'xp' in key or 'lvl' in key or 'res' in key
 
-f = open('monsterStats.json', 'w')
+f = open(dir + 'monsterStats.json', 'w')
 lines = []
 for monster in monsters:
 	lines.append('{{{}}}'.format(', '.join([('"{}": {}' if keyIsInt(key) else '"{}": "{}"').format(key, monster.stats[key]) for key in monster.stats])))
