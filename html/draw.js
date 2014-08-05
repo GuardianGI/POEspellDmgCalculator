@@ -945,6 +945,7 @@ var redraw, onRedraw = [],
                     var key, m, plotRes;
                     tab.innerHTML = '';
                     tab.appendChild(document.createTextNode('Note that the life and armour values are estimates I pulled out of my ass...'));
+                    tab.appendChild(document.createElement('br'));
                     table = document.createElement("table");
                     tab.appendChild(table);
                     m = getAvgMonsterAtLvl(userInput.playerLvlForSuggestions);
@@ -962,11 +963,43 @@ var redraw, onRedraw = [],
                     
                     plotRes = document.createElement('canvas');
                     tab.appendChild(plotRes);
-                    plotRes.width = '140px';
-                    plotRes.height = '140px;';
+                    plotRes.width = 550;
+                    plotRes.height = 250;
+                    plotRes.style.border = '1px solid #000';
                     (function (ctx, c) {
-                        var padding = 40;
+                        var pxX, pxY, lvl, padding = 50, key, plot = {'fire': '#F00', 'cold': '#00F', 'light': '#FF0', 'chaos': '#0F0'};
+                        
                         drawBg(ctx, c, padding);
+                        
+                        ctx.lineWidth = userInput.lineWidth;
+                        for (key in plot) {      
+                            ctx.beginPath();
+                            for (lvl = 0; lvl < 100; lvl += 1) {
+                                m = getAvgMonsterAtLvl(lvl);
+                                pxY = c.height - (padding + 2 * m[key]);
+                                pxX = padding + lvl * 5;
+                                ctx[0 === lvl ? 'moveTo': 'lineTo'](pxX, pxY);
+                            }
+                            ctx.strokeStyle = plot[key];
+                            ctx.stroke();
+                        }
+                        
+                        ctx.font = "15px Georgia";
+                        ctx.fillStyle = "#000000";
+                        pxY = c.height - padding + 14;
+                        for (lvl = 0; lvl < 100; lvl += 10) {
+                            ctx.fillText(lvl, padding + lvl * 5, pxY);
+                        }
+                        pxX = padding - 18;
+                        for (key = 0; key < 100; key += 10) {
+                            ctx.fillText(key, pxX, c.height - padding - key * 2);
+                        }
+                        ctx.save();
+                        ctx.rotate(90 * Math.PI / 180);
+                        ctx.fillText("Resistances", c.height / 2 - 50, -5);
+                        ctx.restore();
+                        
+                        ctx.fillText("Monster lvl", c.width / 2 - 50, c.height - 15);
                     })(plotRes.getContext('2d'), plotRes);
                 };
             })(difTab));

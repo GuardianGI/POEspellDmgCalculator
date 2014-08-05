@@ -112,6 +112,11 @@ label.support {
 	padding: 2px;
 	border-right: 1px solid #AAA;
 }
+.Overview table, .Overview canvas {
+	position: relative;
+	display: inline-block;
+	margin: 5px;
+}
 
 
 

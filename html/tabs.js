@@ -25,6 +25,7 @@ var tabSet = function (parent, id) {
         header.appendChild(tabTitle);
         
         tabTitle.innerHTML = tabTitleText;
+        tabContent.className = tabTitleText;
         
         tabContent.setInactive = function () {
             tabContent.style.display = 'none';
