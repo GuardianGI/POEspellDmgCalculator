@@ -29,31 +29,36 @@ var getAvgMonster = function (lvl, diff) {
         return lvls;
     }()),
     getAvgMonsterAtLvl = function (lvl) {
-        var i, monster, selectedAvgMonster = {'lvl': 0, 'rare/unique xp': 0}, key, count = 0;
+        var i, monster, selectedAvgMonster = {'lvl': 0, 'rare/unique xp': 0}, key, count = 0, offset = 0, gotData = false;
         
         if ((userInput.selectedAreas || []).length > 0) {
-            userInput.selectedAreas.forEach(function (area) {
-                var m, resWordIndex, addAsKey;
-                for (key in area) {
-                    m = area[key];
-                    if (m.enabled) {
-                        for (key in m) {
-                            resWordIndex = key.indexOf(' res');//to regex: /^(\S+) res$/i
-                            if (resWordIndex > 0) {
-                                addAsKey = key.substring(0, resWordIndex);
-                                if (!selectedAvgMonster.hasOwnProperty(addAsKey)) {
-                                    selectedAvgMonster[addAsKey] = 0;
+            for (offset = 0; !gotData; offset += 1) {
+                userInput.selectedAreas.forEach(function (area) {
+                    var m, resWordIndex, addAsKey;
+                    for (key in area) {
+                        m = area[key];
+                        if (m.enabled) {
+                            if (m.lvl - offset <= lvl && m.lvl + offset >= lvl) {
+                                gotData = true;
+                                for (key in m) {
+                                    resWordIndex = key.indexOf(' res');//to regex: /^(\S+) res$/i
+                                    if (resWordIndex > 0) {
+                                        addAsKey = key.substring(0, resWordIndex);
+                                        if (!selectedAvgMonster.hasOwnProperty(addAsKey)) {
+                                            selectedAvgMonster[addAsKey] = 0;
+                                        }
+                                        selectedAvgMonster[addAsKey] += m[key] | 0;
+                                    } else if ('rare/unique xp' === key) {
+                                        selectedAvgMonster[key] += m[key] | 0;
+                                    }
                                 }
-                                selectedAvgMonster[addAsKey] += m[key] | 0;
-                            } else if ('rare/unique xp' === key) {
-                                selectedAvgMonster[key] += m[key] | 0;
+                                selectedAvgMonster.lvl += m.lvl;
+                                count += 1;
                             }
                         }
-                        selectedAvgMonster.lvl += m.lvl | 0;
-                        count += 1;
                     }
-                }
-            });
+                });
+            }
             for (key in selectedAvgMonster) {
                 selectedAvgMonster[key] /= count;
             }

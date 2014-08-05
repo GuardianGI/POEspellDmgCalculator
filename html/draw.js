@@ -818,7 +818,7 @@ var redraw, onRedraw = [],
             };
         })());
         (function () {
-            var setAreaEnabled = {}, i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['the twilight strand', 'the southern forest', 'the city of sarn'],
+            var difTabParent, actTabParent, setAreaEnabled = {}, i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['the twilight strand', 'the southern forest', 'the city of sarn'],
                 fieldset, cbNew, legend, lblNew, table, difTab, actTab, areaTab, tabsByDificulty, tr, td, th, monsterData = document.getElementById('spellDetails'/*'monsterData'*/),
                 newFieldset = function (title) {
                     fieldset = document.createElement("fieldset");
@@ -842,16 +842,52 @@ var redraw, onRedraw = [],
                 };
                 tabsByDificulty = tabSet(monsterData, 'tabsByDificulty');
             for (difName in monstersByArea) {
-                difTab = tabSet(tabsByDificulty.addTab(difName), difName);
+                difTabParent = tabsByDificulty.addTab(difName);
+                (function () {
+                    cbNew = document.createElement('input');
+                    lblNew = document.createElement('label');
+                    lblNew.appendChild(document.createTextNode('(de)select all in dificulty: '));
+                    lblNew.appendChild(cbNew);
+                    difTabParent.appendChild(lblNew);
+                    cbNew.type = 'checkbox';
+                    cbNew.checked = false;
+                    cbNew.onchange = (function (self, innerDifName) {
+                        return function () {
+                            alert('NOT DONE');
+                        };
+                    })(cbNew, difName);
+                })();
+                difTab = tabSet(difTabParent, difName);
+                    
                 act = 0;
                 for (areaName in monstersByArea[difName]) {
                     if (actFirstArea.indexOf(areaName) >= 0) {
                         act += 1;
-                        actTab = tabSet(difTab.addTab('Act' + act), difName + 'Act' + act);
+                        actTabParent = difTab.addTab('Act' + act);
+                        (function () {
+                            cbNew = document.createElement('input');
+                            lblNew = document.createElement('label');
+                            lblNew.appendChild(document.createTextNode('(de)select all in act: '));
+                            lblNew.appendChild(cbNew);
+                            actTabParent.appendChild(lblNew);
+                            cbNew.type = 'checkbox';
+                            cbNew.checked = false;
+                            cbNew.onchange = (function (self, innerAct) {
+                                return function () {
+                                    alert('NOT DONE');
+                                };
+                            })(cbNew, act);
+                        })();
+                        actTab = tabSet(actTabParent, difName + 'Act' + act);
                     }
                     areaTab = actTab.addTab(areaName);
                     cbNew = document.createElement('input');
-                    areaTab.appendChild(cbNew);
+                    
+                    lblNew = document.createElement('label');
+                    lblNew.appendChild(document.createTextNode('(de)select all in area: '));
+                    lblNew.appendChild(cbNew);
+                    areaTab.appendChild(lblNew);
+                    
                     cbNew.type = 'checkbox';
                     cbNew.checked = false;
                     cbNew.onchange = (function (self, area, innerDifName, innerAreaName) {
@@ -946,6 +982,23 @@ var redraw, onRedraw = [],
                     tab.innerHTML = '';
                     tab.appendChild(document.createTextNode('Note that the life and armour values are estimates I pulled out of my ass...'));
                     tab.appendChild(document.createElement('br'));
+                    
+                    (function () {
+                        cbNew = document.createElement('input');
+                        lblNew = document.createElement('label');
+                        lblNew.appendChild(document.createTextNode('(de)select all monsters in all dificulties: '));
+                        lblNew.appendChild(cbNew);
+                        tab.appendChild(lblNew);
+                        cbNew.type = 'checkbox';
+                        cbNew.checked = false;
+                        cbNew.onchange = (function (self, innerAct) {
+                            return function () {
+                                alert('NOT DONE');
+                            };
+                        })(cbNew, act);
+                    })();
+                    tab.appendChild(document.createElement('br'));
+                    
                     table = document.createElement("table");
                     tab.appendChild(table);
                     m = getAvgMonsterAtLvl(userInput.playerLvlForSuggestions);
