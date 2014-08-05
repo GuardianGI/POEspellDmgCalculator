@@ -739,7 +739,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.applyAPS(lvl);
                 }
                 
-                s.hasDmg = s.totalDmg(40) > 0;//all skills are usable after lvl 31, so at 40 all skills should be able to deal dmg if they deal dmg at all.
+                s.hasDmg = s.totalDmg(40) > 0;//all skills are usable after lvl 31 (I think), so at 40 all skills should be able to deal dmg if they deal dmg at all.
                 s.draw = s.hasDmg;
                 s.ignore = s.totalDmg(userInput.playerLvlForSuggestions) > 0;
                 

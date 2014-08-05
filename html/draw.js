@@ -9,8 +9,27 @@ var redraw, onRedraw = [],
         }
         redraw();
     },
+    drawBg = function (ctx, canvas, padding) {
+        ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
+        ctx.fillRect(padding, 0, canvas.width - padding, canvas.height - padding);
+        for (i = 0; i < canvas.height - padding; i += 20) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.fillRect(padding, i, canvas.width - padding, 10);
+        }
+        
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding, canvas.height - padding);
+        ctx.lineTo(padding, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(padding, canvas.height - padding);
+        ctx.lineTo(canvas.width, canvas.height - padding);
+        ctx.stroke();
+    },
     startDraw = function (c, index, body) {
-        var name, i = 0, checkbox, indexLine, zoomLvl = 1, padding = 50,
+        var name, i = 0, checkbox, indexLine, canvasScale = 1, zoomLvl = 1, padding = 50,
             ctx = c.getContext("2d"),
             getSupportRemovedDiff = function (skill, supportIndex) {
                 var clone = skill.clone('tmpClone');
@@ -37,13 +56,13 @@ var redraw, onRedraw = [],
                 if (userInput.enableLogDmgScale) {
                     dmg = Math.log(1 + dmg) * 100;
                 }
-                return dmg //* zoomLvl;
+                return dmg * zoomLvl;
             },
             dmgToCtx = function (dmg) {
                 return parseInt(c.height - dmgToPx(dmg)) - padding;
             },
             pxToDmg = function (px) {
-                var dmg = px /// zoomLvl;
+                var dmg = px / zoomLvl;
                 if (userInput.enableLogDmgScale) {
                     dmg /= 100;
                     dmg = Math.pow(Math.E, dmg) - 1;
@@ -76,6 +95,20 @@ var redraw, onRedraw = [],
         zoomLvl /= 1.2;
         redraw();
     };
+    
+    document.getElementById("btnResetCanvasSize").onclick = function () {
+        canvasScale = 1;
+        redraw();
+    };
+    document.getElementById("btnIncrCanvasSize").onclick = function () {
+        canvasScale *= 1.2;
+        redraw();
+    };
+    document.getElementById("btnDecrCanvasSize").onclick = function () {
+        canvasScale /= 1.2;
+        redraw();
+    };
+    
     document.getElementById("shuffleColors").onclick = (function () {
         var beginColor = 1;
         return function () {
@@ -438,30 +471,10 @@ var redraw, onRedraw = [],
                 ctx.fillText("Damage", c.height / 2, -5);
                 ctx.restore();
                 
-                for (i = 1; i <= 100 * zoomLvl; i += 2) {//dmg values on axis.
+                for (i = 1; i <= 100 * canvasScale; i += 2) {//dmg values on axis.
                     dmg = ctxPxToDmg(c.height - padding - i * 10);
                     ctx.fillText(dmg, padding - 5 - 8 * intLen(dmg), c.height - padding - i * 10);
                 }
-            },
-            drawBg = function () {
-                ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
-                ctx.fillRect(padding, 0, c.width - padding, c.height - padding);
-                for (i = 0; i < c.height - padding; i += 20) {
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-                    ctx.fillRect(padding, i, c.width - padding, 10);
-                }
-                
-                
-                ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(padding, c.height - padding);
-                ctx.lineTo(padding, 0);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(padding, c.height - padding);
-                ctx.lineTo(c.width, c.height - padding);
-                ctx.stroke();
             },
             drawSkills = (function() {
                 var res = [], name;
@@ -475,9 +488,9 @@ var redraw, onRedraw = [],
             plot = function () {
                 var name, lvl, dmg, first, i, s;
                 c.width = 1000;
-                c.height = 900 * zoomLvl;
+                c.height = 900 * canvasScale;
                 
-                drawBg();
+                drawBg(ctx, c, padding);
                 drawDmgScale();
                 
                 for (name in drawSkills) {
@@ -546,7 +559,7 @@ var redraw, onRedraw = [],
                     padding + (barWidth + 1) * 90 * drawSkills.length + (90) * 10;
                 c.height = 900;
                 
-                drawBg();
+                drawBg(ctx, c, padding);
                 drawDmgScale();
                 
                 //draw bar graph
@@ -590,13 +603,13 @@ var redraw, onRedraw = [],
                 var scale = 50,
                     secToPx = function (sec) {
                     sec = drawnSeconds - sec;
-                    return c.height - padding - sec * scale * zoomLvl;
+                    return c.height - padding - sec * scale * canvasScale;
                 }, combatDuration, drawnSeconds;
                 c.width = 1000;
-                c.height = 900 * zoomLvl;
-                drawnSeconds = Math.floor((c.height - padding) / (scale * zoomLvl));
+                c.height = 900 * canvasScale;
+                drawnSeconds = Math.floor((c.height - padding) / (scale * canvasScale));
                 
-                drawBg();
+                drawBg(ctx, c, padding);
                 
                 ctx.font = "15px Georgia";
                 ctx.fillStyle = "#000000";
@@ -615,7 +628,6 @@ var redraw, onRedraw = [],
                     s.calcDmg();//recalc dmg.
                     ctx.beginPath();
                     for (lvl in s.dmg) {
-                        //if (s.dmg[lvl].phys > 0) alert(name);
                         time = s.getCombatTime(lvl);
                         if (time > 0 && time <= drawnSeconds) {
                             //start drawing:
@@ -930,7 +942,7 @@ var redraw, onRedraw = [],
             difTab = tabsByDificulty.addTab('Overview');
             onRedraw.push((function (tab) {
                 return function () {
-                    var key, m;
+                    var key, m, plotRes;
                     tab.innerHTML = '';
                     tab.appendChild(document.createTextNode('Note that the life and armour values are estimates I pulled out of my ass...'));
                     table = document.createElement("table");
@@ -947,6 +959,15 @@ var redraw, onRedraw = [],
                         tr.appendChild(td);
                         td.innerHTML = roundForDisplay(m[key]);
                     }
+                    
+                    plotRes = document.createElement('canvas');
+                    tab.appendChild(plotRes);
+                    plotRes.width = '140px';
+                    plotRes.height = '140px;';
+                    (function (ctx, c) {
+                        var padding = 40;
+                        drawBg(ctx, c, padding);
+                    })(plotRes.getContext('2d'), plotRes);
                 };
             })(difTab));
         })();
