@@ -804,8 +804,8 @@ var redraw,
             };
         })());
         (function () {
-            var i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['The Twilight Strand', 'The Southern Forest', 'The City of Sarn'],
-                fieldset, cbNew, legend, lblNew, table, tr, td, th, header, monsterData = document.getElementById('spellDetails'/*'monsterData'*/),
+            var i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['the twilight strand', 'the southern forest', 'the city of sarn'],
+                fieldset, cbNew, legend, lblNew, table, difTab, actTab, areaTab, tabsByDificulty, tr, td, th, monsterData = document.getElementById('spellDetails'/*'monsterData'*/),
                 newFieldset = function (title) {
                     fieldset = document.createElement("fieldset");
                     monsterData.appendChild(fieldset);
@@ -817,7 +817,7 @@ var redraw,
                 printTableHeader = function () {
                     var i;
                     table = document.createElement("table");
-                    fieldset.appendChild(table);
+                    areaTab.appendChild(table);
                     tr = document.createElement("tr");
                     table.appendChild(tr);
                     for (i = 0; i < cols.length; i += 1) {
@@ -826,18 +826,18 @@ var redraw,
                         th.innerHTML = cols[i];
                     }
                 };
+                tabsByDificulty = tabSet(monsterData, 'tabsByDificulty');
             for (difName in monstersByArea) {
-                header = document.createElement("h3");
-                monsterData.appendChild(header);
-                header.innerHTML = difName;
+                difTab = tabSet(tabsByDificulty.addTab(difName), difName);
                 act = 0;
                 for (areaName in monstersByArea[difName]) {
                     if (actFirstArea.indexOf(areaName) >= 0) {
                         act += 1;
+                        actTab = tabSet(difTab.addTab('Act' + act), difName + 'Act' + act);
                     }
-                    newFieldset(difName + ' ' + areaName);
+                    areaTab = actTab.addTab(areaName);
                     cbNew = document.createElement('input');
-                    legend.appendChild(cbNew);
+                    areaTab.appendChild(cbNew);
                     cbNew.type = 'checkbox';
                     cbNew.checked = false;
                     cbNew.onchange = (function (self, area) {
@@ -873,7 +873,7 @@ var redraw,
                                         count += 1;
                                     }
                                 }
-                                td.innerHTML = sum / count;
+                                td.innerHTML = roundForDisplay(sum / count);
                             }
                         }
                     }
