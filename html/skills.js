@@ -200,17 +200,19 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     var m, resWordIndex, addAsKey;
                     for (key in area) {
                         m = area[key];
-                        for (key in m) {
-                            resWordIndex = key.indexOf(' res');//to regex: /^(\S+) res$/i
-                            if (resWordIndex > 0) {
-                                addAsKey = key.substring(0, resWordIndex);
-                                if (!selectedAvgMonster.hasOwnProperty(addAsKey)) {
-                                    selectedAvgMonster[addAsKey] = 0;
+                        if (m.enabled) {
+                            for (key in m) {
+                                resWordIndex = key.indexOf(' res');//to regex: /^(\S+) res$/i
+                                if (resWordIndex > 0) {
+                                    addAsKey = key.substring(0, resWordIndex);
+                                    if (!selectedAvgMonster.hasOwnProperty(addAsKey)) {
+                                        selectedAvgMonster[addAsKey] = 0;
+                                    }
+                                    selectedAvgMonster[addAsKey] += m[key];
                                 }
-                                selectedAvgMonster[addAsKey] += m[key];
                             }
+                            count += 1;
                         }
-                        count += 1;
                     }
                 });
                 for (key in selectedAvgMonster) {

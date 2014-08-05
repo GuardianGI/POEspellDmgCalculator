@@ -76,10 +76,12 @@ label.support {
 /*tab.js style:*/
 #tabsByDificulty {
 	width: 1024px;
+	position: relative;
+	display: block;
+	float: left;
 }
-/*.tabSet {
-	
-}*/
+.tabSet {
+}
 .tabHeader {
 	margin-top: 5px;
 }
@@ -103,7 +105,7 @@ label.support {
 }
 .tabContent td {
 	border-right: 1px solid #AAA;
-	border-bottom: 1px solid #333;
+	border-top: 1px solid #333;
 	text-align: right;
 }
 .tabContent th {

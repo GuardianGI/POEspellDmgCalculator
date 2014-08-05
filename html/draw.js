@@ -804,7 +804,7 @@ var redraw,
             };
         })());
         (function () {
-            var i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['the twilight strand', 'the southern forest', 'the city of sarn'],
+            var setAreaEnabled = {}, i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['the twilight strand', 'the southern forest', 'the city of sarn'],
                 fieldset, cbNew, legend, lblNew, table, difTab, actTab, areaTab, tabsByDificulty, tr, td, th, monsterData = document.getElementById('spellDetails'/*'monsterData'*/),
                 newFieldset = function (title) {
                     fieldset = document.createElement("fieldset");
@@ -813,7 +813,7 @@ var redraw,
                     legend.appendChild(document.createTextNode(title));
                     fieldset.appendChild(legend);
                 },
-                cols = ['name', 'lvl', 'xp', 'fire res', 'cold res', 'light res', 'chaos res'],
+                cols = ['name', 'lvl', 'xp', 'fire res', 'cold res', 'light res', 'chaos res', 'is used'],
                 printTableHeader = function () {
                     var i;
                     table = document.createElement("table");
@@ -840,20 +840,36 @@ var redraw,
                     areaTab.appendChild(cbNew);
                     cbNew.type = 'checkbox';
                     cbNew.checked = false;
-                    cbNew.onchange = (function (self, area) {
+                    cbNew.onchange = (function (self, area, innerDifName, innerAreaName) {
+                        var setArea, directCall = false;
                         if (!userInput.hasOwnProperty('selectedAreas')) {
                             userInput.selectedAreas = [];
                         }
-                        return function () {
-                            var index = -1;
-                            if (self.checked) {
+                        setArea = function (val) {
+                            var index = userInput.selectedAreas.indexOf(area), key;
+                            if (val && index < 0) {
                                 userInput.selectedAreas.push(area);
-                            } else {
-                                index = userInput.selectedAreas.indexOf(area)
+                            } else if (!val && index >= 0) {
                                 userInput.selectedAreas.splice(index, 1);
                             }
+                            if (directCall) {//set all monsters to same as checkbox if the checkbox itself was clicked.
+                                for (key in area) {
+                                    area[key].setEnabledIgnoreArea(val);
+                                }
+                            }
+                            for (key in skills) {
+                                skills[key].setNeedsRecalc();
+                            }
+                            self.checked = val;
                         };
-                    })(cbNew, monstersByArea[difName][areaName]);
+                        setAreaEnabled[innerDifName + innerAreaName] = setArea;
+                        return function () {
+                            directCall = true;
+                            setArea(self.checked);
+                            directCall = false;
+                            redraw();
+                        }
+                    })(cbNew, monstersByArea[difName][areaName], difName, areaName);
                     printTableHeader();
                     for (monsterName in monstersByArea[difName][areaName]) {
                         m = monstersByArea[difName][areaName][monsterName];
@@ -862,9 +878,9 @@ var redraw,
                         for (i = 0; i < cols.length; i += 1) {
                             td = document.createElement("td");
                             tr.appendChild(td);
-                            if ('xp' !== cols[i]) {
+                            if ('xp' !== cols[i] && 'is used' !== cols[i]) {
                                 td.innerHTML = m[cols[i]];
-                            } else {
+                            } else if ('xp' === cols[i] ) {
                                 sum = 0;
                                 count = 0;
                                 for (key in m) {
@@ -874,6 +890,36 @@ var redraw,
                                     }
                                 }
                                 td.innerHTML = roundForDisplay(sum / count);
+                            } else {
+                                cbNew = document.createElement('input');
+                                td.appendChild(cbNew);
+                                cbNew.type = 'checkbox';
+                                cbNew.checked = false;
+                                cbNew.onchange = (function (monster, self, innerDifName, innerAreaName) {
+                                    monster.enabled = self.checked;
+                                    
+                                    monster.setEnabledIgnoreArea = function (val) {
+                                        monster.enabled = val;
+                                        self.checked = val;
+                                    };
+                                    monster.setEnabled = function (val) {
+                                        var key;
+                                        
+                                        monster.setEnabledIgnoreArea(val);
+                                        
+                                        if (val) {
+                                            setAreaEnabled[innerDifName + innerAreaName](val);
+                                        }
+                                        for (key in skills) {
+                                            skills[key].setNeedsRecalc();
+                                        }
+                                    };
+                                    
+                                    return function () {
+                                        monster.setEnabled(self.checked);
+                                        redraw();
+                                    };
+                                })(m, cbNew, difName, areaName);
                             }
                         }
                     }
