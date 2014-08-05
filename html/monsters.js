@@ -27,4 +27,52 @@ var getAvgMonster = function (lvl, diff) {
             lvls[i] = monster;
         }
         return lvls;
-    }());
+    }()),
+    getAvgMonsterAtLvl = function (lvl) {
+        var i, monster, selectedAvgMonster = {'lvl': 0, 'rare/unique xp': 0}, key, count = 0;
+        
+        if ((userInput.selectedAreas || []).length > 0) {
+            userInput.selectedAreas.forEach(function (area) {
+                var m, resWordIndex, addAsKey;
+                for (key in area) {
+                    m = area[key];
+                    if (m.enabled) {
+                        for (key in m) {
+                            resWordIndex = key.indexOf(' res');//to regex: /^(\S+) res$/i
+                            if (resWordIndex > 0) {
+                                addAsKey = key.substring(0, resWordIndex);
+                                if (!selectedAvgMonster.hasOwnProperty(addAsKey)) {
+                                    selectedAvgMonster[addAsKey] = 0;
+                                }
+                                selectedAvgMonster[addAsKey] += m[key] | 0;
+                            } else if ('rare/unique xp' === key) {
+                                selectedAvgMonster[key] += m[key] | 0;
+                            }
+                        }
+                        selectedAvgMonster.lvl += m.lvl | 0;
+                        count += 1;
+                    }
+                }
+            });
+            for (key in selectedAvgMonster) {
+                selectedAvgMonster[key] /= count;
+            }
+            selectedAvgMonster.lvl = selectedAvgMonster.lvl | 0;
+            if (monsters.length > selectedAvgMonster.lvl) {
+                monster = monsters[selectedAvgMonster.lvl];
+            } else {
+                monster = monsters[monsters.length - 1];
+            }
+            selectedAvgMonster.armour = monster.armour;
+            selectedAvgMonster.life = 2 * selectedAvgMonster['rare/unique xp'] / selectedAvgMonster.lvl;
+            monster = selectedAvgMonster;
+        } else {
+            if (monsters.length > lvl) {
+                monster = monsters[lvl];
+            } else {
+                monster = monsters[monsters.length - 1];
+            }
+        }
+        
+        return monster;
+    };

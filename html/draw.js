@@ -1,4 +1,4 @@
-var redraw,
+var redraw, onRedraw = [],
     toggleCheckAll = function (cb) {
         var i, allCb = document.getElementsByClassName('drawSkill');
         for (i in allCb) {
@@ -484,7 +484,9 @@ var redraw,
                     s = drawSkills[name];
                     first = true;
                     s.calcDmg();//recalc dmg.
-                    
+                    if (!s.ignore) {
+                        continue;//something has changed and the skill no longer deals dmg at userInput.playerLvlForSuggestions
+                    }
                     ctx.beginPath();
                     for (lvl in s.dmg) {
                         //if (s.dmg[lvl].phys > 0) alert(name);
@@ -645,8 +647,8 @@ var redraw,
         })();
         
         //drawSkillIndex();
+        onRedraw.forEach(function (fn) { fn(); });
     };
-    redraw();
     
     
     (function () {
@@ -925,7 +927,30 @@ var redraw,
                     }
                 }
             }
+            difTab = tabsByDificulty.addTab('Overview');
+            onRedraw.push((function (tab) {
+                return function () {
+                    var key, m;
+                    tab.innerHTML = '';
+                    tab.appendChild(document.createTextNode('Note that the life and armour values are estimates I pulled out of my ass...'));
+                    table = document.createElement("table");
+                    tab.appendChild(table);
+                    m = getAvgMonsterAtLvl(userInput.playerLvlForSuggestions);
+                    for (key in m) {
+                        tr = document.createElement("tr");
+                        table.appendChild(tr);
+                        th = document.createElement("th");
+                        tr.appendChild(th);
+                        th.innerHTML = key;
+                        
+                        td = document.createElement("td");
+                        tr.appendChild(td);
+                        td.innerHTML = roundForDisplay(m[key]);
+                    }
+                };
+            })(difTab));
         })();
     })();
     
+    redraw();
     };

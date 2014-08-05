@@ -194,38 +194,11 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
 
         s.applyDefense = function (lvl) {
-            var pen, key, monster, selectedAvgMonster = {}, count = 0, morePhysDmg = 1 + userInput.morePhysDmg / 100;
-            if ((userInput.selectedAreas || []).length > 0) {
-                userInput.selectedAreas.forEach(function (area) {
-                    var m, resWordIndex, addAsKey;
-                    for (key in area) {
-                        m = area[key];
-                        if (m.enabled) {
-                            for (key in m) {
-                                resWordIndex = key.indexOf(' res');//to regex: /^(\S+) res$/i
-                                if (resWordIndex > 0) {
-                                    addAsKey = key.substring(0, resWordIndex);
-                                    if (!selectedAvgMonster.hasOwnProperty(addAsKey)) {
-                                        selectedAvgMonster[addAsKey] = 0;
-                                    }
-                                    selectedAvgMonster[addAsKey] += m[key];
-                                }
-                            }
-                            count += 1;
-                        }
-                    }
-                });
-                for (key in selectedAvgMonster) {
-                    selectedAvgMonster[key] /= count;
-                }
-            }
+            var pen, monster, morePhysDmg = 1 + userInput.morePhysDmg / 100;
+            
             s.applyForLvls(function (i) {
                 var j;
-                monster = monsters[i] || monster;
-                selectedAvgMonster.armour = monster.armour;
-                if ((userInput.selectedAreas || []).length > 0) {
-                    monster = selectedAvgMonster;
-                }
+                monster = getAvgMonsterAtLvl(i);
                 for (j = 0; j < dmgTypes.length; j += 1) {
                     type = dmgTypes[j];
                     if (s.dmg[i].hasOwnProperty(type)) {
@@ -766,8 +739,9 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.applyAPS(lvl);
                 }
                 
-                s.hasDmg = s.totalDmg(undefined === lvl ? 40 : lvl) > 0;
+                s.hasDmg = s.totalDmg(40) > 0;//all skills are usable after lvl 31, so at 40 all skills should be able to deal dmg if they deal dmg at all.
                 s.draw = s.hasDmg;
+                s.ignore = s.totalDmg(userInput.playerLvlForSuggestions) > 0;
                 
                 needsRecalc = false;
                 if (undefined !== lvl) {
