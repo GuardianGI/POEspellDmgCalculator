@@ -784,6 +784,7 @@ var redraw,
                 difficulty[dif] = {};
             });
             getAreas = function () { return difficulty; };
+            
             return function (monster) {
                 if (!difficulty[curDif].hasOwnProperty(monster.area)) {
                     difficulty[curDif][monster.area] = {};
@@ -803,7 +804,7 @@ var redraw,
             };
         })());
         (function () {
-            var i, sum, count, key, difName, areaName, monsterName, monsterStats = getAreas(), m,
+            var i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['The Twilight Strand', 'The Southern Forest', 'The City of Sarn'],
                 fieldset, cbNew, legend, lblNew, table, tr, td, th, header, monsterData = document.getElementById('spellDetails'/*'monsterData'*/),
                 newFieldset = function (title) {
                     fieldset = document.createElement("fieldset");
@@ -825,11 +826,15 @@ var redraw,
                         th.innerHTML = cols[i];
                     }
                 };
-            for (difName in monsterStats) {
+            for (difName in monstersByArea) {
                 header = document.createElement("h3");
                 monsterData.appendChild(header);
                 header.innerHTML = difName;
-                for (areaName in monsterStats[difName]) {
+                act = 0;
+                for (areaName in monstersByArea[difName]) {
+                    if (actFirstArea.indexOf(areaName) >= 0) {
+                        act += 1;
+                    }
                     newFieldset(difName + ' ' + areaName);
                     cbNew = document.createElement('input');
                     legend.appendChild(cbNew);
@@ -848,10 +853,10 @@ var redraw,
                                 userInput.selectedAreas.splice(index, 1);
                             }
                         };
-                    })(cbNew, monsterStats[difName][areaName]);
+                    })(cbNew, monstersByArea[difName][areaName]);
                     printTableHeader();
-                    for (monsterName in monsterStats[difName][areaName]) {
-                        m = monsterStats[difName][areaName][monsterName];
+                    for (monsterName in monstersByArea[difName][areaName]) {
+                        m = monstersByArea[difName][areaName][monsterName];
                         tr = document.createElement("tr");
                         table.appendChild(tr);
                         for (i = 0; i < cols.length; i += 1) {

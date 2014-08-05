@@ -72,3 +72,30 @@ label.support {
 	position: absolute;
 	padding: 3px;
 }
+
+/*tab.js style:*/
+/*.tabSet {
+	
+}
+.tabHeader {
+	
+}*/
+.tabHeader label {
+	margin-right: 5px;
+	border: 1px solid #000;
+	border-bottom: none;
+	padding: 5px;
+	padding-bottom: 2px;
+}
+.tabHeader label.active {
+	background-color: #FFF;
+}
+.tabContent {
+	border: 1px solid #000;
+	padding: 5px;
+	background-color: #FFF;
+}
+
+
+
+

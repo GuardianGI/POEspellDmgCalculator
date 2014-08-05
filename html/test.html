@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>POE skill/spell dmg plot/calc</title>
+	
+		<script type="text/javascript" src="tabs.js"></script>
+		<script type="text/javascript">
+			var load = function (body) {
+				var tabs = tabSet(body, 'a'),
+					tabsB,
+					tabA = tabs.addTab('A'),
+					tabB = tabs.addTab('B'),
+					tabC = tabs.addTab('C');
+				tabA.appendChild(document.createTextNode('foo'));
+				tabB.appendChild(document.createTextNode('bar'));
+				tabsB = tabSet(tabC, 'b')
+				tabsB.addTab('baz').appendChild(document.createTextNode('mooo'));
+			}
+		</script>
+		
+		<link rel="stylesheet" type="text/css" href="style.css" />
+	</head>
+	<body onload="load( document.getElementsByTagName('body')[0]);">
+	</body>
+</html>
