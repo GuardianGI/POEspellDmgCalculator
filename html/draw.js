@@ -660,7 +660,6 @@ var redraw, onRedraw = [],
         
         //drawSkillIndex();
         onRedraw.forEach(function (fn) { fn(); });
-        alert('redraw!');
     };
     
     
@@ -819,7 +818,7 @@ var redraw, onRedraw = [],
             };
         })());
         (function () {
-            var difTabParent, actTabParent, setAreaEnabled = {}, i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['the twilight strand', 'the southern forest', 'the city of sarn'],
+            var difTabParent, actTabParent, i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['the twilight strand', 'the southern forest', 'the city of sarn'],
                 fieldset, cbNew, legend, lblNew, table, difTab, actTab, areaTab, tabsByDificulty, tr, td, th, monsterData = document.getElementById('spellDetails'/*'monsterData'*/),
                 newFieldset = function (title) {
                     fieldset = document.createElement("fieldset");
@@ -827,6 +826,25 @@ var redraw, onRedraw = [],
                     legend = document.createElement("legend");
                     legend.appendChild(document.createTextNode(title));
                     fieldset.appendChild(legend);
+                },
+                updatedSelectedArea = function () {
+                    var key;
+                    userInput.selectedAreas = [];
+                    for (difName in monstersByArea) {
+                        for (areaName in monstersByArea[difName]) {
+                            for (monsterName in monstersByArea[difName][areaName]) {
+                                if (monstersByArea[difName][areaName][monsterName].enabled) {
+                                    userInput.selectedAreas.push(monstersByArea[difName][areaName]);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    for (key in skills) {
+                        skills[key].setNeedsRecalc();
+                    }
+                    setMonstersNeedRecalc();
+                    redraw();
                 },
                 cols = ['name', 'lvl', 'xp', 'fire res', 'cold res', 'light res', 'chaos res', 'is used'],
                 printTableHeader = function () {
@@ -861,7 +879,7 @@ var redraw, onRedraw = [],
                                     innerM.setEnabled(self.checked);
                                 }
                             }
-                            redraw();
+                            updatedSelectedArea();
                         };
                     })(cbNew, difName);
                 })();
@@ -882,7 +900,7 @@ var redraw, onRedraw = [],
                             cbNew.checked = false;
                             cbNew.onchange = (function (self, innerAct, innerDif) {
                                 return function () {
-                                    var innerAreaName, innerMonsterName, innerM;
+                                    var innerAreaName, innerMonsterName, innerM, key;
                                     for (innerAreaName in monstersByArea[innerDif]) {
                                         for (innerMonsterName in monstersByArea[innerDif][innerAreaName]) {
                                             innerM = monstersByArea[innerDif][innerAreaName][innerMonsterName];
@@ -893,7 +911,7 @@ var redraw, onRedraw = [],
                                             }
                                         }
                                     }
-                                    redraw();
+                                    updatedSelectedArea();
                                 };
                             })(cbNew, act, difName);
                         })();
@@ -910,33 +928,13 @@ var redraw, onRedraw = [],
                     cbNew.type = 'checkbox';
                     cbNew.checked = false;
                     cbNew.onchange = (function (self, area, innerDifName, innerAreaName) {
-                        var setArea, directCall = false;
-                        if (!userInput.hasOwnProperty('selectedAreas')) {
-                            userInput.selectedAreas = [];
-                        }
-                        setArea = function (val) {
-                            var index = userInput.selectedAreas.indexOf(area), key;
-                            if (val && index < 0) {
-                                userInput.selectedAreas.push(area);
-                            } else if (!val && index >= 0) {
-                                userInput.selectedAreas.splice(index, 1);
-                            }
-                            if (directCall) {//set all monsters to same as checkbox if the checkbox itself was clicked.
-                                for (key in area) {
-                                    area[key].setEnabledIgnoreArea(val);
-                                }
-                            }
-                            for (key in skills) {
-                                skills[key].setNeedsRecalc();
-                            }
-                            self.checked = val;
-                        };
-                        setAreaEnabled[innerDifName + innerAreaName] = setArea;
                         return function () {
-                            directCall = true;
+                            var key;
                             setArea(self.checked);
-                            directCall = false;
-                            redraw();
+                            for (key in area) {
+                                area[key].setEnabled(self.checked);
+                            }
+                            updatedSelectedArea();
                         }
                     })(cbNew, monstersByArea[difName][areaName], difName, areaName);
                     printTableHeader();
@@ -967,26 +965,21 @@ var redraw, onRedraw = [],
                                 cbNew.onchange = (function (monster, self, innerDifName, innerAreaName) {
                                     monster.enabled = self.checked;
                                     monster.act = act;
-                                    monster.setEnabledIgnoreArea = function (val) {
-                                        monster.enabled = val;
+                                    
+                                    monster.setEnabled = function (val) {
+                                        monster.enabled = val || false;
                                         self.checked = val;
                                     };
-                                    monster.setEnabled = function (val) {
-                                        var key;
-                                        
-                                        monster.setEnabledIgnoreArea(val);
-                                        
-                                        if (val) {
-                                            setAreaEnabled[innerDifName + innerAreaName](val);
-                                        }
-                                        for (key in skills) {
-                                            skills[key].setNeedsRecalc();
-                                        }
+                                    
+                                    self.oncontextmenu = function () {
+                                        alert(self.checked + ' ' + monster.enabled);
+                                        return false;
                                     };
                                     
                                     return function () {
+                                        var key;
                                         monster.setEnabled(self.checked);
-                                        redraw();
+                                        updatedSelectedArea();
                                     };
                                 })(m, cbNew, difName, areaName);
                             }
@@ -996,6 +989,7 @@ var redraw, onRedraw = [],
             }
             difTab = tabsByDificulty.addTab('Overview');
             onRedraw.push((function (tab) {
+                var globallyEnabled = false;
                 return function () {
                     var key, m, plotRes;
                     tab.innerHTML = '';
@@ -1009,10 +1003,11 @@ var redraw, onRedraw = [],
                         lblNew.appendChild(cbNew);
                         tab.appendChild(lblNew);
                         cbNew.type = 'checkbox';
-                        cbNew.checked = false;
+                        cbNew.checked = globallyEnabled;
                         cbNew.onchange = (function (self) {
                             return function () {
-                                var innerAreaName, innerMonsterName, innerDif, innerM;
+                                var innerAreaName, innerMonsterName, innerDif, innerM, key;
+                                globallyEnabled = self.checked;
                                 for (innerDif in monstersByArea) {
                                     for (innerAreaName in monstersByArea[innerDif]) {
                                         for (innerMonsterName in monstersByArea[innerDif][innerAreaName]) {
@@ -1021,10 +1016,34 @@ var redraw, onRedraw = [],
                                         }
                                     }
                                 }
-                                redraw();
+                                updatedSelectedArea();
                             };
-                        })(cbNew, act);
+                        })(cbNew);
                     })();
+                    tab.appendChild(document.createElement('br'));
+                    
+                    lblNew = document.createElement('label');
+                    cbNew = document.createElement('input');
+                    lblNew.appendChild(document.createTextNode('Min level offset: '));
+                    lblNew.appendChild(cbNew);
+                    tab.appendChild(lblNew);
+                    cbNew.type = 'input';
+                    if (!userInput.hasOwnProperty('minMonsterLvlOffset')) {
+                        userInput.minMonsterLvlOffset = 5;
+                    }
+                    cbNew.value = userInput.minMonsterLvlOffset;
+                    cbNew.id = 'minMonsterLvlOffset';
+                    cbNew.onchange = (function (self) {
+                        return function () {
+                            var key;
+                            userInput[self.id] = self.value | 0;
+                            setMonstersNeedRecalc();
+                            for (key in skills) {
+                                skills[key].setNeedsRecalc();
+                            }
+                            redraw();
+                        };
+                    })(cbNew);
                     tab.appendChild(document.createElement('br'));
                     
                     table = document.createElement("table");

@@ -1,4 +1,5 @@
-var executeOnLoad = [],
+var userInput = {},
+    executeOnLoad = [],
     dmgTypes = ['fire', 'cold', 'light', 'chaos', 'phys'],
     eleDmgTypes = ['fire', 'cold', 'light'],
     translateMatch = function (str) {
@@ -81,7 +82,6 @@ var executeOnLoad = [],
     };
 executeOnLoad.push(function () {
     var key, inputs, input;
-    userInput = {};
     inputs = document.getElementsByClassName("userInput");
     for (key in inputs) {
         input = inputs[key];
