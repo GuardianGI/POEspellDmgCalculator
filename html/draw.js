@@ -660,6 +660,7 @@ var redraw, onRedraw = [],
         
         //drawSkillIndex();
         onRedraw.forEach(function (fn) { fn(); });
+        alert('redraw!');
     };
     
     
@@ -851,9 +852,16 @@ var redraw, onRedraw = [],
                     difTabParent.appendChild(lblNew);
                     cbNew.type = 'checkbox';
                     cbNew.checked = false;
-                    cbNew.onchange = (function (self, innerDifName) {
+                    cbNew.onchange = (function (self, innerDif) {
                         return function () {
-                            alert('NOT DONE');
+                            var innerAreaName, innerMonsterName, innerM;
+                            for (innerAreaName in monstersByArea[innerDif]) {
+                                for (innerMonsterName in monstersByArea[innerDif][innerAreaName]) {
+                                    innerM = monstersByArea[innerDif][innerAreaName][innerMonsterName];
+                                    innerM.setEnabled(self.checked);
+                                }
+                            }
+                            redraw();
                         };
                     })(cbNew, difName);
                 })();
@@ -872,11 +880,22 @@ var redraw, onRedraw = [],
                             actTabParent.appendChild(lblNew);
                             cbNew.type = 'checkbox';
                             cbNew.checked = false;
-                            cbNew.onchange = (function (self, innerAct) {
+                            cbNew.onchange = (function (self, innerAct, innerDif) {
                                 return function () {
-                                    alert('NOT DONE');
+                                    var innerAreaName, innerMonsterName, innerM;
+                                    for (innerAreaName in monstersByArea[innerDif]) {
+                                        for (innerMonsterName in monstersByArea[innerDif][innerAreaName]) {
+                                            innerM = monstersByArea[innerDif][innerAreaName][innerMonsterName];
+                                            if (innerM.act === innerAct) {
+                                                innerM.setEnabled(self.checked);
+                                            } else {
+                                                break;//if any monster in the are isn't in the right act, none are...
+                                            }
+                                        }
+                                    }
+                                    redraw();
                                 };
-                            })(cbNew, act);
+                            })(cbNew, act, difName);
                         })();
                         actTab = tabSet(actTabParent, difName + 'Act' + act);
                     }
@@ -947,7 +966,7 @@ var redraw, onRedraw = [],
                                 cbNew.checked = false;
                                 cbNew.onchange = (function (monster, self, innerDifName, innerAreaName) {
                                     monster.enabled = self.checked;
-                                    
+                                    monster.act = act;
                                     monster.setEnabledIgnoreArea = function (val) {
                                         monster.enabled = val;
                                         self.checked = val;
@@ -991,9 +1010,18 @@ var redraw, onRedraw = [],
                         tab.appendChild(lblNew);
                         cbNew.type = 'checkbox';
                         cbNew.checked = false;
-                        cbNew.onchange = (function (self, innerAct) {
+                        cbNew.onchange = (function (self) {
                             return function () {
-                                alert('NOT DONE');
+                                var innerAreaName, innerMonsterName, innerDif, innerM;
+                                for (innerDif in monstersByArea) {
+                                    for (innerAreaName in monstersByArea[innerDif]) {
+                                        for (innerMonsterName in monstersByArea[innerDif][innerAreaName]) {
+                                            innerM = monstersByArea[innerDif][innerAreaName][innerMonsterName];
+                                            innerM.setEnabled(self.checked);
+                                        }
+                                    }
+                                }
+                                redraw();
                             };
                         })(cbNew, act);
                     })();
