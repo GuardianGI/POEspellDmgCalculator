@@ -353,6 +353,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.isBallLightning = s.name.indexOf("Ball Lightning") > -1;
         s.isGlacialCascade = s.name.indexOf("Glacial Cascade") > -1;
         s.isArc = s.name.indexOf("Arc") > -1;
+        s.isSrs = s.name.indexOf("Summon Raging Spirit") > -1;
         
         s.getSupportStage = function (support, lvl) {
             var stage;
@@ -630,7 +631,16 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 }
                 
                 s.parseModifiers();
-                
+                if (s.isSrs) {//luckily no additional phys dmg bufs exist for now...
+                    s.dmg.multiply({'mult': 0.5, 'type': 'phys'});
+                    s.applyForLvls(function (i) {
+                        var minMaxAvg;
+                        s.dmg[i]['fire from phys'] = {};
+                        for (minMaxAvg in s.dmg[i].phys) {
+                            s.dmg[i]['fire from phys'][minMaxAvg] = s.dmg[i].phys[minMaxAvg];
+                        }
+                    });
+                }
                 //begin applying supports.
                 for (key in s.supports) {
                     support = s.supports[key];

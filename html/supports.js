@@ -256,29 +256,38 @@ var supports = (function () {
                             }
                         
                             return function (supportStage, skillLvl, skill) {
-                                if (supportStage >= 0) {
-                                    dmgLvls.forEach(function (dmgLvl) {
-                                        var fromType, addedAs;
-                                        for (fromType in skill.dmg[skillLvl]) {
-                                            if (0 === fromType.indexOf(from) && 0 > fromType.indexOf(to)) {
-                                                addedAs = to + ' from ' + fromType;
-                                                if (!skill.dmg[skillLvl].hasOwnProperty(addedAs)) {
-                                                    skill.dmg[skillLvl][addedAs] = {}
-                                                }
-                                                if (!skill.dmg[skillLvl][addedAs].hasOwnProperty(dmgLvl)) {
-                                                    skill.dmg[skillLvl][addedAs][dmgLvl] = 0;
-                                                }
-                                                
-                                                skill.dmg[skillLvl][addedAs][dmgLvl] +=
-                                                    skill.dmg[skillLvl][fromType][dmgLvl] *
-                                                    pctConverted[supportStage];
-                                                    
-                                                if (!isAdditional) {//dmg is converted not just added.
-                                                    skill.dmg[skillLvl][fromType][dmgLvl] *= 1 - pctConverted[supportStage];
-                                                }
+                                var i, keys = [], dmgLvl, increases = {'min': {}, 'max': {}, 'avg': {}};
+                                for (i in skill.dmg[skillLvl]) {
+                                    keys.push(i);
+                                }
+                                dmgLvls.forEach(function (dmgLvl) {
+                                    var fromType, addedAs;
+                                    for (i = 0; i < keys.length; i += 1) {
+                                        fromType = keys[i];
+                                        if (0 <= fromType.indexOf(from)/* && 0 > fromType.indexOf(to)*/) {
+                                            addedAs = to + ' from ' + fromType;
+                                            if (!skill.dmg[skillLvl].hasOwnProperty(addedAs)) {
+                                                skill.dmg[skillLvl][addedAs] = {}
+                                            }
+                                            if (!skill.dmg[skillLvl][addedAs].hasOwnProperty(dmgLvl)) {
+                                                skill.dmg[skillLvl][addedAs][dmgLvl] = 0;
+                                            }
+                                            increases[dmgLvl][addedAs] = skill.dmg[skillLvl][fromType][dmgLvl] *
+                                                pctConverted[supportStage];
+                                            /*skill.dmg[skillLvl][addedAs][dmgLvl] +=
+                                                skill.dmg[skillLvl][fromType][dmgLvl] *
+                                                pctConverted[supportStage];*/
+                                            if (!isAdditional) {//dmg is converted not just added.
+                                                //TODO: move to an apply before/after (interferes with converted dmg that is alter used for added)
+                                                skill.dmg[skillLvl][fromType][dmgLvl] *= 1 - pctConverted[supportStage];
                                             }
                                         }
-                                    });
+                                    }
+                                });
+                                for (dmgLvl in increases) {
+                                    for (addedAs in increases[dmgLvl]) {
+                                        skill.dmg[skillLvl][addedAs][dmgLvl] += increases[dmgLvl][addedAs];
+                                    }
                                 }
                             };
                         })(translateMatch(matches[1]), translateMatch(matches[2]), 'addedConvertedDmg' === reType));

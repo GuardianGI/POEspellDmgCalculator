@@ -530,7 +530,7 @@ var redraw, onRedraw = [],
                         if (userInput.elementalColors) {
                             for (type in s.dmg[lvl]) {
                                 if (s.dmg[lvl][type].max > 0) {
-                                    ctx.fillStyle = styles[type];
+                                    ctx.fillStyle = styles[type.split(' ')[0]];
                                     ctx.fillRect(offset, dmgToCtx(totalDmg),
                                         barWidth, -dmgToPx(s.dmg[lvl][type].avg));
                                     totalDmg += s.dmg[lvl][type].avg;
