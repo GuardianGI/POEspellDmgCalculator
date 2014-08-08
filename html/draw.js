@@ -386,6 +386,27 @@ var redraw, onRedraw = [],
                                         redraw();
                                     };
                                 })(inputNew, s);
+                                
+                                newFieldset('Item details');
+                                
+                                ['fire', 'cold', 'light', 'melee', 'minion', 'all'].forEach(function (keyword) {
+                                    lblNew = document.createElement('label');
+                                    fieldset.appendChild(lblNew);
+                                    inputNew = document.createElement('input');
+                                    lblNew.appendChild(document.createTextNode('+x to ' + keyword + ' gems: '));
+                                    inputNew.type = "text";
+                                    lblNew.appendChild(inputNew);
+                                    inputNew.value = s.additionalKeywordLvl[keyword] || 0;
+                                    inputNew.onchange = (function (self, s) {
+                                        return function () {
+                                            s.additionalKeywordLvl[keyword] = self.value | 0;
+                                            s.setNeedsRecalc();
+                                            redraw();
+                                        };
+                                    })(inputNew, s);
+                                    
+                                    fieldset.appendChild(document.createElement('br'));
+                                });
                             };
                         getSupportsDropDown = function () {
                             var key, nonProblematicSupports, stillApplicable = true, select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti, tmpClone, dmgMultForSupports;//todo: calclate dmgDiff

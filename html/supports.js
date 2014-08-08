@@ -441,9 +441,9 @@ var supports = (function () {
             }
         };
     for (sName in rawSupports) {
-        s = rawSupports[sName]
+        s = rawSupports[sName];
         res[sName] = {};
-        res[sName].maxLvl = 20;
+        res[sName].maxLvl = s.stages.length - 3;//this should be a proper value, but with a max of +2 to gem levels on gear and 1 from corruption it should be ok?
         res[sName].name = sName;
         res[sName].stages = s.stages;
         res[sName].initFunctions = [];
@@ -452,6 +452,7 @@ var supports = (function () {
         res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
         res[sName].beforeDmgStages = [];//apply before parsing base dmg from raw skill data.
         res[sName].types = [];
+        res[sName].keywords = s.keywords.splice(0).map(translateMatch);
         res[sName].isApplicable = (function (supportName) {
             return function () {
                 //console.log('default is applicable was called for '+ supportName);

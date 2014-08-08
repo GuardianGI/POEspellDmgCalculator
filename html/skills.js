@@ -17,11 +17,13 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         return d;
     },
     skill = function (rawSkill, name) {
-        var s = {}, i, type;
+        var s = {}, i, type, resetKeywords = function () {
+            s.keywords = rawSkill.keywords.slice(0).map(translateMatch);
+        };
         s.additionalLvl = 0;
         s.maxLvl = userInput.maxSpellLvl;
         s.name = name;
-        s.keywords = rawSkill.keywords.slice(0);
+        resetKeywords();
         s.qualityBonus = rawSkill.qualityBonus;
         s.qualityLvl = userInput.qualityLvlAll;
         s.qualityEffects = [];
@@ -40,8 +42,14 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.projectiles = [];
         s.resPen = [];
         s.isMinion = rawSkill.hasAPS;
+        s.maxMinions = 0;
         s.chains = rawSkill.chains;
         s.supportQualityLvl = {};
+        s.additionalKeywordLvl = {};
+        
+        if (s.isMinion) {
+            s.maxMinions = 3;//todo: get actual values form skills... and then limit animate weapon somehow...
+        }
         
         executeOnLoad.push(function () {
             var i;
@@ -355,6 +363,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.isArc = s.name.indexOf("Arc") > -1;
         s.isSrs = s.name.indexOf("Summon Raging Spirit") > -1;
         
+        s.applySwarm = function () {
+            s.dmg.multiply({'mult': s.maxMinions});
+        };
+        
         s.getSupportStage = function (support, lvl) {
             var stage;
             for (stage = 0; stage < support.stages.length; stage += 1) {
@@ -363,6 +375,13 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 }
             }
             stage = stage > support.maxLvl ? support.maxLvl : stage;
+            
+            for (keyword in s.additionalKeywordLvl) {
+                if (support.keywords.indexOf(keyword) >= 0 || 'all' === keyword) {
+                    stage += s.additionalKeywordLvl[keyword];
+                }
+            }
+            stage = stage > support.stages.length ? support.stages.length : stage;
             return stage - 1;//to 0 based index
         };
         s.applySupportStage = function (support, fn, lvl) {
@@ -550,7 +569,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             var needsRecalc = true;
             s.setNeedsRecalc = function () { needsRecalc = true; };
             return function (lvl) {
-                var lastDmg = 0, support, key, type, j, getDmgTypes = function () {
+                var lastDmg = 0, support, key, type, j, additionalLvlsFromGear = 0, keyword, getDmgTypes = function () {
                     return {fire: 0, cold: 0, light: 0, chaos: 0, phys: 0, elemental: 0, aoe: 0, projectile: 0};
                 };
                 if (!needsRecalc) {
@@ -559,7 +578,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 //reset things that may or may not get edited every calcDmg by supports and such.
                 s.getAdditionalChanceToIgnite = function () { return 0; };
                 
-                s.keywords = rawSkill.keywords.slice(0);//reset keywords, may be modified by supports.
+                resetKeywords();//reset keywords, may be modified by supports.
                 if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap || s.isMinion) {
                     s.keywords.splice(s.keywords.indexOf('spell'), 1);//these may be spells, they are not affected by for instance increased spell dmg.
                 }
@@ -595,9 +614,13 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.additionalCC = [];
                 s.additionalCD = [];
                 s.resPen = [];
-                
+                for (keyword in s.additionalKeywordLvl) {
+                    if (s.keywords.indexOf(keyword) >= 0 || 'all' === keyword) {
+                        additionalLvlsFromGear += s.additionalKeywordLvl[keyword];
+                    }
+                }
                 s.applyForLvls(function (i) {
-                    s.dmg[i] = skillDmg(rawSkill, i, s.additionalLvl + s.empower[i], s.maxLvl);
+                    s.dmg[i] = skillDmg(rawSkill, i, s.additionalLvl + s.empower[i] + additionalLvlsFromGear, s.maxLvl);
                     if (s.sumDmgLvl(s.dmg[i]) > lastDmg) {//is new stage
                         s.stages.push(i);
                         lastDmg = s.sumDmgLvl(s.dmg[i]);
@@ -747,6 +770,9 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 
                 if (userInput.applyAPS) {
                     s.applyAPS(lvl);
+                }
+                if (userInput.singleTargetSwarm && s.isMinion) {
+                    s.applySwarm();
                 }
                 
                 s.hasDmg = s.totalDmg(40) > 0;//all skills are usable after lvl 31 (I think), so at 40 all skills should be able to deal dmg if they deal dmg at all.

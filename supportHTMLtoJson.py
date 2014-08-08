@@ -126,6 +126,7 @@ class support:
 		values = {}
 		rows = table.getElementsByTagName("tr")
 		rowId = 0
+		prevLvl = -1
 		for row in rows:
 			i = 0
 			lvl = -1
@@ -141,18 +142,26 @@ class support:
 							if not 'icon_small.png' in tdTxt:
 								ColumnNames[i - 1] = tdTxt
 					i += 1
-			elif rowId < 21:#supports like iron will have an extra row that we ignore. (but we need to allow up to 23 for corrupting)
+			else:#elif rowId < 24:#supports like iron will have an extra row that we ignore. (but we need to allow up to 23 for corrupting)
 				for td in row.getElementsByTagName("td"):
 					if i == charLvlColumn:
 						val = getNodeVal(td)
 						if not val:
 							val = -1
 						lvl = sint(val)
+						if -1 is lvl or None is lvl:
+							lvl = prevLvl + 1
+						prevLvl = lvl
 						if None is not lvl:
 							self.lvlStages.append(lvl)
-						values[lvl] = {}
+							values[lvl] = {}
 					elif i in ColumnNames.keys():
-						values[lvl][ColumnNames[i]] = getNodeVal(td)
+						val = getNodeVal(td)
+						if val:
+							values[lvl][ColumnNames[i]] = val
+						else:
+							values.pop(lvl, None)
+							self.lvlStages.remove(lvl)
 					i += 1
 			rowId += 1
 		self.values = values
