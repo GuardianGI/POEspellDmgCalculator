@@ -443,7 +443,7 @@ var supports = (function () {
     for (sName in rawSupports) {
         s = rawSupports[sName];
         res[sName] = {};
-        res[sName].maxLvl = s.stages.length - 3;//this should be a proper value, but with a max of +2 to gem levels on gear and 1 from corruption it should be ok?
+        res[sName].maxLvl = s.maxLvl;//this should be a proper value, but with a max of +2 to gem levels on gear and 1 from corruption it should be ok?
         res[sName].name = sName;
         res[sName].stages = s.stages;
         res[sName].initFunctions = [];

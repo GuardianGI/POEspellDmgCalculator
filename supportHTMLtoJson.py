@@ -27,7 +27,8 @@ def ignore_exception(IgnoreException=Exception,DefaultVal=None):
 sint = ignore_exception(ValueError)(int)
 
 def getNodeVal(node):
-	return re.search("(<?\<.*?\>)(.*?)\<\/", node.toxml().lower()).group(2).strip()
+	xml = node.toxml().lower()
+	return None if re.match('^\<[^>]+/\>$', xml) else re.search("(<?\<.*?\>)(.*?)\<\/", xml).group(2).strip()
 
 def tryGetTitle(node):
 	try:
@@ -64,6 +65,7 @@ class support:
 		self.manaMultiplier = 1
 		self.values = []
 		self.modifiers = []
+		self.maxLvlableStage = 1
 		
 		
 		f = open(dir + file, "rb")
@@ -122,6 +124,7 @@ class support:
 
 	def parseStatTable(self, table):
 		charLvlColumn = -1
+		expColumn = -1
 		ColumnNames = {}
 		values = {}
 		rows = table.getElementsByTagName("tr")
@@ -136,8 +139,8 @@ class support:
 						tdTxt = getNodeVal(td)
 						if "required level" in tdTxt:
 							charLvlColumn = i - 1
-						elif "exp" in tdTxt.lower():
-							pass#ignored.
+						elif "exp." in tdTxt.lower():
+							expColumn = i - 1
 						else:
 							if not 'icon_small.png' in tdTxt:
 								ColumnNames[i - 1] = tdTxt
@@ -155,6 +158,10 @@ class support:
 						if None is not lvl:
 							self.lvlStages.append(lvl)
 							values[lvl] = {}
+					elif i is expColumn:
+						val = getNodeVal(td)
+						if val and 'n/a' not in val and '-' not in val:
+							self.maxLvlableStage += 1
 					elif i in ColumnNames.keys():
 						val = getNodeVal(td)
 						if val:
@@ -195,12 +202,13 @@ for file in os.listdir(dir):
 
 supports = []
 for skill in skills:
-	s = "'{}': {{'manaMultiplier': {}, 'keywords': [{}], 'modifiers': [{}], 'qualityBonus': '{}', 'stages': [".format(
+	s = "'{}': {{'manaMultiplier': {}, 'keywords': [{}], 'modifiers': [{}], 'qualityBonus': '{}', 'maxLvl': {}, 'stages': [".format(
 		skill.name,
 		skill.manaMultiplier,
 		', '.join(["'{}'".format(word) for word in skill.keywords]),
 		', '.join(["'{}'".format(word) for word in skill.modifiers]),
-		skill.qualityBonus)
+		skill.qualityBonus,
+		skill.maxLvlableStage)
 	
 	s += ', '.join(str(n) for n in skill.lvlStages)
 	

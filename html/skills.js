@@ -51,9 +51,9 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             s.maxMinions = 3;//todo: get actual values form skills... and then limit animate weapon somehow...
         }
         
-        executeOnLoad.push(function () {
+        addExecuteOnLoad(function () {
             var i;
-            document.getElementById('qualityLvlAllSupports').onChangeFns.push(function () {
+            document.getElementById('qualityLvlAllSupports').executeOnChange.push(function () {
                 for (i in supports) {
                     s.supportQualityLvl[supports[i].name] = userInput.qualityLvlAllSupports;
                 }
@@ -810,7 +810,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         return s;
     };
 
-executeOnLoad.push(function () {
+addExecuteOnLoad(function () {
     var name;
     for (name in rawSkills) {
         skills[name] = skill(rawSkills[name], name);

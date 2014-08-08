@@ -212,7 +212,7 @@ var redraw, onRedraw = [],
                 indexLine.appendChild(btn);
                 btn.onclick = (function (s) {
                     return function () {
-                        var details, dif, lblNew, inputNew, btnClone, head, btnClose, fieldset, legend, lblQualityBonus, support, node, checkbox, k, getSupportsDropDown,
+                        var details, dif, lblNew, inputNew, btnClone, head, btnClose, fieldset, legend, support, node, checkbox, k, getSupportsDropDown,
                             newFieldset = function (title) {
                                 fieldset = document.createElement("fieldset");
                                 details.appendChild(fieldset);
@@ -256,9 +256,9 @@ var redraw, onRedraw = [],
                                 }
                                 details.appendChild(btnClose);
                                 
-                                lblQualityBonus = document.createElement("label");
-                                lblQualityBonus.innerHTML = s.qualityBonus;
-                                details.appendChild(lblQualityBonus);
+                                lblNew = document.createElement("label");
+                                lblNew.innerHTML = s.keywords.join(', ');
+                                details.appendChild(lblNew);
                                 
                                 newFieldset('Supports');
                                 
@@ -336,9 +336,10 @@ var redraw, onRedraw = [],
                                     };
                                 })(s, name);
                                 
+                                fieldset.appendChild(document.createElement('br'));
                                 lblNew = document.createElement('label');
                                 fieldset.appendChild(lblNew);
-                                lblNew.innerHTML = s.totalDmg(userInput.playerLvlForSuggestions);
+                                lblNew.innerHTML = 'DPS: ' + roundForDisplay(s.totalDmg(userInput.playerLvlForSuggestions));
                                 
                                 newFieldset('Quality/Level');
                                 
@@ -396,6 +397,9 @@ var redraw, onRedraw = [],
                                     lblNew.appendChild(document.createTextNode('+x to ' + keyword + ' gems: '));
                                     inputNew.type = "text";
                                     lblNew.appendChild(inputNew);
+                                    lblNew.style.width = '300px';
+                                    lblNew.style.display = 'inline-block';
+                                    lblNew.style.textAlign = 'right';
                                     inputNew.value = s.additionalKeywordLvl[keyword] || 0;
                                     inputNew.onchange = (function (self, s) {
                                         return function () {

@@ -1,6 +1,19 @@
 var userInput = {},
     gemTypes = ['fire', 'cold', 'light', 'melee', 'minion', 'all'],
     executeOnLoad = [],
+    addExecuteOnLoad = (function () {
+        var loaded = false;
+        executeOnLoad.push(function () {
+            loaded = true;
+        });
+        return function (fn) {
+            if (loaded) {
+                fn();
+            } else {
+                executeOnLoad.push(fn);
+            }
+        };
+    })(),
     dmgTypes = ['fire', 'cold', 'light', 'chaos', 'phys'],
     eleDmgTypes = ['fire', 'cold', 'light'],
     translateMatch = function (str) {
@@ -81,7 +94,7 @@ var userInput = {},
         }
         return totalDmg / count;
     };
-executeOnLoad.push(function () {
+addExecuteOnLoad(function () {
     var key, inputs, input;
     inputs = document.getElementsByClassName("userInput");
     for (key in inputs) {
@@ -109,7 +122,7 @@ executeOnLoad.push(function () {
         }(input));
     }
     
-    (function () {
+    /*(function () {
         var i, self = document.getElementById('qualityLvlAllSupports');
         self.onChangeFns = [];
 
@@ -120,9 +133,9 @@ executeOnLoad.push(function () {
             }
             redraw();
         };
-    })();
+    })();*/
     
-    executeOnLoad.push(function () {
+    addExecuteOnLoad(function () {
         var globalSkillSettings = document.getElementById('globalSkillSettings');
         gemTypes.forEach(function (keyword) {
             var lblNew = document.createElement('label'),
