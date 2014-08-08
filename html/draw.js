@@ -381,7 +381,7 @@ var redraw, onRedraw = [],
                                 inputNew.value = s.maxLvl;
                                 inputNew.onchange = (function (self, s) {
                                     return function () {
-                                        s.maxLvl = (self.value | 0) - 1;
+                                        s.maxLvl = (self.value | 0);
                                         s.setNeedsRecalc();
                                         redraw();
                                     };
@@ -389,7 +389,7 @@ var redraw, onRedraw = [],
                                 
                                 newFieldset('Item details');
                                 
-                                ['fire', 'cold', 'light', 'melee', 'minion', 'all'].forEach(function (keyword) {
+                                gemTypes.forEach(function (keyword) {
                                     lblNew = document.createElement('label');
                                     fieldset.appendChild(lblNew);
                                     inputNew = document.createElement('input');

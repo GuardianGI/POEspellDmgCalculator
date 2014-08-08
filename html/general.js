@@ -1,4 +1,5 @@
 var userInput = {},
+    gemTypes = ['fire', 'cold', 'light', 'melee', 'minion', 'all'],
     executeOnLoad = [],
     dmgTypes = ['fire', 'cold', 'light', 'chaos', 'phys'],
     eleDmgTypes = ['fire', 'cold', 'light'],
@@ -120,6 +121,30 @@ executeOnLoad.push(function () {
             redraw();
         };
     })();
-
+    
+    executeOnLoad.push(function () {
+        var globalSkillSettings = document.getElementById('globalSkillSettings');
+        gemTypes.forEach(function (keyword) {
+            var lblNew = document.createElement('label'),
+                inputNew = document.createElement('input');
+            inputNew.type = 'text';
+            inputNew.value = 0;
+            lblNew.appendChild(document.createTextNode('+x to ' + keyword + ' gems: '));
+            lblNew.appendChild(inputNew);
+            globalSkillSettings.appendChild(lblNew);
+            inputNew.onchange = (function (self) {
+                return function () {
+                    var key, s;
+                    for (key in skills) {
+                        s = skills[key];
+                        s.additionalKeywordLvl[keyword] = self.value | 0;
+                        s.setNeedsRecalc();
+                    }
+                    redraw();
+                };
+            })(inputNew);
+        });
+    });
+    
     return userInput;
 });

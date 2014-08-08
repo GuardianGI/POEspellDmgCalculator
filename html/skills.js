@@ -794,6 +794,13 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             for (key in s.supportQualityLvl) {
                 clone.supportQualityLvl[key] = s.supportQualityLvl[key];
             }
+            for (key in s.additionalKeywordLvl) {
+                clone.additionalKeywordLvl[key] = s.additionalKeywordLvl[key];
+            }
+            clone.additionalLvl = s.additionalLvl;
+            clone.qualityLvl = s.qualityLvl;
+            clone.maxLvl = s.maxLvl;
+            
             clone.setNeedsRecalc();
             clone.name = newName + ' : ' + s.name;
             return clone;
