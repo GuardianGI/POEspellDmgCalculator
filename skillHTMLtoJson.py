@@ -33,6 +33,9 @@ def strToFloat(s):
 def getXmlVal(s):
 	return re.search("(<?\<.*?\>)(.*?)\<\/", s.lower()).group(2).strip()
 
+def stripXml(xml):
+	return re.sub('\<[^>]+>', '', xml)
+	
 def getNodeVal(node):
 	return getXmlVal(node.toxml())
 
@@ -206,12 +209,12 @@ class skill:
 			else:
 				for td in row.getElementsByTagName("td"):
 					if i == charLvlColumn:
-						val = getNodeVal(td)
+						val = stripXml(getNodeVal(td))
 						if not val:
 							val = -1
 						self.dmg.lvlStages.append(sint(val))
 					elif i in dmgColumnNames.keys():
-						self.dmg.setDmg(rowId, dmgColumnNames[i], getNodeVal(td))
+						self.dmg.setDmg(rowId, dmgColumnNames[i], stripXml(getNodeVal(td)))
 					i += 1
 			rowId += 1
 	
@@ -232,7 +235,7 @@ class skill:
 			self.dmg.castTime = self.strToFloat(castTime)
 		except Exception: pass
 		try:
-			qualityBonus = self.getMeta("per.*?quality")
+			qualityBonus = stripXml(self.getMeta("per.*?quality"))
 			self.qualityBonus = self.getBonus(qualityBonus)
 		except Exception: pass
 		try:

@@ -1,4 +1,7 @@
 var userInput = {},
+    firstToUpper = function (str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    },
     gemTypes = ['fire', 'cold', 'light', 'melee', 'minion', 'all'],
     executeOnLoad = [],
     addExecuteOnLoad = (function () {

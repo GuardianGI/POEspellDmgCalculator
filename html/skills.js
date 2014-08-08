@@ -37,6 +37,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.incrCastSpeedFromQuality = 0;
         s.incrCcFromQuality = 0;
         s.additionalChanceToIgnite = [];
+        s.additionalShockChance = [];
         s.otherIncrCastSpeed = [];
         s.castTime = rawSkill.castTime;
         s.projectiles = [];
@@ -161,12 +162,17 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 } else {
                     matches = qualityBonusStr.match(reChance);
                     if (null != matches && matches.length > 4) {
-                        value = matches[1] | 0;
+                        value = matches[1] - 0;//cast to float
                         if ("ignite" == matches[3]) {
                             s.applyForLvls(function (i) {
-                                s.additionalChanceToIgnite[i] += (value / 100) * getQualityLvl(i);
+                                s.additionalChanceToIgnite[i] = (value / 100) * getQualityLvl(i) + (s.additionalChanceToIgnite[i] || 0);
                             }, lvl);
-                        }//todo: add shock and freeze.
+                        } else if ('shock' == matches[3]) {//todo: add freeze.
+                            s.applyForLvls(function (i) {
+                                if (i === 70) console.log(matches, value);
+                                s.additionalShockChance[i] = (value / 100) * getQualityLvl(i) + (s.additionalShockChance[i] || 0);
+                            }, lvl);
+                        }
                     }
                 }
             };
@@ -202,7 +208,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
 
         s.applyDefense = function (lvl) {
-            var pen, monster, morePhysDmg = 1 + userInput.morePhysDmg / 100;
+            var pen, res, reduced, monster, morePhysDmg = 1 + userInput.morePhysDmg / 100;
             
             s.applyForLvls(function (i) {
                 var j;
@@ -218,12 +224,17 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                             }
                         } else {
                             pen = 0;
-                            if ('chaos' !== type) {
-                                pen = userInput.reducedEleRes;//penetrate and res reduction for the element.
-                                pen += s.resPen[i][type];
-                                pen = monster[type] - pen > 100 ? monster[type] - 100 : pen;
+                            reduced = 0;
+                            if (eleDmgTypes.indexOf(type) >= 0) {//if type is ele dmg:
+                                reduced = userInput.reducedResElemental;
                             }
-                            s.dmg.multiply({'isDefense': true, 'mult': 1 - ((monster[type] - pen) / 100), 'type': type, 'lvl': i});
+                            reduced += userInput['reducedRes' + firstToUpper(type)] || 0;
+                            pen += s.resPen[i][type];
+                            res = monster[type];
+                            res -= reduced;
+                            res = res > 75 ? 75 : res;
+                            res -= pen;
+                            s.dmg.multiply({'isDefense': true, 'mult': 1 - (res / 100), 'type': type, 'lvl': i});
                             s.dmg[i][type].avg = (s.dmg[i][type].min + s.dmg[i][type].max) / 2;
                         }
                     }
@@ -289,14 +300,19 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             s.applySpecificMultiplier = function (mult, type, lvl) {
                     s.dmg.multiply({'mult': mult, 'type': type, 'lvl': lvl});
             };
+        s.getChanceToShock = function (lvl) {
+            if (s.name === 'Arc' && lvl === 70) console.log('additional shock chance', s.additionalShockChance[lvl]);
+            return userInput.monsterChanceToShock / 100 + (s.additionalShockChance[lvl] || 0);
+        };
         
         s.applyShock = function (lvl) {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
-            var hits = 1, shockStage, mult;
+            var hits = 1, shockStage, mult, chanceToShock;
             s.applyForLvls(function (i) {
+                chanceToShock = s.cc + s.getChanceToShock(i);
                 if (s.getLightDmg(i).max > 0) {
                     hits = s.getProjectiles(i);
                     shockStage = function (stage) {
-                        var m = 0.3 * Math.pow(s.cc, stage) * hits;
+                        var m = 0.3 * Math.pow(chanceToShock, stage) * hits;
                         return m > 0.3 ? 0.3 : m;
                     };
                     mult = 1 + shockStage(1) + shockStage(2) + shockStage(3);
@@ -593,7 +609,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.empower = [];
                 s.additionalQuality = [];
                 s.additionalChanceToIgnite = [];
-                
+                s.additionalShockChance = [];
+                                
                 s.applyForLvls(function (i) {
                     s.dmgIncreases[i] = getDmgTypes();
                     s.projectiles[i] = {base: 1, multiplier: 1};
