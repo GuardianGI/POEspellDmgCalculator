@@ -169,7 +169,6 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                             }, lvl);
                         } else if ('shock' == matches[3]) {//todo: add freeze.
                             s.applyForLvls(function (i) {
-                                if (i === 70) console.log(matches, value);
                                 s.additionalShockChance[i] = (value / 100) * getQualityLvl(i) + (s.additionalShockChance[i] || 0);
                             }, lvl);
                         }
@@ -301,7 +300,6 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.dmg.multiply({'mult': mult, 'type': type, 'lvl': lvl});
             };
         s.getChanceToShock = function (lvl) {
-            if (s.name === 'Arc' && lvl === 70) console.log('additional shock chance', s.additionalShockChance[lvl]);
             return userInput.chanceToShock / 100 + (s.additionalShockChance[lvl] || 0);
         };
         
