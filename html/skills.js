@@ -200,10 +200,17 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
 
         s.applyCastTime = function (lvl) {
-            s.applyForLvls(function (i) {
-                var castTimeMultiplier = 1 / (s.getCastTime(i) * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage));
-                s.dmg.multiply({'mult': castTimeMultiplier, 'lvl': i});
-            }, lvl);
+            if (s.keywords.indexOf('traps') >= 0 || s.keywords.indexOf('traps') >= 0 ) {
+                s.applyForLvls(function (i) {
+                    var castTimeMultiplier = 2;//default trap speed is 0.5 seconds, 1 / 0.5 = 2
+                    s.dmg.multiply({'mult': castTimeMultiplier, 'lvl': i});
+                }, lvl);
+            } else {
+                s.applyForLvls(function (i) {
+                    var castTimeMultiplier = 1 / (s.getCastTime(i) * (!s.isFlameBlast ? 1 : 1 + userInput.flameBlastStage));
+                    s.dmg.multiply({'mult': castTimeMultiplier, 'lvl': i});
+                }, lvl);
+            }
         };
 
         s.applyDefense = function (lvl) {
