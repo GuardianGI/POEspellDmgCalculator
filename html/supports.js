@@ -19,7 +19,8 @@ var supports = (function () {
             totem: /summons a totem which uses this skill/i,
             echo: /x% more cast speed/i,
             incrCast: /x% increased.*?cast.*?speed/i,
-            moreSomethingDmg: /x% more\s(\S+)\s(\S+) damage/i
+            moreSomethingDmg: /x% more\s(\S+)\s(\S+) damage/i,
+            culling: /kills enemies on 10% life or less when hit by supported Skills/i
         }, matches, match, dmgLvls = ['min', 'max', 'avg'],
         dmgTypes = ['fire', 'cold', 'light', 'phys', 'chaos'],
         isDmgType = function (type) {
@@ -34,6 +35,14 @@ var supports = (function () {
                 if (null !== matches) {
                     res[sName].types.push(reType);
                     switch (reType) {
+                    case 'culling':
+                        res[sName].isApplicable = function () { return true; };
+                        res[sName].applyAfter.push(
+                            function (supportStage, skillLvl, skill) {
+                                skill.dmg.multiply({mult: 1 / 0.9, lvl: skillLvl});
+                            }
+                        );
+                        break;
                     case 'empower':
                         res[sName].isApplicable = function () { return true; };
                         res[sName].beforeDmgStages.push((function (support, rawSupport) {

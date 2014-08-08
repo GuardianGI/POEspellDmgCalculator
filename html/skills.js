@@ -217,7 +217,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             var pen, res, reduced, monster, morePhysDmg = 1 + userInput.morePhysDmg / 100;
             
             s.applyForLvls(function (i) {
-                var j;
+                var j, dmg, life, nrOfHits;
                 monster = getAvgMonsterAtLvl(i);
                 for (j = 0; j < dmgTypes.length; j += 1) {
                     type = dmgTypes[j];
