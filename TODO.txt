@@ -1,7 +1,6 @@
 todo:
-	area/difficulty support & monster selection: http://pathofexile.gamepedia.com/Monster_Experience (got data, applied as resists, need to add selection options and visulaization)
-	monster life = 2 * xp / lvl (seems about right on driping dead & brittle thiefs & Oozeback Bloom)
-		implemented for some cases (when selecting specific mosnters/area's)
+	~~monster life = 2 * xp / lvl (seems about right on driping dead & brittle thiefs & Oozeback Bloom)~~
+		~~implemented for some cases (when selecting specific mosnters/area's)~~
 		needs more testing or better yet, propper values...
 	charges
 		power & frenzy charges need to scale all dmg
@@ -27,6 +26,11 @@ todo:
 			crit: where cc (crit chance) is 0.05 for 5% and cd (crit multiplier) is 1 by default for 100% more dmg
 				divergence /= cc
 				or: divergence = (max dmg * cd - min dmg) / (casts per second * (1 + cc))
+	curses (in monster data or on skills?)
+		apply correct curse lvl for char lvl
+		get a dps increase estimate (for all drawn skills? add curse to single skill?)
+	map mods & champion/magic monster abilities (add a 4th tab in the monster thing?)
+	option to assume shock stack?
 				
 
 bugs:

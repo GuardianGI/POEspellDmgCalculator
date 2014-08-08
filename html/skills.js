@@ -277,7 +277,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             //todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
             var d, apply = function (dmg, lvl) {
                 var additionalIgniteChance = s.additionalChanceToIgnite[lvl] +
-                            ((userInput.chanceToIgnite + userInput.monsterChanceToIgnite) / 100) +
+                            (userInput.chanceToIgnite / 100) +
                             s.getAdditionalChanceToIgnite(lvl),
                         chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
                     chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
@@ -302,13 +302,14 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             };
         s.getChanceToShock = function (lvl) {
             if (s.name === 'Arc' && lvl === 70) console.log('additional shock chance', s.additionalShockChance[lvl]);
-            return userInput.monsterChanceToShock / 100 + (s.additionalShockChance[lvl] || 0);
+            return userInput.chanceToShock / 100 + (s.additionalShockChance[lvl] || 0);
         };
         
         s.applyShock = function (lvl) {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
             var hits = 1, shockStage, mult, chanceToShock;
             s.applyForLvls(function (i) {
                 chanceToShock = s.cc + s.getChanceToShock(i);
+                chanceToShock = chanceToShock > 1 ? 1 : chanceToShock;
                 if (s.getLightDmg(i).max > 0) {
                     hits = s.getProjectiles(i);
                     shockStage = function (stage) {
