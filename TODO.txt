@@ -31,7 +31,9 @@ todo:
 		get a dps increase estimate (for all drawn skills? add curse to single skill?)
 	map mods & champion/magic monster abilities (add a 4th tab in the monster thing?)
 	option to assume shock stack?
-	culling strike: simply give a dmg "/ 0.9" or multiply by 1.11111 repeating (or 1 / 0.9)
+	culling strike:
+		~~simply give a dmg "/ 0.9" or multiply by 1.11111 repeating (or 1 / 0.9)~~
+		make culling strike less effective for high dmg skills (and leave effectivess as it is now for high APS abilities)
 				
 
 bugs:

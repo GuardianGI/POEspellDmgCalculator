@@ -12,7 +12,8 @@ var supports = (function () {
             empower: /\+x level of supported active skill gems/i,//not as general as I'd like, but I doubt there will ever be similar skills
             enhance: /\+x% to quality of supported active skill gems/i,
             faster: /x% increased (\S+) speed/i,
-            incrDmg: /x% increased\s?(\S*?)\s?damage/i,
+            incrDmg: /x% increased\s?(\S*)\s?damage/i,
+            incrOther: /x% increased\s?(.+)/i,
             aditional: /(\S*)\s?(\d+) additional (\S+)/i,
             incrCrit: /x% increased critical strike (\S+)/i,
             ironWill: /damage bonus applies to spell damage/i,
@@ -34,6 +35,36 @@ var supports = (function () {
                 if (null !== matches) {
                     res[sName].types.push(reType);
                     switch (reType) {
+                    case 'incrOther':
+                        matches = matches[1].split(/\s/i).map(translateMatch);
+                        if (matches.indexOf('damage') < 0) {
+                            switch (matches.join(' ')) {
+                            case 'skill effect duration':
+                                res[sName].enabled = true;
+                                res[sName].isApplicable = (function (support) {
+                                    return function () { return support.enabled; };
+                               })(res[sName]);
+                                res[sName].applyFirst.push((function (support, rawSupport) {
+                                    var stageStats = {},
+                                        column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                            key = key.toLowerCase();
+                                            return key.indexOf('duration') >= 0;
+                                        })[0];
+                                    for (stage in support.stages) {
+                                        stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+                                    }
+                                    console.log(stageStats);
+                                    
+                                    return function (supportStage, skillLvl, skill) {
+                                        skill.increasedDuration[skillLvl] += stageStats[supportStage];
+                                    };
+                                })(res[sName], s));
+                                break;
+                            default:
+                                console.log('incr non dmg: ', matches);
+                            }
+                        }
+                        break;
                     case 'culling':
                         res[sName].enabled = true;
                         res[sName].isApplicable = (function (support) {
@@ -523,6 +554,8 @@ var supports = (function () {
                                             };
                                         })(res[sName]);
                                     }
+                                    break;
+                                case 'incrOther'://ignore in case of dmg...
                                     break;
                                 default:
                                     console.log(['no case added for', reType, column, sName]);

@@ -129,11 +129,13 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     if (matches.length > 3) {
                         switch (matches[3]) {
                         case 'damage':
-                            s.qualityEffects.push(function () {
-                                s.applyForLvls(function (i) {
-                                    s.setIncrDmg(value * getQualityLvl(i) / 100, translateMatch(matches[2]), i);
-                                }, lvl);
-                            });
+                            s.qualityEffects.push((function (v) {
+                                return function () {
+                                    s.applyForLvls(function (i) {
+                                        s.setIncrDmg(v * getQualityLvl(i) / 100, translateMatch(matches[2]), i);
+                                    }, lvl);
+                                };
+                            })(value));
                             break;
                         }
                         switch (matches[2] + ' ' + matches[3]) {
@@ -146,7 +148,16 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         case 'critical strike':
                             if ('chance' === matches[4]) {
                                 s.incrCcFromQuality = value / 100;
+                            } else if ('damage' === matches[4]) {
+                                console.log('incr crit dmg: ', value);
                             }
+                            break;
+                        }
+                        switch (matches[2] + ' ' + matches[3] + ' ' + matches[4]) {
+                        case 'skill effect duration':
+                                s.applyForLvls(function (i) {
+                                    s.increasedDuration[i] += value * getQualityLvl(i) / 100;
+                                }, lvl);
                             break;
                         }
                     } else {
@@ -282,8 +293,11 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     'lvl': i});
             }, lvl);
         };
-        s.getIncrDurationMutiplier = function (type) {
-            return 1 + (userInput.incrDuration / 100 || 0) + (userInput['incrDuration' + firstToUpper(type)] || 0);
+        s.getIncrDurationMutiplier = function (type, lvl) {
+            return 1 +
+                s.increasedDuration[lvl] +
+                (userInput.incrDuration / 100 || 0) +
+                (userInput['incrDuration' + firstToUpper(type)] / 100 || 0);
         };
         s.applyBurn = function (lvl) {
             //todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
@@ -293,7 +307,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                             s.getAdditionalChanceToIgnite(lvl),
                         chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
                     chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
-                    mult = chanceToIgnite * 0.8 * s.getIncrDurationMutiplier('burn') *
+                    mult = chanceToIgnite * 0.8 * s.getIncrDurationMutiplier('burn', lvl) *
                         (1 + (userInput.incrBurnDmg / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
                     if (mult > 0) {
                         dmgLvls.forEach(function (minMaxAvg) {
@@ -350,15 +364,18 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.dmg.multiply({'mult': s.getHits(i), 'lvl': i});
             }, lvl);
         };
-        s.sumDmgLvl = function (dmgLvl) {
+        s.sumDmgLvl = function (dmgLvl, burnOnly) {
             var sum = 0;
+            burnOnly = burnOnly || false;
             for (type in dmgLvl) {
-                sum += dmgLvl[type].avg;
+                if (!burnOnly || 0 === type.indexOf('burning')) {
+                    sum += dmgLvl[type].avg;
+                }
             }
             return sum;
         };
         s.totalDmg = function (lvl) {
-            return s.sumDmgLvl(s.dmg[lvl]);
+            return s.sumDmgLvl(s.dmg[lvl], userInput.burnDmgOnly);
         };
         
         s.applyIncinerateStage = function (lvl) {
@@ -636,6 +653,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.additionalChanceToIgnite = [];
                 s.additionalShockChance = [];
                 s.traps = [];
+                s.increasedDuration = [];
                                 
                 s.applyForLvls(function (i) {
                     s.dmgIncreases[i] = getDmgTypes();
@@ -644,6 +662,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.empower[i] = 0;
                     s.additionalQuality[i] = 0;
                     s.additionalChanceToIgnite[i] = 0;
+                    s.increasedDuration[i] = userInput.incrDuration / 100;
                 }, lvl);
                 
                 for (key in s.supports) {
@@ -708,7 +727,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         for (minMaxAvg in s.dmg[i].phys) {
                             s.dmg[i]['fire from phys'][minMaxAvg] = s.dmg[i].phys[minMaxAvg];
                         }
-                    });
+                    }, lvl);
                 }
                 //begin applying supports.
                 for (key in s.supports) {
