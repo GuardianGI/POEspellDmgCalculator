@@ -18,10 +18,9 @@ var supports = (function () {
             ironWill: /damage bonus applies to spell damage/i,
             totem: /summons a totem which uses this skill/i,
             echo: /x% more cast speed/i,
-            incrCast: /x% increased.*?cast.*?speed/i,
             moreSomethingDmg: /x% more\s(\S+)\s(\S+) damage/i,
             culling: /kills enemies on 10% life or less when hit by supported Skills/i
-        }, matches, match, dmgLvls = ['min', 'max', 'avg'],
+        }, matches, match,
         dmgTypes = ['fire', 'cold', 'light', 'phys', 'chaos'],
         isDmgType = function (type) {
             return dmgTypes.indexOf(type) >= 0;
@@ -156,25 +155,34 @@ var supports = (function () {
                             };
                         })(res[sName], s, matches[1]));
                         break;
-                    case 'incrCast':
-                        res[sName].enabled = true;
-                        res[sName].isApplicable = (function (support) {
-                            return function (skill) { return support.enabled && skill.keywords.indexOf('spell') >= 0; };
-                        })(res[sName]);
-                        res[sName].applyFirst.push((function (support, rawSupport) {
-                            var stageStats = {},
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
-                                    key = key.toLowerCase();
-                                    return key.indexOf('increased') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
-                                })[0];
-                            for (stage in support.stages) {
-                                stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
-                            }
-                            return function (supportStage, skillLvl, skill) {
-                                skill.otherIncrCastSpeed[skillLvl] += stageStats[supportStage];
-                            };
-                        })(res[sName], s));
+                    case 'faster':
+                        switch(translateMatch(matches[1])) {
+                        case 'cast': case 'attack':
+                            res[sName].enabled = true;
+                            res[sName].isApplicable = (function (support, match) {
+                                return function (skill) { return support.enabled && (
+                                    skill.keywords.indexOf('cast' === match ? 'spell' : 'attack') >= 0 ||
+                                    'attack' === match && skill.isMinion);
+                                };
+                            })(res[sName], translateMatch(matches[1]));
+                            res[sName].applyFirst.push((function (support, rawSupport, match) {
+                                var stageStats = {},
+                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                        key = key.toLowerCase();
+                                        return key.indexOf('increased') >= 0 && key.indexOf(match) >= 0 && key.indexOf('speed') >= 0;
+                                    })[0];
+                                for (stage in support.stages) {
+                                    stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
+                                }
+                                return function (supportStage, skillLvl, skill) {
+                                    skill.otherIncrCastSpeed[skillLvl] += stageStats[supportStage];
+                                };
+                            })(res[sName], s, matches[1]));
+                            break;
+                        }
                         break;
+                        case 'movement'://interesting for SRS
+                            break;
                     case 'totem':
                         res[sName].enabled = true;
                         res[sName].isApplicable = (function (support) {
@@ -239,7 +247,6 @@ var supports = (function () {
                                 })(res[sName]);
                                 res[sName].applyFirst.push((function (additionalTraps) {
                                     return function (supportStage, skillLvl, skill) {
-                                        console.log(additionalTraps);
                                         skill.traps[skillLvl].base += additionalTraps;//TODO: with a chain/fork projectile skill this would be too low (it needs to multiply 'multiplier' by 3, not add 2)
                                     }
                                 })(matches[2] | 0));
@@ -452,24 +459,32 @@ var supports = (function () {
                                     })(res[sName]));
                                     break;
                                 case 'chanceToStatusAilment':
+                                    var innerMatches = translateMatch(column.match(/chance to (\S+).*?on hit with (\S+) damage/i));
                                     res[sName].enabled = true;
-                                    res[sName].isApplicable = (function (support) {
-                                        var dmgType = translateMatch(column.match(/chance to (\S+).*?on hit with (\S+) damage/i)[2]);
+                                    res[sName].isApplicable = (function (support, dmgType) {
                                         return function (skill) {
-                                            return support.enabled && skill.dmg[40][dmgType].min > 0;
+                                            return support.enabled &&
+                                                skill.getDmg(dmgType, userInput.playerLvlForSuggestions).min > 0;
                                         };
-                                    })(res[sName]);
+                                    })(res[sName], translateMatch(innerMatches[2]));
                                     
-                                    res[sName].additionalAilmentChance = {};
-                                    
-                                    for (stage in s.stageStats) {
-                                        for (column in s.stageStats[stage]) {
-                                            if (column.indexOf('additional chance to') >= 0) {
-                                                res[sName].additionalAilmentChance[stage] =
-                                                    parsePercent(s.stageStats[stage][column]);
+                                    res[sName].applyFirst.push((function () {
+                                        var additionalAilmentChance = {}, ailment = firstToUpper(translateMatch(innerMatches[1]));
+                                        
+                                        for (stage in s.stageStats) {
+                                            for (column in s.stageStats[stage]) {
+                                                if (column.indexOf('additional chance to') >= 0) {
+                                                    additionalAilmentChance[stage] =
+                                                        parsePercent(s.stageStats[stage][column]);
+                                                }
                                             }
                                         }
-                                    }
+                                        
+                                        return function (supportStage, skillLvl, skill) {
+                                            skill['additionalChanceTo' + ailment][skillLvl] +=
+                                                additionalAilmentChance[supportStage];
+                                        };
+                                    })());
                                     break;
                                 case 'incrDmg':
                                     res[sName].applyFirst.push((function (type, support) {
@@ -498,6 +513,13 @@ var supports = (function () {
                                             return function (skill) {
                                                 return support.enabled &&
                                                     skill.keywords.indexOf('projectile') >= 0;
+                                            };
+                                        })(res[sName]);
+                                    }else if ('burning' === translateMatch(matches[1])) {
+                                        res[sName].enabled = true;
+                                        res[sName].isApplicable = (function (support) {
+                                            return function (skill) {
+                                                return support.enabled;
                                             };
                                         })(res[sName]);
                                     }

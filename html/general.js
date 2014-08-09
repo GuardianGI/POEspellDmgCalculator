@@ -2,6 +2,8 @@ var userInput = {},
     firstToUpper = function (str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     },
+    dmgLvls = ['min', 'max', 'avg'],
+    defaultDmg = function () { return {min: -1, max: -1, avg: -1}; },
     gemTypes = ['fire', 'cold', 'light', 'melee', 'minion', 'all'],
     executeOnLoad = [],
     addExecuteOnLoad = (function () {
@@ -31,6 +33,8 @@ var userInput = {},
             return 'phys';
         case 'traps':
             return 'trap';
+        case 'spells':
+            return 'spell';
         default:
             return str;
         }

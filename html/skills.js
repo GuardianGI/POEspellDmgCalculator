@@ -1,6 +1,5 @@
 var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         var type,
-            defaultDmg = function () { return {min: -1, max: -1, avg: -1}; },
             d = {phys: defaultDmg(),
                 fire: defaultDmg(),
                 cold: defaultDmg(),
@@ -65,39 +64,39 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         });
         
         s.dmg.multiply = (function () {
-            return function (poperties) {
+            return function (properties) {
                 var d, lvl, isApplicable = function (t) {
                     return s.keywords.indexOf(t) >= 0;
-                }, apply = (poperties.hasOwnProperty('type') ? function () {
+                }, apply = (properties.hasOwnProperty('type') ? function () {
                     var type;
-                    if (poperties.hasOwnProperty('isDefense')) {//in case of defence only the final dmg type after conversions is applied (and the multiplier should be <= 1)
+                    if (properties.hasOwnProperty('isDefense')) {//in case of defence only the final dmg type after conversions is applied (and the multiplier should be <= 1)
                         for (type in d) {
-                            if (0 === type.indexOf(poperties.type) || isApplicable(poperties.type)) {
-                                d[type].min *= poperties.mult;
-                                d[type].max *= poperties.mult;
-                                d[type].avg *= poperties.mult;
+                            if (0 === type.indexOf(properties.type) || isApplicable(properties.type)) {
+                                d[type].min *= properties.mult;
+                                d[type].max *= properties.mult;
+                                d[type].avg *= properties.mult;
                             }
                         }
                     } else {
                         for (type in d) {
-                            if ((poperties.hasOwnProperty('applicable') && poperties.applicable(type))
-                                    || 0 <= type.indexOf(poperties.type) || isApplicable(poperties.type)) {
-                                d[type].min *= poperties.mult;
-                                d[type].max *= poperties.mult;
-                                d[type].avg *= poperties.mult;
+                            if ((properties.hasOwnProperty('applicable') && properties.applicable(type))
+                                    || 0 <= type.indexOf(properties.type) || isApplicable(properties.type)) {
+                                d[type].min *= properties.mult;
+                                d[type].max *= properties.mult;
+                                d[type].avg *= properties.mult;
                             }
                         }
                     }
                 } : function () {
                     var type;
                     for (type in d) {
-                        d[type].min *= poperties.mult;
-                        d[type].max *= poperties.mult;
-                        d[type].avg *= poperties.mult;
+                        d[type].min *= properties.mult;
+                        d[type].max *= properties.mult;
+                        d[type].avg *= properties.mult;
                     }
                 });
-                if (poperties.hasOwnProperty('lvl') && undefined !== poperties.lvl) {
-                    d = s.dmg[poperties.lvl];
+                if (properties.hasOwnProperty('lvl') && undefined !== properties.lvl) {
+                    d = s.dmg[properties.lvl];
                     apply();
                 } else {
                     for (lvl = 0; lvl < 100; lvl += 1) {
@@ -283,23 +282,38 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     'lvl': i});
             }, lvl);
         };
+        s.getIncrDurationMutiplier = function (type) {
+            return 1 + (userInput.incrDuration / 100 || 0) + (userInput['incrDuration' + firstToUpper(type)] || 0);
+        };
         s.applyBurn = function (lvl) {
             //todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
-            var d, apply = function (dmg, lvl) {
-                var additionalIgniteChance = s.additionalChanceToIgnite[lvl] +
+            var apply = function (fromType, toType, lvl) {
+                var mult, additionalIgniteChance = s.additionalChanceToIgnite[lvl] +
                             (userInput.chanceToIgnite / 100) +
                             s.getAdditionalChanceToIgnite(lvl),
                         chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
                     chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
-                    return dmg * chanceToIgnite * 0.8 *
+                    mult = chanceToIgnite * 0.8 * s.getIncrDurationMutiplier('burn') *
                         (1 + (userInput.incrBurnDmg / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
+                    if (mult > 0) {
+                        dmgLvls.forEach(function (minMaxAvg) {
+                            s.dmg[lvl][toType][minMaxAvg] = s.dmg[lvl][fromType][minMaxAvg] * mult;
+                        });
+                    }
                 };
             
             s.applyForLvls(function (i) {
-                d = s.getFireDmg(i);
-                s.dmg[i].fire.min += apply(d.min, i);
-                s.dmg[i].fire.max += apply(d.max, i);
-                s.dmg[i].fire.avg += apply(d.avg, i);
+                var asTypeBase = 'burning from ', fromType, fromTypes = [];
+                for (fromType in s.dmg[i]) {
+                    if (fromType.indexOf('fire') >= 0 && s.dmg[i][fromType].min > 0) {
+                        fromTypes.push(fromType);
+                    }
+                }
+                fromTypes.forEach(function (fromType) {
+                    var asType = asTypeBase + fromType;
+                    s.dmg[i][asType] = defaultDmg();
+                    apply(fromType, asType, i);
+                });
             }, lvl);
         };
         
@@ -441,7 +455,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             }
         };
         
-        s.getIcrDmg = function (type, lvl, keywords) {
+        s.getIncrDmg = function (type, lvl, keywords) {
             var incr = 0, typeKey, typeKeys, applicable = true, innerKey;
             for (typeKey in s.dmgIncreases[lvl]) {
                 typeKeys = typeKey.split(', ');
@@ -502,12 +516,12 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         })();
         
         s.applyDmgIncreases = function (lvl) {
-            var spellTypes = ['aoe', 'projectile', 'spell'],
+            var spellTypes = ['aoe', 'projectile', s.isMinion ? 'minion' : 'spell'],//minions do not benefit from spell dmg
                 keywords, generalIncr = 0, lvl;
             
             keywords = s.keywords.filter(function (keyword) {
                 for (key in spellTypes) {
-                    if (spellTypes[key].toLowerCase() == keyword.toLowerCase()) {
+                    if (spellTypes[key].toLowerCase() === keyword.toLowerCase()) {
                         return true;
                     }
                 }
@@ -524,14 +538,14 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     typesArr = types.split(' from ');
                     for (type in typesArr) {//usually just one, could be more.
                         type = typesArr[type];//get val, not key...
-                        if (!appliedGeneralEleDmg && eleDmgTypes.indexOf(type) > -1) {
+                        if (!appliedGeneralEleDmg && eleDmgTypes.indexOf(type) >= 0) {
                             appliedGeneralEleDmg = true;
                             incr += userInput.eleDmgIncr / 100;
                         }
-                        incr += userInput[type + 'DmgIncr'] / 100;
-                        incr += s.getIcrDmg(type, i, keywords);//already in percent format....
+                        incr += (userInput[type + 'DmgIncr'] || 0) / 100;
+                        incr += s.getIncrDmg(type, i, keywords);//already in percent format....
                     }
-                    ['min', 'max', 'avg'].forEach(function (key) {
+                    dmgLvls.forEach(function (key) {
                         s.dmg[i][types][key] *= incr;
                     });
                 }
@@ -606,7 +620,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.getAdditionalChanceToIgnite = function () { return 0; };
                 
                 resetKeywords();//reset keywords, may be modified by supports.
-                if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap || s.isMinion) {
+                if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap) {
                     s.keywords.splice(s.keywords.indexOf('spell'), 1);//these may be spells, they are not affected by for instance increased spell dmg.
                 }
                 
@@ -789,7 +803,6 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.applyShotgun(lvl);
                 } else {//trap count is applied in shotgun as it counts as multiple hits.
                     s.applyForLvls(function (i) {
-                        if (s.traps[i].base > 1) console.log({'mult': s.traps[i].base, 'lvl': i});
                         s.dmg.multiply({'mult': s.traps[i].base, 'lvl': i});
                     }, lvl);
                 }
