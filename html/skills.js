@@ -112,8 +112,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             return s.qualityLvl + s.additionalQuality[lvl];
         };
 
-        s.getProjectiles = function (lvl) {
-            return s.projectiles[lvl].base * s.projectiles[lvl].multiplier;
+        s.getHits = function (lvl) {
+            return s.projectiles[lvl].base * s.projectiles[lvl].multiplier * s.traps[lvl].base;
         };
         s.getCastTime = function (lvl) {
             return s.castTime / (1 + (s.otherIncrCastSpeed[lvl] +
@@ -200,7 +200,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
 
         s.applyCastTime = function (lvl) {
-            if (s.keywords.indexOf('traps') >= 0 || s.keywords.indexOf('traps') >= 0 ) {
+            if (s.keywords.indexOf('trap') >= 0 || s.keywords.indexOf('mine') >= 0 ) {
                 s.applyForLvls(function (i) {
                     var castTimeMultiplier = 2;//default trap speed is 0.5 seconds, 1 / 0.5 = 2
                     s.dmg.multiply({'mult': castTimeMultiplier, 'lvl': i});
@@ -320,7 +320,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 chanceToShock = s.cc + s.getChanceToShock(i);
                 chanceToShock = chanceToShock > 1 ? 1 : chanceToShock;
                 if (s.getLightDmg(i).max > 0) {
-                    hits = s.getProjectiles(i);
+                    hits = s.getHits(i);
                     shockStage = function (stage) {
                         var m = 0.3 * Math.pow(chanceToShock, stage) * hits;
                         return m > 0.3 ? 0.3 : m;
@@ -333,7 +333,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
         s.applyShotgun = function (lvl) {
             s.applyForLvls(function (i) {
-                s.dmg.multiply({'mult': s.getProjectiles(i), 'lvl': i});
+                s.dmg.multiply({'mult': s.getHits(i), 'lvl': i});
             }, lvl);
         };
         s.sumDmgLvl = function (dmgLvl) {
@@ -621,10 +621,12 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.additionalQuality = [];
                 s.additionalChanceToIgnite = [];
                 s.additionalShockChance = [];
+                s.traps = [];
                                 
                 s.applyForLvls(function (i) {
                     s.dmgIncreases[i] = getDmgTypes();
                     s.projectiles[i] = {base: 1, multiplier: 1};
+                    s.traps[i] = {base: 1};
                     s.empower[i] = 0;
                     s.additionalQuality[i] = 0;
                     s.additionalChanceToIgnite[i] = 0;
@@ -785,6 +787,11 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 
                 if (userInput.assumeShotgun) {
                     s.applyShotgun(lvl);
+                } else {//trap count is applied in shotgun as it counts as multiple hits.
+                    s.applyForLvls(function (i) {
+                        if (s.traps[i].base > 1) console.log({'mult': s.traps[i].base, 'lvl': i});
+                        s.dmg.multiply({'mult': s.traps[i].base, 'lvl': i});
+                    }, lvl);
                 }
                 
                 for (key in s.supports) {

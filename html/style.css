@@ -45,7 +45,7 @@
 	/*left: 5px;
 	width: 100%;*/
 }
-.spellDetails {
+.spellDetails, #supportsTabSetContainer {
 	position: relative;
 	display: block;
 	float: left;

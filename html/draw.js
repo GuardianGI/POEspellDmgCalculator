@@ -755,8 +755,39 @@ var redraw, onRedraw = [],
     
     (function () {
         var btnAddBest = document.getElementById('btnAddBestSupport'),
-            btnRemoveWorst = document.getElementById('removeWorstSupport');
-            
+            btnRemoveWorst = document.getElementById('removeWorstSupport'),
+            btnRemoveAll = document.getElementById('removeAllSupport'),
+            btnAddAll = document.getElementById('addAllSupport');
+        
+        btnAddAll.onclick = function () {
+            var dmgMultForSupports, s, name, i;
+            for (name in skills) {
+                s = skills[name];
+                if (s.draw) {
+                    dmgMultForSupports = getSortedSupports(s);
+                    if (dmgMultForSupports.length > 0) {
+                        for (i = 0; i < dmgMultForSupports.length; i += 1) {
+                            s.supports.push(dmgMultForSupports[i].support.clone());
+                        }
+                        s.setNeedsRecalc();
+                    }
+                }
+            }
+            redraw();
+        };
+        
+        btnRemoveAll.onclick = function () {
+            var s, name;
+            for (name in skills) {
+                s = skills[name];
+                if (s.draw && s.supports.length > 0) {
+                    s.setNeedsRecalc();
+                    s.supports = [];
+                }
+            }
+            redraw();
+        };
+        
         btnAddBest.onclick = function () {
             var dmgMultForSupports, s, name;
             for (name in skills) {
@@ -1128,6 +1159,50 @@ var redraw, onRedraw = [],
                     })(plotRes.getContext('2d'), plotRes);
                 };
             })(difTab));
+        })();
+        (function(){
+            var supportsTab, container,
+                detailsSection = document.getElementById('spellDetails'),
+                name,
+                tabs = {},
+                tabName,
+                s, keyword, lblSupport, cbSupportEnabled, update;
+            container = document.createElement('div');
+            container.id = 'supportsTabSetContainer';
+            detailsSection.appendChild(container);
+            supportsTab = tabSet(container, 'supportsApplicability');
+            update = function () {
+                for (keyword in tabs) {
+                    tabs[keyword].innerHTML = '';//clear all tabs.
+                }
+                for (name in supports) {
+                    s = supports[name];
+                    for (keyword in s.keywords) {
+                        keyword = s.keywords[keyword];
+                        if (Object.keys(tabs).indexOf(keyword) < 0) {
+                            tabs[keyword] = supportsTab.addTab(keyword);
+                        }
+                        cbSupportEnabled = document.createElement('input');
+                        cbSupportEnabled.type = 'checkbox';
+                        cbSupportEnabled.checked = s.enabled;
+                        lblSupport = document.createElement('label');
+                        lblSupport.appendChild(document.createTextNode(s.name + ': '));
+                        lblSupport.appendChild(cbSupportEnabled);
+                        tabs[keyword].appendChild(lblSupport);
+                        tabs[keyword].appendChild(document.createElement('br'));
+                        
+                        cbSupportEnabled.onchange = (function (self, support) {
+                            return function () {
+                                support.enabled = self.checked;
+                                update();
+                                redraw();
+                            };
+                        })(cbSupportEnabled, s);
+                    }
+                }
+            };
+            //onRedraw.push(update);//if the support enabled ever updates by another source this line needs to be added...
+            update();
         })();
     })();
     

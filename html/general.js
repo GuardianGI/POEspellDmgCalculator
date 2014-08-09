@@ -29,6 +29,8 @@ var userInput = {},
             return 'projectile';
         case 'physical':
             return 'phys';
+        case 'traps':
+            return 'trap';
         default:
             return str;
         }

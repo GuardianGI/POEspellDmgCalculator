@@ -13,7 +13,7 @@ var supports = (function () {
             enhance: /\+x% to quality of supported active skill gems/i,
             faster: /x% increased (\S+) speed/i,
             incrDmg: /x% increased\s?(\S*?)\s?damage/i,
-            aditional: /(\d+) additional (\S+)/i,
+            aditional: /(\S*)\s?(\d+) additional (\S+)/i,
             incrCrit: /x% increased critical strike (\S+)/i,
             ironWill: /damage bonus applies to spell damage/i,
             totem: /summons a totem which uses this skill/i,
@@ -36,7 +36,10 @@ var supports = (function () {
                     res[sName].types.push(reType);
                     switch (reType) {
                     case 'culling':
-                        res[sName].isApplicable = function () { return true; };
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
+                            return function () { return support.enabled; };
+                       })(res[sName]);
                         res[sName].applyAfter.push(
                             function (supportStage, skillLvl, skill) {
                                 skill.addCullingStrike(skillLvl);
@@ -44,7 +47,10 @@ var supports = (function () {
                         );
                         break;
                     case 'empower':
-                        res[sName].isApplicable = function () { return true; };
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
+                            return function () { return support.enabled; };
+                       })(res[sName]);
                         res[sName].beforeDmgStages.push((function (support, rawSupport) {
                             var stageStats = {},
                                 column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
@@ -61,7 +67,10 @@ var supports = (function () {
                         })(res[sName], s));
                         break;
                     case 'enhance':
-                        res[sName].isApplicable = function () { return true; };
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
+                            return function () { return support.enabled; };
+                       })(res[sName]);
                         res[sName].beforeDmgStages.push((function (support, rawSupport) {
                             var stageStats = {},
                                 column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
@@ -78,7 +87,10 @@ var supports = (function () {
                         })(res[sName], s));
                         break;
                     case 'ironWill':
-                        res[sName].isApplicable = function () { return true; };
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
+                            return function (skill) { return support.enabled && skill.keywords.indexOf('spell') >= 0; };
+                        })(res[sName]);
                         res[sName].applyBefore.push((function () {
                             return function (supportStage, skillLvl, skill) {
                                 skill.setIncrDmg(((userInput.str / 5) | 0) / 100, 'spell', skillLvl);
@@ -100,11 +112,12 @@ var supports = (function () {
                         })(res[sName], s));
                         break;
                     case 'penetrateRes':
-                        res[sName].isApplicable = (function (dmgType) {
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (dmgType, support) {
                             return function (skill) {//has correct elemental dmg at selected level?
-                                return skill.dmg[userInput.playerLvlForSuggestions][dmgType].min > 0;
+                                return support.enabled && skill.dmg[userInput.playerLvlForSuggestions][dmgType].min > 0;
                             };
-                        })(translateMatch(matches[1]));
+                        })(translateMatch(matches[1]), res[sName]);
                         
                         res[sName].applyFirst.push((function (support, rawSupport, type) {
                             var stageStats = {},
@@ -122,7 +135,10 @@ var supports = (function () {
                         })(res[sName], s, translateMatch(matches[1])));
                         break;
                     case 'incrCrit':
-                        res[sName].isApplicable = function (skill) { return skill.cc > 0; };
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
+                            return function (skill) { return support.enabled && skill.cc > 0; };
+                        })(res[sName]);
                         
                         res[sName].applyFirst.push((function (support, rawSupport, type) {
                             var stageStats = {}, selector,
@@ -141,7 +157,10 @@ var supports = (function () {
                         })(res[sName], s, matches[1]));
                         break;
                     case 'incrCast':
-                        res[sName].isApplicable = function (skill) { return true; };
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
+                            return function (skill) { return support.enabled && skill.keywords.indexOf('spell') >= 0; };
+                        })(res[sName]);
                         res[sName].applyFirst.push((function (support, rawSupport) {
                             var stageStats = {},
                                 column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
@@ -157,13 +176,15 @@ var supports = (function () {
                         })(res[sName], s));
                         break;
                     case 'totem':
-                        res[sName].isApplicable = (function () {
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
                             return function (skill) {
-                                return skill.keywords.indexOf('totem') < 0 &&
+                                return support.enabled && 
+                                    skill.keywords.indexOf('totem') < 0 &&
                                     skill.keywords.indexOf('mine') < 0 &&
-                                    skill.keywords.indexOf('traps') < 0;
+                                    skill.keywords.indexOf('trap') < 0;
                             }
-                        })();
+                        })(res[sName]);
                         res[sName].initFunctions.push(function (skill) {
                             skill.keywords.push('totem');
                         });
@@ -183,38 +204,63 @@ var supports = (function () {
                             })(matches[1], matches[2], res[sName]));
                         break;
                     case 'chain':
-                        res[sName].isApplicable = (function () {
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
                             return function (skill) {
-                                return skill.keywords.indexOf('projectile') >= 0 || skill.isArc;
+                                return support.enabled && (skill.keywords.indexOf('projectile') >= 0 || skill.isArc);
                             }
-                        })();
+                        })(res[sName]);
                         res[sName].applyFirst.push(function (supportStage, skillLvl, skill) {
                             skill.projectiles[skillLvl].multiplier += 2;
                         });
                         break;
                     case 'aditional'://lmp, gmp and?
-                        switch (translateMatch(matches[2])) {
+                        switch (translateMatch(matches[3])) {
                         case 'projectile':
-                            res[sName].isApplicable = function (skill) {
-                                return skill.keywords.indexOf('projectile') >= 0;
-                            };
+                            res[sName].enabled = true;
+                            res[sName].isApplicable = (function (support) {
+                                return function (skill) {
+                                    return support.enabled && skill.keywords.indexOf('projectile') >= 0;
+                                };
+                            })(res[sName]);
                             res[sName].applyFirst.push((function (additionalProjectiles) {
                                 return function (supportStage, skillLvl, skill) {
                                     skill.projectiles[skillLvl].base += additionalProjectiles;
                                 }
-                            })(matches[1] | 0));
+                            })(matches[2] | 0));
+                            break;
+                        case 'trap':
+                            if ('throw' === translateMatch(matches[1])) {
+                                res[sName].enabled = true;
+                                res[sName].isApplicable = (function (support) {
+                                    return function (skill) {
+                                        return support.enabled && skill.keywords.indexOf('trap') >= 0;
+                                    };
+                                })(res[sName]);
+                                res[sName].applyFirst.push((function (additionalTraps) {
+                                    return function (supportStage, skillLvl, skill) {
+                                        console.log(additionalTraps);
+                                        skill.traps[skillLvl].base += additionalTraps;//TODO: with a chain/fork projectile skill this would be too low (it needs to multiply 'multiplier' by 3, not add 2)
+                                    }
+                                })(matches[2] | 0));
+                            }
                             break;
                         default:
-                            console.log(['additional', matches[1], matches[2]]);
+                            console.log('additional', matches[1], matches[2], matches[3]);
                             break;
                         }
                         break;
                     case 'echo':
-                        res[sName].isApplicable = function (skill) {
-                            return skill.keywords.indexOf('totem') < 0 &&
-                                skill.keywords.indexOf('traps') < 0 &&
-                                skill.keywords.indexOf('mine') < 0;
-                        };
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
+                            return function (skill) {
+                                return support.enabled &&
+                                    skill.keywords.indexOf('spell') >= 0 &&
+                                    skill.keywords.indexOf('totem') < 0 &&
+                                    skill.keywords.indexOf('trap') < 0 &&
+                                    skill.keywords.indexOf('mine') < 0;
+                            };
+                        })(res[sName]);
                         res[sName].applyAfter.push((function (support, rawSupport) {
                             var stageStats = {},
                                 column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
@@ -232,19 +278,22 @@ var supports = (function () {
                         })(res[sName], s));
                         break;
                     case 'addedConvertedDmg': case 'dmgConverted':
-                        res[sName].isApplicable = (function (dmgType) {
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (dmgType, support) {
                             return function (skill) {//has dmg of converted type at selected level?
                                 var t;
-                                for (t in skill.dmg[userInput.playerLvlForSuggestions]) {
-                                    if (0 === t.indexOf(dmgType)) {
-                                        if (skill.dmg[userInput.playerLvlForSuggestions][t].min > 0) {
-                                            return true;
+                                if (support.enabled) {
+                                    for (t in skill.dmg[userInput.playerLvlForSuggestions]) {
+                                        if (0 === t.indexOf(dmgType)) {
+                                            if (skill.dmg[userInput.playerLvlForSuggestions][t].min > 0) {
+                                                return true;
+                                            }
                                         }
                                     }
                                 }
                                 return false;
                             };
-                        })(translateMatch(matches[1]));
+                        })(translateMatch(matches[1]), res[sName]);
                         
                         
                         res[sName].applyFirst.push((function (from, to, isAdditional) {
@@ -308,11 +357,12 @@ var supports = (function () {
                                 res[sName].types.push(reType);
                                 switch (reType) {
                                 case 'moreSomethingDmg':
-                                    res[sName].isApplicable = (function (tmpName, type) {
+                                    res[sName].enabled = true;
+                                    res[sName].isApplicable = (function (tmpName, type, support) {
                                         return function (skill) {
-                                            return skill.keywords.indexOf(type) >= 0;
+                                            return support.enabled && skill.keywords.indexOf(type) >= 0;
                                         };
-                                    })(sName, translateMatch(matches[1]));
+                                    })(sName, translateMatch(matches[1]), res[sName]);
                                     res[sName].applyBefore.push((function (rawSupport, support, dmgMod, dmgType) {
                                         var stageStats = {};
                                         for (stage in support.stages) {
@@ -328,7 +378,10 @@ var supports = (function () {
                                     })(s, res[sName], translateMatch(matches[1]), translateMatch(matches[2])))
                                     break;
                                 case 'addedDmg':
-                                    res[sName].isApplicable = function (skill) { return true; };
+                                    res[sName].enabled = true;
+                                    res[sName].isApplicable = (function (support) {
+                                        return function (skill) { return support.enabled; };
+                                    })(res[sName]);
                                     
                                     res[sName].applyFirst.push((function (support) {
                                         var dmgStages = [];
@@ -355,16 +408,18 @@ var supports = (function () {
                                     })(res[sName]));
                                     break;
                                 case 'moreDmg':
+                                    res[sName].enabled = true;
                                     if (matches[1].length == 0) {
                                         matches[1] = 'all';
                                     }
-                                    res[sName].isApplicable = (function (dmgType) {
+                                    res[sName].isApplicable = (function (dmgType, support) {
                                         if (sName.toLowerCase().indexOf('trap') > -1) {
                                             res[sName].initFunctions.push(function (skill) {
-                                                skill.keywords.push('traps');
+                                                skill.keywords.push('trap');
                                             });
                                             return function (skill) {
-                                                return skill.keywords.indexOf('traps') < 0 &&
+                                                return support.enabled &&
+                                                    skill.keywords.indexOf('trap') < 0 &&
                                                     skill.keywords.indexOf('totem') < 0 &&
                                                     (skill.keywords.indexOf('mine') < 0 ||
                                                         skill.supports.indexOf(res['Remote Mine']) >= 0);
@@ -374,14 +429,17 @@ var supports = (function () {
                                                 skill.keywords.push('mine');
                                             });
                                             return function (skill) {
-                                                return skill.keywords.indexOf('mine') < 0 && skill.keywords.indexOf('totem') < 0;
+                                                return support.enabled &&
+                                                    skill.keywords.indexOf('mine') < 0 &&
+                                                    skill.keywords.indexOf('totem') < 0;
                                             };														
                                         } else {
                                             return function (skill) {
-                                                return skill.keywords.indexOf(dmgType) > -1;
+                                                return support.enabled &&
+                                                    skill.keywords.indexOf(dmgType) > -1;
                                             };
                                         }
-                                    })(translateMatch(matches[1]));
+                                    })(translateMatch(matches[1]), res[sName]);
                                     
                                     res[sName].applyBefore.push((function(support) {
                                         var multipliers = [];
@@ -394,12 +452,13 @@ var supports = (function () {
                                     })(res[sName]));
                                     break;
                                 case 'chanceToStatusAilment':
-                                    res[sName].ailmentElement = translateMatch(column.match(/chance to (\S+).*?on hit with (\S+) damage/i)[2]);
-                                    res[sName].isApplicable = (function (dmgType) {
+                                    res[sName].enabled = true;
+                                    res[sName].isApplicable = (function (support) {
+                                        var dmgType = translateMatch(column.match(/chance to (\S+).*?on hit with (\S+) damage/i)[2]);
                                         return function (skill) {
-                                            return skill.dmg[40][dmgType].min > 0;
+                                            return support.enabled && skill.dmg[40][dmgType].min > 0;
                                         };
-                                    })(res[sName].ailmentElement);
+                                    })(res[sName]);
                                     
                                     res[sName].additionalAilmentChance = {};
                                     
@@ -434,9 +493,13 @@ var supports = (function () {
                                     })(translateMatch(matches[1]), res[sName]));
                                     
                                     if ('faster projectiles' === sName.toLowerCase()) {
-                                        res[sName].isApplicable = function (skill) {
-                                            return skill.keywords.indexOf('projectile') >= 0;
-                                        };
+                                        res[sName].enabled = true;
+                                        res[sName].isApplicable = (function (support) {
+                                            return function (skill) {
+                                                return support.enabled &&
+                                                    skill.keywords.indexOf('projectile') >= 0;
+                                            };
+                                        })(res[sName]);
                                     }
                                     break;
                                 default:
@@ -462,6 +525,7 @@ var supports = (function () {
         res[sName].beforeDmgStages = [];//apply before parsing base dmg from raw skill data.
         res[sName].types = [];
         res[sName].keywords = s.keywords.splice(0).map(translateMatch);
+        res[sName].enabled = false;
         res[sName].isApplicable = (function (supportName) {
             return function () {
                 //console.log('default is applicable was called for '+ supportName);
