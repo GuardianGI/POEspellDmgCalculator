@@ -256,6 +256,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             }, lvl);
         };
         
+        s.addCullingStrike = function (lvl) {
+            s.dmg.multiply({mult: userInput.partySize / 0.9, lvl: lvl});
+        };
+        
         s.additionalCC = [];
         s.getCritChance = function (lvl) {
             return s.cc * 
@@ -597,6 +601,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 if (!needsRecalc) {
                     return;
                 }
+                
                 //reset things that may or may not get edited every calcDmg by supports and such.
                 s.getAdditionalChanceToIgnite = function () { return 0; };
                 
@@ -643,12 +648,14 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     }
                 }
                 s.applyForLvls(function (i) {
+                    var sumDmg;
                     s.dmg[i] = skillDmg(rawSkill, i, s.additionalLvl + s.empower[i] + additionalLvlsFromGear, s.maxLvl);
-                    if (s.sumDmgLvl(s.dmg[i]) > lastDmg) {//is new stage
+                    sumDmg = s.sumDmgLvl(s.dmg[i]);
+                    if (sumDmg > lastDmg) {//is new stage
                         s.stages.push(i);
-                        lastDmg = s.sumDmgLvl(s.dmg[i]);
-                    } else if (i > 0 && lastDmg > 0 && s.sumDmgLvl(s.dmg[i]) < lastDmg) {//is missing/corrupt stage
-                        for (key in s.dmg[i]) {
+                        lastDmg = sumDmg;
+                    } else if (i > 0 && lastDmg > 0 && sumDmg < lastDmg) {//is missing/corrupt stage
+                        for (key in s.dmg[i]) {//use prev stage.
                             for (type in s.dmg[i][key]) {
                                 s.dmg[i][key][type] = s.dmg[i - 1][key][type];
                             }

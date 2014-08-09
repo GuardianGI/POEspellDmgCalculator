@@ -39,7 +39,7 @@ var supports = (function () {
                         res[sName].isApplicable = function () { return true; };
                         res[sName].applyAfter.push(
                             function (supportStage, skillLvl, skill) {
-                                skill.dmg.multiply({mult: 1 / 0.9, lvl: skillLvl});
+                                skill.addCullingStrike(skillLvl);
                             }
                         );
                         break;

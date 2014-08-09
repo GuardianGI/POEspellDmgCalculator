@@ -212,9 +212,15 @@ class skill:
 						val = stripXml(getNodeVal(td))
 						if not val:
 							val = -1
-						self.dmg.lvlStages.append(sint(val))
+						val = sint(val)
+						self.dmg.lvlStages.append(val)
 					elif i in dmgColumnNames.keys():
-						self.dmg.setDmg(rowId, dmgColumnNames[i], stripXml(getNodeVal(td)))
+						dmgVal = stripXml(getNodeVal(td))
+						if None is dmgVal or None is re.match('\d+', dmgVal):
+							if val in self.dmg.lvlStages:
+								self.dmg.lvlStages.remove(val)
+						else:
+							self.dmg.setDmg(rowId, dmgColumnNames[i], dmgVal)
 					i += 1
 			rowId += 1
 	
@@ -319,10 +325,10 @@ for skill in skills:
 	dmgStrs = []
 	for lvl in skill.dmg.lvlStages:
 		dmgStr = "{"
-		dmgStr += ("'lvl': '{}', 'dps': {}, 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}" +
+		dmgStr += ("'lvl': '{}', 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}" +
 				(", 'APS': {}" if skill.dmg.hasAPS else "") + 
 				(", 'chain': {}" if skill.dmg.hasChain else "")).format(
-					lvl, skill.dmg.getAvgDmg(i),
+					lvl,
 					printMinMaxDmg(skill.dmg.phys[i]),
 					printMinMaxDmg(skill.dmg.fire[i]),
 					printMinMaxDmg(skill.dmg.cold[i]),
