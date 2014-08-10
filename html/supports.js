@@ -179,7 +179,7 @@ var supports = (function () {
                             for (stage in support.stages) {
                                 stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
                             }
-                            selector = 'chance' === type ? 'additionalCC' : 'additionalCD';
+                            selector = 'chance' === type ? 'additionalIncrCC' : 'additionalCD';
                             return function (supportStage, skillLvl, skill) {
                                 skill[selector][skillLvl] += stageStats[supportStage];
                             };

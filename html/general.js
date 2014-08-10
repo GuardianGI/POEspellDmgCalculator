@@ -97,10 +97,10 @@ var userInput = {},
         armour /= 12;//just the way armour is applied in POE...
         totalDmg = calcPhysIntergral(armour);
         if (userInput.enableCrit) {
+            totalDmg *= 1 - cc;
             min *= cd;
             max *= cd;
             totalDmg += calcPhysIntergral(armour) * cc;
-            count += count * cc;
         }
         return totalDmg / count;
     };

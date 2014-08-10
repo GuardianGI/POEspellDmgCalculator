@@ -154,8 +154,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         case 'critical strike':
                             if ('chance' === matches[4]) {
                                 s.incrCcFromQuality = value / 100;
-                            } else if ('damage' === matches[4]) {
-                                console.log('incr crit dmg: ', value);
+                            } else if ('damage' === matches[4] || 'multiplier' === matches[4]) {
+                                s.incrCdFromQuality = value / 100;
                             }
                             break;
                         }
@@ -276,23 +276,27 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             s.dmg.multiply({mult: userInput.partySize / 0.9, lvl: lvl});
         };
         
-        s.additionalCC = [];
+        s.additionalIncrCC = [];
         s.getCritChance = function (lvl) {
-            return s.cc * 
-                    (1 + userInput.incrCritChance / 100 +
-                        s.additionalCC[lvl] +
+            var cc = s.cc * 
+                    (1 + (s.isMinion ? 0 : (userInput.incrCritChance / 100)) +
+                        s.additionalIncrCC[lvl] +
                         s.incrCcFromQuality * s.getQualityLvl(lvl) +
                         (s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0));
+            return cc > 1 ? 1 : cc;
         };
         s.additionalCD = [];
         s.getCritDmg = function (lvl) {
-            return s.cd + userInput.incrCritDmg / 100 + s.additionalCD[lvl];
+            return s.cd +
+                (s.isMinion ? 0 : userInput.incrCritDmg / 100) +
+                s.additionalCD[lvl] +
+                s.incrCdFromQuality * s.getQualityLvl(lvl);
         };
         s.applyCrit = function (lvl) {
             var chance, mult;
             s.applyForLvls(function (i) {
                 chance = s.getCritChance(i);
-                mult = 1 + (chance > 1 ? 1 : chance) * s.getCritDmg(i);
+                mult = 1 + (chance * s.getCritDmg(i));
                 s.dmg.multiply({'mult': mult,
                     'applicable':function(type) {//crit is applied when applying mosnter def for phys dmg
                         return 'phys' !== type || !userInput.enableMonsterDef; },
@@ -302,19 +306,19 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.getIncrDurationMutiplier = function (type, lvl) {
             return 1 +
                 s.increasedDuration[lvl] +
-                (userInput.incrDuration / 100 || 0) +
-                (userInput['incrDuration' + firstToUpper(type)] / 100 || 0);
+                (s.isMinion ? 0 : ((userInput.incrDuration / 100 || 0) +
+                    (userInput['incrDuration' + firstToUpper(type)] / 100 || 0)));
         };
         s.applyBurn = function (lvl) {
             //todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
             var apply = function (fromType, toType, lvl) {
                 var mult, additionalIgniteChance = s.additionalChanceToIgnite[lvl] +
-                            (userInput.chanceToIgnite / 100) +
+                            (s.isMinion ? 0 : (userInput.chanceToIgnite / 100)) +
                             s.getAdditionalChanceToIgnite(lvl),
                         chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
                     chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
                     mult = chanceToIgnite * 0.8 * s.getIncrDurationMutiplier('burn', lvl) *
-                        (1 + (userInput.burningDmgIncr / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
+                        (1 + (s.isMinion ? 0 : (userInput.burningDmgIncr / 100)));//20% dps for 4 seconds = 0.2 * 4 = 0.8
                     if (mult > 0) {
                         dmgLvls.forEach(function (minMaxAvg) {
                             s.dmg[lvl][toType][minMaxAvg] += s.dmg[lvl][fromType][minMaxAvg] * mult;
@@ -340,7 +344,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
         
         s.getChanceToShock = function (lvl) {
-            return userInput.chanceToShock / 100 + (s.additionalShockChance[lvl] || 0);
+            return (s.isMinion ? 0 : (userInput.chanceToShock / 100)) + (s.additionalShockChance[lvl] || 0);
         };
         
         s.applyShock = function (lvl) {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
@@ -663,6 +667,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 
                 s.incrCastSpeedFromQuality = 0;
                 s.incrCcFromQuality = 0;
+                s.incrCdFromQuality = 0;
                 s.dmgIncreases = {};
                 s.empower = {};
                 s.additionalQuality = {};
@@ -691,7 +696,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 
                 s.stages = [];
                 s.otherIncrCastSpeed = [];
-                s.additionalCC = [];
+                s.additionalIncrCC = [];
                 s.additionalCD = [];
                 s.resPen = [];
                 for (keyword in s.additionalKeywordLvl) {
@@ -720,7 +725,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     
                     s.mana[i] = getRawSkillDmgAtLvl(rawSkill, i, s.additionalLvl, s.maxLvl).mana;
                     s.otherIncrCastSpeed[i] = 0;
-                    s.additionalCC[i] = 0;
+                    s.additionalIncrCC[i] = 0;
                     s.additionalCD[i] = 0;
                     s.resPen[i] = getDmgTypes();
                 }, lvl);
