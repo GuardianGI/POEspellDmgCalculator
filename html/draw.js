@@ -1197,10 +1197,13 @@ var redraw, onRedraw = [],
                 name,
                 tabs = {},
                 tabName,
-                s, keyword, lblSupport, cbSupportEnabled, update;
+                s, keyword, lblSupport, cbSupportEnabled, update, heading;
             container = document.createElement('div');
             container.id = 'supportsTabSetContainer';
             detailsSection.appendChild(container);
+            heading = document.createElement('h3');
+            heading.appendChild(document.createTextNode('Support gems'));
+            container.appendChild(heading);
             supportsTab = tabSet(container, 'supportsApplicability');
             update = function () {
                 for (keyword in tabs) {

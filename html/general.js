@@ -106,14 +106,10 @@ var userInput = {},
             cc = s.getCritChance(lvl);
             if (cc > 0 && cc <= 1) {
                 cd = 1 + s.getCritDmg(lvl);
-                if (70 === lvl) console.log('new skill', cc, cd)
-                if (70 === lvl) console.log(totalDmg)
                 totalDmg *= 1 - cc;
-                if (70 === lvl) console.log(totalDmg)
                 min *= cd;
                 max *= cd;
                 totalDmg += calcPhysIntergral(armour, min, max) * cc;
-                if (70 === lvl) console.log(totalDmg)
             }
         }
         return totalDmg;
