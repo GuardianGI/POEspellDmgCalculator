@@ -190,9 +190,9 @@ var supports = (function () {
                         case 'cast': case 'attack':
                             res[sName].enabled = true;
                             res[sName].isApplicable = (function (support, match) {
-                                return function (skill) { return support.enabled && (
-                                    skill.keywords.indexOf('cast' === match ? 'spell' : 'attack') >= 0 ||
-                                    'attack' === match && skill.isMinion);
+                                return function (skill) {
+                                    return support.enabled &&
+                                        skill.keywords.indexOf(match) >= 0;
                                 };
                             })(res[sName], translateMatch(matches[1]));
                             res[sName].applyFirst.push((function (support, rawSupport, match) {
@@ -216,11 +216,24 @@ var supports = (function () {
                     case 'totem':
                         res[sName].enabled = true;
                         res[sName].isApplicable = (function (support) {
+                            var keyword, notKeywords = ['totem', 'mine', 'trap'];
+                            if (sName.indexOf('spell') >= 0) {
+                                keyword = 'cast';
+                            } else {
+                                keyword = 'attack';
+                                notKeywords.push('melee');
+                            }
                             return function (skill) {
-                                return support.enabled && 
-                                    skill.keywords.indexOf('totem') < 0 &&
-                                    skill.keywords.indexOf('mine') < 0 &&
-                                    skill.keywords.indexOf('trap') < 0;
+                                var i;
+                                if (!support.enabled || skill.keywords.indexOf(keyword) < 0) {
+                                    return false;
+                                }
+                                for (i = 0; i < notKeywords.length; i += 1) {
+                                    if (skill.keywords.indexOf(notKeywords[i]) >= 0) {
+                                        return false;
+                                    }
+                                }
+                                return true;
                             }
                         })(res[sName]);
                         res[sName].initFunctions.push(function (skill) {
@@ -292,7 +305,7 @@ var supports = (function () {
                         res[sName].isApplicable = (function (support) {
                             return function (skill) {
                                 return support.enabled &&
-                                    skill.keywords.indexOf('spell') >= 0 &&
+                                    skill.keywords.indexOf('cast') >= 0 &&
                                     skill.keywords.indexOf('totem') < 0 &&
                                     skill.keywords.indexOf('trap') < 0 &&
                                     skill.keywords.indexOf('mine') < 0;
