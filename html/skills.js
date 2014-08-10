@@ -314,7 +314,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
                     chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
                     mult = chanceToIgnite * 0.8 * s.getIncrDurationMutiplier('burn', lvl) *
-                        (1 + (userInput.incrBurnDmg / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
+                        (1 + (userInput.burningDmgIncr / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
                     if (mult > 0) {
                         dmgLvls.forEach(function (minMaxAvg) {
                             s.dmg[lvl][toType][minMaxAvg] += s.dmg[lvl][fromType][minMaxAvg] * mult;
@@ -473,27 +473,41 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             }
         };
         
-        s.getIncrDmg = function (type, lvl, keywords) {
+        s.getIncrDmg = function (type, lvl) {
             var typesArr = type.split(' from '), addEleDmg = false,
                 incr = 0, typeKey, typeKeys, applicable = true, innerKey;
             for (type in typesArr) {//is ele dmg? add ele dmg incr.
+                type = typesArr[type];
                 if (!addEleDmg && eleDmgTypes.indexOf(type) >= 0) {
                     addEleDmg = true;
-                    incr += ((userInput['eleDmgIncr'] || 0) | 0) / 100;
+                    if (!s.isMinion) {
+                        incr += ((userInput['eleDmgIncr'] || 0) | 0) / 100;
+                    }
                     incr += s.dmgIncreases[lvl]['elemental'];
                     break;
                 }
             }
-            for (type in typesArr) {
-                incr += ((userInput[type + 'DmgIncr'] || 0) | 0) / 100;
+            
+            if (!s.isMinion) {
+                for (type in typesArr) {
+                    type = typesArr[type];
+                    incr += ((userInput[type + 'DmgIncr'] || 0) | 0) / 100;
+                }
+                
+                s.keywords.forEach(function(keyword) {
+                    if (typesArr.indexOf(keyword) < 0) {
+                        incr += ((userInput[keyword + 'DmgIncr'] || 0) | 0) / 100;
+                    }
+                });
             }
             for (typeKey in s.dmgIncreases[lvl]) {
                 typeKeys = typeKey.split(', ');
                 applicable = true;
                 for (type in typesArr) {
+                    type = typesArr[type];
                     for (innerKey in typeKeys) {
                         innerKey = typeKeys[innerKey];
-                        if (!(innerKey === type || keywords.indexOf(innerKey) >= 0 || 'all' === innerKey)) {
+                        if (!(innerKey === type || s.keywords.indexOf(innerKey) >= 0 || 'all' === innerKey)) {
                             applicable = false;
                             break;
                         }
@@ -503,11 +517,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     incr += s.dmgIncreases[lvl][typeKey];
                 }
             }
-            keywords.forEach(function(keyword) {
-                if (typesArr.indexOf(keyword) < 0) {
-                    incr += userInput[keyword + 'DmgIncr'] | 0;
-                }
-            });
+                
+            if (s.isMinion) {
+                incr += ((s.dmgIncreases[lvl]['minion'] || 0) | 0) / 100;
+            }
             return incr;
         };
         
@@ -553,17 +566,12 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         })();
         
         s.applyDmgIncreases = function (lvl) {
-            var keywords;
-            
-            keywords = dmgSubTypes.filter(function (keyword) {//TODO: split dmg increases into player based and gem based (to support minions correctly)
-                return (s.isMinion && ('melee' !== keyword || 'attack' !== keyword)) || //minions do benefit from (some) melee and attack boosts
-                    !(s.isMinion && 'spell' === keyword) ||//minions do not benefit from spell dmg
-                    s.keywords.indexOf(keyword) >= 0;
-            });
             s.applyForLvls(function (i) {
                 var type;
                 for (type in s.dmg[i]) {
-                    s.dmg.multiply({'mult': 1 + s.getIncrDmg(type, i, keywords), 'lvl': i, 'type': type});
+                    dmgLvls.forEach(function (dmgLvl) {
+                        s.dmg[i][type][dmgLvl] *= 1 + s.getIncrDmg(type, i);
+                    });
                 }
             }, lvl);
         };
