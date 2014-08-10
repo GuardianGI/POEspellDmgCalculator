@@ -339,13 +339,6 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             }, lvl);
         };
         
-        //TODO: remove these 2 useless functions I'm too lazy to replace for now.
-            s.applyDmgMultiplier = function (mult, lvl) {
-                s.dmg.multiply({'mult': mult, 'lvl': lvl});
-            };
-            s.applySpecificMultiplier = function (mult, type, lvl) {
-                    s.dmg.multiply({'mult': mult, 'type': type, 'lvl': lvl});
-            };
         s.getChanceToShock = function (lvl) {
             return userInput.chanceToShock / 100 + (s.additionalShockChance[lvl] || 0);
         };
@@ -576,11 +569,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
         
         s.getCombatTime = function (lvl) {
-            var life = lvl * lvl,//todo: get life from mosnter data
+            var life = lvl * lvl,
                 castTime = s.getCastTime(lvl),
                 dps = s.totalDmg(lvl);
             if (dps > 0 && castTime > 0) {
-                //console.log(Math.ceil(life / s.totalDmg(lvl) / castTime) * castTime, dps, castTime);
                 return Math.ceil(life / dps / castTime) * castTime;
             } else {
                 return -1;
@@ -632,7 +624,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             var needsRecalc = true;
             s.setNeedsRecalc = function () { needsRecalc = true; };
             return function (lvl) {
-                var lastDmg = 0, support, key, type, j, additionalLvlsFromGear = 0, keyword, getDmgTypes = function () {
+                var index, lastDmg = 0, support, key, type, j, additionalLvlsFromGear = 0, keyword, getDmgTypes = function () {
                     return {fire: 0, cold: 0, light: 0, chaos: 0, phys: 0, elemental: 0, aoe: 0, projectile: 0};
                 };
                 if (!needsRecalc) {
@@ -644,7 +636,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 
                 resetKeywords();//reset keywords, may be modified by supports.
                 if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap) {
-                    s.keywords.splice(s.keywords.indexOf('spell'), 1);//these may be spells, they are not affected by for instance increased spell dmg.
+                    index = s.keywords.indexOf('spell');
+                    if (index >= 0) {
+                        s.keywords.splice(index, 1);//these may be spells, they are not affected by for instance increased spell dmg.
+                    }
                 }
                 
                 if (s.isMinion) {//assume all minions are melee, up to the user to decide if this will be the case...
@@ -653,13 +648,14 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 
                 s.incrCastSpeedFromQuality = 0;
                 s.incrCcFromQuality = 0;
-                s.dmgIncreases = [];
-                s.empower = [];
-                s.additionalQuality = [];
-                s.additionalChanceToIgnite = [];
-                s.additionalShockChance = [];
-                s.traps = [];
-                s.increasedDuration = [];
+                s.dmgIncreases = {};
+                s.empower = {};
+                s.additionalQuality = {};
+                s.additionalChanceToIgnite = {};
+                s.additionalShockChance = {};
+                s.traps = {};
+                s.increasedDuration = {};
+                s.projectiles = {};
                                 
                 s.applyForLvls(function (i) {
                     s.dmgIncreases[i] = getDmgTypes();
@@ -724,7 +720,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     });
                 }
                 
-                s.parseModifiers();
+                s.parseModifiers(lvl);
                 if (s.isSrs) {//luckily no additional phys dmg bufs exist for now...
                     s.dmg.multiply({'mult': 0.5, 'type': 'phys'});
                     s.applyForLvls(function (i) {
@@ -797,27 +793,23 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     if (userInput.enableCastSpeed) {
                         s.applyIncinerateStage(lvl);
                     } else {
-                        s.applyDmgMultiplier(4, lvl);
+                        s.dmg.multiply({'mult': 4, 'lvl': lvl});
                     }
                 }
                 if (userInput.enableFlameSurgeBurn && s.isFlameSurge) {
-                    s.applyDmgMultiplier(1.5, lvl);
+                    s.dmg.multiply({'mult': 1.5, 'lvl': lvl});
                 }
                 if (s.isFlameBlast) {
-                    s.applyDmgMultiplier(1 + 1.1 * userInput.flameBlastStage, lvl);
+                    s.dmg.multiply({'mult': 1 + 1.1 * userInput.flameBlastStage, 'lvl': lvl});
                 }
                 
                 for (i in s.qualityEffects) {
                     s.qualityEffects[i]();
                 }
                 
-                s.applyDmgMultiplier(s.eff);
-                s.applyDmgIncreases();
-                
-                if (s.isSearingBond) {
-                    s.applySpecificMultiplier(1 + userInput.incrBurnDmg / 100, 'fire', lvl);
-                }
-                
+                s.dmg.multiply({'mult': s.eff, 'lvl': lvl});
+                s.applyDmgIncreases(lvl);
+                                
                 if (userInput.enableMonsterDef) {
                     s.applyDefense(lvl);
                 } else {
@@ -881,7 +873,6 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             return clone;
         }
         
-        s.calcDmg();
         return s;
     };
 
@@ -889,6 +880,7 @@ addExecuteOnLoad(function () {
     var name;
     for (name in rawSkills) {
         skills[name] = skill(rawSkills[name], name);
+        skills[name].calcDmg();
     }
     publicSkills = skills;
 });
