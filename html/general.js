@@ -95,20 +95,30 @@ var userInput = {},
             return (a * a * Math.log(a + 12 * n)) / 144 - a * n / 12 + n * n / 2;
         }
         return function (a, min, max) {//defined intergral over min to max
-            return intergral(a, max) - intergral(a, min);
+            return (intergral(a, max) - intergral(a, min)) / (max - min);
         };
     })(),
     calcAvgPhysDmg = function (s, min, max, armour, lvl) {
-        var  count = max - min, totalDmg, cc = s.getCritChance(lvl), cd = s.getCritDmg(lvl);
-        totalDmg = calcPhysIntergral(armour, min, max);
+        var totalDmg = calcPhysIntergral(armour, min, max),
+            cc,
+            cd;
         if (userInput.enableCrit) {
-            totalDmg *= 1 - cc;
-            min *= cd;
-            max *= cd;
-            totalDmg += calcPhysIntergral(armour, min, max) * cc;
+            cc = s.getCritChance(lvl);
+            if (cc > 0 && cc <= 1) {
+                cd = 1 + s.getCritDmg(lvl);
+                if (70 === lvl) console.log('new skill', cc, cd)
+                if (70 === lvl) console.log(totalDmg)
+                totalDmg *= 1 - cc;
+                if (70 === lvl) console.log(totalDmg)
+                min *= cd;
+                max *= cd;
+                totalDmg += calcPhysIntergral(armour, min, max) * cc;
+                if (70 === lvl) console.log(totalDmg)
+            }
         }
-        return totalDmg / count;
+        return totalDmg;
     };
+    
 addExecuteOnLoad(function () {
     var key, inputs, input;
     inputs = document.getElementsByClassName("userInput");

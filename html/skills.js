@@ -34,7 +34,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.qualityEffects = [];
         s.cc = rawSkill.crit;
         s.eff = rawSkill.eff;
-        s.cd = 2;//get from passive tree and inc crit dmg support.
+        s.cd = 1;
         s.dmg = [];
         s.stages = [];
         s.mana = [];
@@ -240,9 +240,11 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     if (s.dmg[i].hasOwnProperty(type)) {
                         if ('phys' === type) {
                             if (s.dmg[i][type].min > 0 && s.dmg[i][type].max > 0) {
+                                s.dmg[i][type].min *= morePhysDmg;
+                                s.dmg[i][type].max *= morePhysDmg;
                                 s.dmg[i][type].avg = calcAvgPhysDmg(s, s.dmg[i][type].min, s.dmg[i][type].max, monster.armour, i);
-                                s.dmg[i][type].min = calcPhysDmg(s.dmg[i][type].min * morePhysDmg, monster.armour);
-                                s.dmg[i][type].max = calcPhysDmg(s.dmg[i][type].max * morePhysDmg, monster.armour);
+                                s.dmg[i][type].min = calcPhysDmg(s.dmg[i][type].min, monster.armour);
+                                s.dmg[i][type].max = calcPhysDmg(s.dmg[i][type].max, monster.armour);
                             }
                         } else {
                             pen = 0;
@@ -283,7 +285,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         s.additionalIncrCC[lvl] +
                         s.incrCcFromQuality * s.getQualityLvl(lvl) +
                         (s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0));
-            return cc > 1 ? 1 : cc;
+            return cc > 1 ? 1 : cc < 0 ? 0 : cc;
         };
         s.additionalCD = [];
         s.getCritDmg = function (lvl) {
@@ -298,8 +300,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 chance = s.getCritChance(i);
                 mult = 1 + (chance * s.getCritDmg(i));
                 s.dmg.multiply({'mult': mult,
-                    'applicable':function(type) {//crit is applied when applying mosnter def for phys dmg
-                        return 'phys' !== type || !userInput.enableMonsterDef; },
+                    'applicable': function(type) {//crit is applied when applying mosnter def for phys dmg
+                        return 0 !== type.indexOf('phys') || !userInput.enableMonsterDef; },
                     'lvl': i});
             }, lvl);
         };
@@ -315,7 +317,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 var mult, additionalIgniteChance = s.additionalChanceToIgnite[lvl] +
                             (s.isMinion ? 0 : (userInput.chanceToIgnite / 100)) +
                             s.getAdditionalChanceToIgnite(lvl),
-                        chanceToIgnite = 1 - ((1 - s.cc) * (1 - additionalIgniteChance));
+                        chanceToIgnite = 1 - ((1 - s.getCritChance(lvl)) * (1 - additionalIgniteChance));
                     chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
                     mult = chanceToIgnite * 0.8 * s.getIncrDurationMutiplier('burn', lvl) *
                         (1 + (s.isMinion ? 0 : (userInput.burningDmgIncr / 100)));//20% dps for 4 seconds = 0.2 * 4 = 0.8
@@ -350,7 +352,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.applyShock = function (lvl) {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
             var hits = 1, shockStage, mult, chanceToShock;
             s.applyForLvls(function (i) {
-                chanceToShock = s.cc + s.getChanceToShock(i);
+                chanceToShock = s.getCritChance(i) + s.getChanceToShock(i);
                 chanceToShock = chanceToShock > 1 ? 1 : chanceToShock;
                 if (s.getLightDmg(i).max > 0) {
                     hits = s.getHits(i);
