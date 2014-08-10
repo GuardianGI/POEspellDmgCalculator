@@ -582,7 +582,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.applyForLvls = function (fn, start, end) {
             var lvl;
             if (undefined === start) {
-                start = s.stages[0] || 0;
+                start = 0;
                 end = 100;
             } else if (undefined === end) {
                 end = start + 1;
@@ -635,7 +635,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.getAdditionalChanceToIgnite = function () { return 0; };
                 
                 resetKeywords();//reset keywords, may be modified by supports.
-                if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap) {
+                if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap || s.isMinion) {
                     index = s.keywords.indexOf('spell');
                     if (index >= 0) {
                         s.keywords.splice(index, 1);//these may be spells, they are not affected by for instance increased spell dmg.
@@ -644,6 +644,13 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 
                 if (s.isMinion) {//assume all minions are melee, up to the user to decide if this will be the case...
                     s.keywords.push('melee');
+                    s.keywords.push('attack');
+                    if (s.keywords.indexOf('duration') >= 0) {//cast speed doesn;t really affect the dps of permanent minions (in case of a casting spectre just use faster attacks and your imagination...)
+                        s.keywords.push('cast');
+                    }
+                }
+                if (s.isShockwaveTotem || s.keywords.indexOf('spell') >= 0) {//todo: check if shockwave totem really is affected by incr cast speed.
+                    s.keywords.push('cast');
                 }
                 
                 s.incrCastSpeedFromQuality = 0;

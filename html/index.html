@@ -81,12 +81,16 @@
 					<label title="overides all skill quality lvls and sets them to the given value.">Quality lvl for all skills<input class="userInput" type="text" value="20" id="qualityLvlAll" /></label>
 					<label>Quality lvl for all supports<input class="userInput" type="text" value="20" id="qualityLvlAllSupports" /></label>
 					<label>Max spell lvl<input class="userInput" type="text" value="20" id="maxSpellLvl" /></label>
-					<button id="btnAddBestSupport" title="Warning, SLOOOW">Add "best" support gem to all (drawn) skills</button><br />
-					<button id="removeWorstSupport">Remove "worst" support gem from all (drawn) skills</button><br />
-					<button id="removeAllSupport">Remove all support gems from all (drawn) skills</button><br />
-					<button id="addAllSupport">Add all support gems to all (drawn) skills</button><br />
 					<label title="for ele prolif burn builds">Show burn dmg only<input class="userInput" type="checkbox" id="burnDmgOnly" /></label>
 				</fieldset>
+				<fieldset id="globalSupportSettings">
+					<legend>Global supports</legend>
+					<button id="btnAddBestSupport">Add "best" support gem to all (drawn) skills</button><br />
+					<button id="removeWorstSupport" title="Warning, SLOW">Remove "worst" support gem from all (drawn) skills</button><br />
+					<button id="removeAllSupport">Remove all support gems from all (drawn) skills</button><br />
+					<button id="addAllSupport">Add all support gems to all (drawn) skills</button><br />
+					<label>Max supports<input class="userInput" type="text" value="5" id="maxSupports" /></label>
+					<button title="Warning, SLOOOW" id="reduceToMaxSupports">Reduce all skills to the max amount of supports (removing worst first)</button><br />
 			</div>
 			<div>
 				<h2>Player stats. (values are in %)</h2>

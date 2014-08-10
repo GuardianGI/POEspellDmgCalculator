@@ -34,7 +34,8 @@ var redraw, onRedraw = [],
             getSupportRemovedDiff = function (skill, supportIndex) {
                 var clone = skill.clone('tmpClone');
                 clone.supports.splice(supportIndex, 1);
-                clone.calcDmg();
+                clone.setNeedsRecalc();
+                clone.calcDmg(userInput.playerLvlForSuggestions);
                 return clone.totalDmg(userInput.playerLvlForSuggestions) / skill.totalDmg(userInput.playerLvlForSuggestions);
             },
             getColor = function (n) {
@@ -757,7 +758,36 @@ var redraw, onRedraw = [],
         var btnAddBest = document.getElementById('btnAddBestSupport'),
             btnRemoveWorst = document.getElementById('removeWorstSupport'),
             btnRemoveAll = document.getElementById('removeAllSupport'),
-            btnAddAll = document.getElementById('addAllSupport');
+            btnAddAll = document.getElementById('addAllSupport'),
+            btnReduceToMaxSupports = document.getElementById('reduceToMaxSupports');
+        
+        btnReduceToMaxSupports.onclick = function () {
+            var s, k, mult = 0, newMult, worstSupportKey = -1;
+            for (name in skills) {
+                s = skills[name];
+                if (s.draw) {
+                    while (s.supports.length > userInput.maxSupports) {
+                        worstSupportKey = -1;
+                        mult = -1;
+                        for (k in s.supports) {
+                            s.calcDmg(userInput.playerLvlForSuggestions);
+                            newMult = getSupportRemovedDiff(s, k);
+                            if (newMult > mult) {
+                                mult = newMult;
+                                worstSupportKey = k;
+                            }
+                        }
+                        if (worstSupportKey >= 0) {
+                            s.supports.splice(worstSupportKey, 1);
+                            s.setNeedsRecalc();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+            redraw();
+        };
         
         btnAddAll.onclick = function () {
             var dmgMultForSupports, s, name, i;
@@ -810,6 +840,7 @@ var redraw, onRedraw = [],
                      worstSupportKey = -1;
                      mult = -1;
                     for (k in s.supports) {
+                        s.calcDmg(userInput.playerLvlForSuggestions);
                         newMult = getSupportRemovedDiff(s, k);
                         if (newMult > mult) {
                             mult = newMult;
