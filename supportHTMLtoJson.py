@@ -30,6 +30,9 @@ def getNodeVal(node):
 	xml = node.toxml().lower()
 	return None if re.match('^\<[^>]+/\>$', xml) else re.search("(<?\<.*?\>)(.*?)\<\/", xml).group(2).strip()
 
+def stripXml(xml):
+	return re.sub('\<[^>]+>', '', xml)
+	
 def tryGetTitle(node):
 	try:
 		nodeTitle = re.search('title="([^"]*)"', node).group(1)
@@ -147,8 +150,10 @@ class support:
 					i += 1
 			else:#elif rowId < 24:#supports like iron will have an extra row that we ignore. (but we need to allow up to 23 for corrupting)
 				for td in row.getElementsByTagName("td"):
+					val = getNodeVal(td)
+					if val:
+						val = stripXml(val)
 					if i == charLvlColumn:
-						val = getNodeVal(td)
 						if not val:
 							val = -1
 						lvl = sint(val)
@@ -159,12 +164,14 @@ class support:
 							self.lvlStages.append(lvl)
 							values[lvl] = {}
 					elif i is expColumn:
-						val = getNodeVal(td)
 						if val and 'n/a' not in val and '-' not in val:
 							self.maxLvlableStage += 1
 					elif i in ColumnNames.keys():
-						val = getNodeVal(td)
 						if val:
+							if 'n/a' in val or '-' is val:
+								val = '0';
+								if 'x%' in ColumnNames[i]:
+									val += '%'
 							values[lvl][ColumnNames[i]] = val
 						else:
 							values.pop(lvl, None)

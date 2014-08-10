@@ -86,7 +86,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     } else {
                         for (type in d) {
                             if ((properties.hasOwnProperty('applicable') && properties.applicable(type))
-                                    || 0 <= type.indexOf(properties.type) || isApplicable(properties.type)) {
+                                    || 0 <= type.indexOf(properties.type)
+                                    || isApplicable(properties.type)
+                                    || ('elemental' === properties.type && isEleDmgType(type))
+                                    ) {
                                 d[type].min *= properties.mult;
                                 d[type].max *= properties.mult;
                                 d[type].avg *= properties.mult;
@@ -129,50 +132,46 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             var parse = function (qualityBonusStr) {
                 var reIncr = /(\d+[.]?\d*)%\s*increased\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
                     reChance = /(\d+[.]?\d*)%\s*chance\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)\s*(\w*)/i,
-                    matches = qualityBonusStr.match(reIncr), i, value, effect;
+                    matches = qualityBonusStr.match(reIncr), i, value, effect, strippedMatches = [];
                 if (null != matches && matches.length > 2) {
                     value = matches[1] - 0;
-                    if (matches.length > 3) {
-                        switch (matches[3]) {
-                        case 'damage':
-                            s.qualityEffects.push((function (v) {
-                                return function () {
-                                    s.applyForLvls(function (i) {
-                                        s.setIncrDmg(v * getQualityLvl(i) / 100, translateMatch(matches[2]), i);
-                                    }, lvl);
-                                };
-                            })(value));
-                            break;
+                    if (matches.indexOf('damage') >= 2) {//handle all direct dmg increases.
+                        for (i = 2; i < matches.indexOf('damage'); i += 1) {
+                            strippedMatches.push(matches[i]);
                         }
-                        switch (matches[2] + ' ' + matches[3]) {
-                        case 'projectile speed':
-                            //ignore, adds no damage, only range/kill speed.
-                            break;
-                        case 'cast speed':
-                            s.incrCastSpeedFromQuality = value / 100;
-                            break;
-                        case 'critical strike':
-                            if ('chance' === matches[4]) {
-                                s.incrCcFromQuality = value / 100;
-                            } else if ('damage' === matches[4] || 'multiplier' === matches[4]) {
-                                s.incrCdFromQuality = value / 100;
+                        strippedMatches = strippedMatches.map(translateMatch);
+                        if (0 === strippedMatches.length) {
+                            strippedMatches.push('all');
+                        }
+                        
+                        s.applyForLvls(function (i) {
+                            s.setIncrDmg(value * getQualityLvl(i) / 100, strippedMatches.join(', '), i);
+                        }, lvl);
+                        
+                    } else {//handles random other increases...
+                        if (matches.length > 3) {
+                            switch (matches[2] + ' ' + matches[3]) {
+                            case 'projectile speed':
+                                //ignore, adds no damage, only range/kill speed.
+                                break;
+                            case 'cast speed':
+                                s.incrCastSpeedFromQuality = value / 100;
+                                break;
+                            case 'critical strike':
+                                if ('chance' === matches[4]) {
+                                    s.incrCcFromQuality = value / 100;
+                                } else if ('damage' === matches[4] || 'multiplier' === matches[4]) {
+                                    s.incrCdFromQuality = value / 100;
+                                }
+                                break;
                             }
-                            break;
-                        }
-                        switch (matches[2] + ' ' + matches[3] + ' ' + matches[4]) {
-                        case 'skill effect duration':
+                            switch (matches[2] + ' ' + matches[3] + ' ' + matches[4]) {
+                            case 'skill effect duration':
                                 s.applyForLvls(function (i) {
                                     s.increasedDuration[i] += value * getQualityLvl(i) / 100;
                                 }, lvl);
-                            break;
-                        }
-                    } else {
-                        if ("damage" == matches[2]) {
-                            s.qualityEffects.push(function () {
-                                s.applyForLvls(function (i) {
-                                    s.setIncrDmg(value * getQualityLvl(i) / 100, 'all', i);
-                                }, lvl);
-                            });
+                                break;
+                            }
                         }
                     }
                 } else {
@@ -525,7 +524,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             }
                 
             if (s.isMinion) {
-                incr += ((s.dmgIncreases[lvl]['minion'] || 0) | 0) / 100;
+                incr += (s.dmgIncreases[lvl]['minion'] || 0);
             }
             return incr;
         };
@@ -573,10 +572,11 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         
         s.applyDmgIncreases = function (lvl) {
             s.applyForLvls(function (i) {
-                var type;
+                var type, mult;
                 for (type in s.dmg[i]) {
+                    mult = 1 + s.getIncrDmg(type, i);
                     dmgLvls.forEach(function (dmgLvl) {
-                        s.dmg[i][type][dmgLvl] *= 1 + s.getIncrDmg(type, i);
+                        s.dmg[i][type][dmgLvl] *= mult;
                     });
                 }
             }, lvl);

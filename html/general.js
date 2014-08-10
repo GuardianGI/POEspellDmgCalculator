@@ -5,7 +5,6 @@ var userInput = {},
     dmgLvls = ['min', 'max', 'avg'],
     defaultDmg = function () { return {min: 0, max: 0, avg: 0}; },
     gemTypes = ['fire', 'cold', 'light', 'melee', 'minion', 'all'],
-    dmgSubTypes = ['aoe', 'melee', 'projectile', 'minion', 'spell', 'attack'],
     executeOnLoad = [],
     addExecuteOnLoad = (function () {
         var loaded = false;
@@ -20,8 +19,18 @@ var userInput = {},
             }
         };
     })(),
-    dmgTypes = ['fire', 'cold', 'light', 'chaos', 'phys'],
+    dmgSubTypes = ['aoe', 'melee', 'projectile', 'minion', 'spell', 'attack'],
+    isDmgSubType = function (type) {
+        return dmgSubTypes.indexOf(type) >= 0;
+    },
+    dmgTypes = ['fire', 'cold', 'light', 'phys', 'chaos', 'elemental'],
+    isDmgType = function (type) {
+        return dmgTypes.indexOf(type) >= 0;
+    },
     eleDmgTypes = ['fire', 'cold', 'light'],
+    isEleDmgType = function (type) {
+        return eleDmgTypes.indexOf(type) >= 0;
+    },
     translateMatch = function (str) {
         switch (str) {
         case 'lightning':
