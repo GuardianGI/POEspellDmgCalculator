@@ -1,5 +1,5 @@
 var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
-        var type,
+        var type, addAsType,
             d = {phys: defaultDmg(),
                 fire: defaultDmg(),
                 cold: defaultDmg(),
@@ -7,10 +7,16 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 chaos: defaultDmg()},
             rawSkillDmg = getRawSkillDmgAtLvl(rawSkill, lvl, additionalLvl, maxLvl);
         if (rawSkillDmg) {
-            for (type in d) {
-                d[type].min = rawSkillDmg[type].min;
-                d[type].max = rawSkillDmg[type].max;
-                d[type].avg = (d[type].min + d[type].max) / 2;
+            for (type in rawSkillDmg) {
+                addAsType = type.replace(/_/g, ' ');
+                if (d.hasOwnProperty(type) || type !== addAsType) {
+                    if (!d.hasOwnProperty(addAsType)) {
+                        d[addAsType] = {};
+                    }
+                    d[addAsType].min = rawSkillDmg[type].min;
+                    d[addAsType].max = rawSkillDmg[type].max;
+                    d[addAsType].avg = (d[addAsType].min + d[addAsType].max) / 2;
+                }
             }
         }
         return d;
@@ -311,7 +317,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         (1 + (userInput.incrBurnDmg / 100));//20% dps for 4 seconds = 0.2 * 4 = 0.8
                     if (mult > 0) {
                         dmgLvls.forEach(function (minMaxAvg) {
-                            s.dmg[lvl][toType][minMaxAvg] = s.dmg[lvl][fromType][minMaxAvg] * mult;
+                            s.dmg[lvl][toType][minMaxAvg] += s.dmg[lvl][fromType][minMaxAvg] * mult;
                         });
                     }
                 };
@@ -319,13 +325,15 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             s.applyForLvls(function (i) {
                 var asTypeBase = 'burning from ', fromType, fromTypes = [];
                 for (fromType in s.dmg[i]) {
-                    if (fromType.indexOf('fire') >= 0 && s.dmg[i][fromType].min > 0) {
+                    if (fromType.indexOf('fire') >= 0 && fromType.indexOf('burning') < 0 && s.dmg[i][fromType].min > 0) {
                         fromTypes.push(fromType);
                     }
                 }
                 fromTypes.forEach(function (fromType) {
                     var asType = asTypeBase + fromType;
-                    s.dmg[i][asType] = defaultDmg();
+                    if (!s.dmg[i].hasOwnProperty(asType)) {
+                        s.dmg[i][asType] = defaultDmg();
+                    }
                     apply(fromType, asType, i);
                 });
             }, lvl);
@@ -473,21 +481,40 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
         
         s.getIncrDmg = function (type, lvl, keywords) {
-            var incr = 0, typeKey, typeKeys, applicable = true, innerKey;
+            var typesArr = type.split(' from '), addEleDmg = false,
+                incr = 0, typeKey, typeKeys, applicable = true, innerKey;
+            for (type in typesArr) {//is ele dmg? add ele dmg incr.
+                if (!addEleDmg && eleDmgTypes.indexOf(type) >= 0) {
+                    addEleDmg = true;
+                    incr += ((userInput['eleDmgIncr'] || 0) | 0) / 100;
+                    incr += s.dmgIncreases[lvl]['elemental'];
+                    break;
+                }
+            }
+            for (type in typesArr) {
+                incr += ((userInput[type + 'DmgIncr'] || 0) | 0) / 100;
+            }
             for (typeKey in s.dmgIncreases[lvl]) {
                 typeKeys = typeKey.split(', ');
                 applicable = true;
-                for (innerKey in typeKeys) {
-                    innerKey = typeKeys[innerKey];
-                    if (!(innerKey === type || keywords.indexOf(innerKey) >= 0 || 'all' === innerKey)) {
-                        applicable = false;
-                        break;
-                    }									
+                for (type in typesArr) {
+                    for (innerKey in typeKeys) {
+                        innerKey = typeKeys[innerKey];
+                        if (!(innerKey === type || keywords.indexOf(innerKey) >= 0 || 'all' === innerKey)) {
+                            applicable = false;
+                            break;
+                        }
+                    }
                 }
                 if (applicable) {
                     incr += s.dmgIncreases[lvl][typeKey];
                 }
             }
+            keywords.forEach(function(keyword) {
+                if (typesArr.indexOf(keyword) < 0) {
+                    incr += userInput[keyword + 'DmgIncr'] | 0;
+                }
+            });
             return incr;
         };
         
@@ -533,38 +560,17 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         })();
         
         s.applyDmgIncreases = function (lvl) {
-            var spellTypes = ['aoe', 'projectile', s.isMinion ? 'minion' : 'spell'],//minions do not benefit from spell dmg
-                keywords, generalIncr = 0, lvl;
+            var keywords;
             
-            keywords = s.keywords.filter(function (keyword) {
-                for (key in spellTypes) {
-                    if (spellTypes[key].toLowerCase() === keyword.toLowerCase()) {
-                        return true;
-                    }
-                }
-                return false;
-            });
-            keywords.forEach(function(keyword) {
-                generalIncr += userInput[keyword + 'DmgIncr'] | 0;
+            keywords = dmgSubTypes.filter(function (keyword) {//TODO: split dmg increases into player based and gem based (to support minions correctly)
+                return (s.isMinion && ('melee' !== keyword || 'attack' !== keyword)) || //minions do benefit from (some) melee and attack boosts
+                    !(s.isMinion && 'spell' === keyword) ||//minions do not benefit from spell dmg
+                    s.keywords.indexOf(keyword) >= 0;
             });
             s.applyForLvls(function (i) {
-                var types, type, typesArr, incr, appliedGeneralEleDmg;
-                for (types in s.dmg[i]) {
-                    incr = 1 + generalIncr / 100;
-                    appliedGeneralEleDmg = false
-                    typesArr = types.split(' from ');
-                    for (type in typesArr) {//usually just one, could be more.
-                        type = typesArr[type];//get val, not key...
-                        if (!appliedGeneralEleDmg && eleDmgTypes.indexOf(type) >= 0) {
-                            appliedGeneralEleDmg = true;
-                            incr += userInput.eleDmgIncr / 100;
-                        }
-                        incr += (userInput[type + 'DmgIncr'] || 0) / 100;
-                        incr += s.getIncrDmg(type, i, keywords);//already in percent format....
-                    }
-                    dmgLvls.forEach(function (key) {
-                        s.dmg[i][types][key] *= incr;
-                    });
+                var type;
+                for (type in s.dmg[i]) {
+                    s.dmg.multiply({'mult': 1 + s.getIncrDmg(type, i, keywords), 'lvl': i, 'type': type});
                 }
             }, lvl);
         };

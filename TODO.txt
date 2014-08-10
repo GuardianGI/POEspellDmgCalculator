@@ -37,6 +37,7 @@ todo:
 				
 
 bugs:
+	if added cold is added to a gem before added cold the cold dmg isn't converted to fire.
 
 cool to have:
 	curse cast speed

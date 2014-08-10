@@ -26,6 +26,7 @@ def ignore_exception(IgnoreException=Exception, DefaultVal=None):
 	return dec
 
 sint = ignore_exception(ValueError)(int)
+sfloat = ignore_exception(ValueError)(float)
 
 def strToFloat(s):
 	return float(re.search("([\d.]*)", s).group(1))
@@ -39,15 +40,11 @@ def stripXml(xml):
 def getNodeVal(node):
 	return getXmlVal(node.toxml())
 
+dmgTypes = ['fire', 'cold', 'light', 'phys', 'chaos', 'burning_from_fire'];
 
 class dmg:	
 	def __init__(self):
 		self.lvlStages = []
-		self.fire = list([0, 0] for i in range(0, 35))
-		self.cold = list([0, 0] for i in range(0, 35))
-		self.light = list([0, 0] for i in range(0, 35))
-		self.phys = list([0, 0] for i in range(0, 35))
-		self.chaos = list([0, 0] for i in range(0, 35))
 		self.mana = list(1 for i in range(0, 35))
 		self.APS = list(1 for i in range(0, 35))
 		self.chains = list(1 for i in range(0, 35))
@@ -64,25 +61,42 @@ class dmg:
 		return 0
 	
 	def setDmg(self, stage, typeStr, dmgStr):
+		isDot = False
 		if re.match("\s?\d+?\s*-\s*\d+?\s?", dmgStr):
 			dmgVal = list(int(strToFloat(n)) for n in dmgStr.split("-"))
 		elif re.match("\s?\d+.*", dmgStr):
 			try:
 				val = float(dmgStr.replace(",", ""))
 				dmgVal = [val, val]
+				isDot = True
 			except Exception:
 				dmgVal = [0, 0]
 		else:
 			dmgVal = [0, 0]
 		if "fire" in typeStr:
-			self.fire[stage] = dmgVal
+			if isDot or 'dot' in typeStr:
+				if not hasattr(self, 'burning_from_fire'):
+					self.burning_from_fire = list([0, 0] for i in range(0, 35))
+				self.burning_from_fire[stage] = dmgVal
+			else:
+				if not hasattr(self, 'fire'):
+					self.fire = list([0, 0] for i in range(0, 35))
+				self.fire[stage] = dmgVal
 		elif "cold" in typeStr or "ice" in typeStr:
+			if not hasattr(self, 'cold'):
+				self.cold = list([0, 0] for i in range(0, 35))
 			self.cold[stage] = dmgVal
 		elif "light" in typeStr:
+			if not hasattr(self, 'light'):
+				self.light = list([0, 0] for i in range(0, 35))
 			self.light[stage] = dmgVal
 		elif "chaos" in typeStr:
+			if not hasattr(self, 'chaos'):
+				self.chaos = list([0, 0] for i in range(0, 35))
 			self.chaos[stage] = dmgVal
 		elif "phys" in typeStr or "damage" == typeStr:
+			if not hasattr(self, 'phys'):
+				self.phys = list([0, 0] for i in range(0, 35))
 			self.phys[stage] = dmgVal
 		elif "mana" in typeStr:
 			self.mana[stage] = dmgVal[0]
@@ -196,6 +210,8 @@ class skill:
 					tdTxt = getNodeVal(td)
 					if "required level" in tdTxt:
 						charLvlColumn = i - 1
+					elif "dot" in tdTxt:
+						dmgColumnNames[i - 1] = tdTxt
 					elif "damage" in tdTxt:
 						if not "absorption" in tdTxt:
 							dmgColumnNames[i - 1] = tdTxt
@@ -279,32 +295,32 @@ class skill:
 for file in os.listdir(dir):
 	newSkill = skill(file)
 	skills.append(newSkill)
-s = "Name\tavgPhys\tavgFire\tavgCold\tavglight\teff\tcrit\taddedFire\taddedCold\taddedLight\tshocked multi\tburnDmg\tMana\ttotal dmg\n"
-row = 2
-for skill in skills:
-	s += "{}\n".format(
-		"\t".join(str(x) for x in [
-			skill.name, #D
-			"{}".format(sum(skill.dmg.phys[19]) / 2, row),#E
-			"={}+K{}".format(sum(skill.dmg.fire[19]) / 2, row),#F
-			"={}+L{}".format(sum(skill.dmg.cold[19]) / 2, row),#G
-			"={}+M{}".format(sum(skill.dmg.light[19]) / 2, row),#H
-			skill.dmg.effectiveness,#I
-			skill.dmg.crit,#J
-			"=E{} * $B$2".format(row),#K
-			"=E{} * $B$1".format(row),#L
-			"=E{} * $B$3".format(row),#M
-			"=(1 + (J{0} * (H{0} > 0)))".format(row),#N shock multi
-			"=0.8 * J{0} * F{0}".format(row),#O burn dmg
-			skill.dmg.mana[19],#P
-			"=(E{0}+F{0}+G{0}+H{0}) * I{0} * (1 + J{0}) * N{0}".format(row),#Q
-			"=(Q{0} + O{0}) * N{0}".format(row)#R
-		]))
-	row += 1
+# s = "Name\tavgPhys\tavgFire\tavgCold\tavglight\teff\tcrit\taddedFire\taddedCold\taddedLight\tshocked multi\tburnDmg\tMana\ttotal dmg\n"
+# row = 2
+# for skill in skills:
+	# s += "{}\n".format(
+		# "\t".join(str(x) for x in [
+			# skill.name, #D
+			# "{}".format(sum(skill.dmg.phys[19]) / 2, row),#E
+			# "={}+K{}".format(sum(skill.dmg.fire[19]) / 2, row),#F
+			# "={}+L{}".format(sum(skill.dmg.cold[19]) / 2, row),#G
+			# "={}+M{}".format(sum(skill.dmg.light[19]) / 2, row),#H
+			# skill.dmg.effectiveness,#I
+			# skill.dmg.crit,#J
+			# "=E{} * $B$2".format(row),#K
+			# "=E{} * $B$1".format(row),#L
+			# "=E{} * $B$3".format(row),#M
+			# "=(1 + (J{0} * (H{0} > 0)))".format(row),#N shock multi
+			# "=0.8 * J{0} * F{0}".format(row),#O burn dmg
+			# skill.dmg.mana[19],#P
+			# "=(E{0}+F{0}+G{0}+H{0}) * I{0} * (1 + J{0}) * N{0}".format(row),#Q
+			# "=(Q{0} + O{0}) * N{0}".format(row)#R
+		# ]))
+	# row += 1
 
-f = open("skillAvgDmgTest.txt", "w")
-f.write(s)
-f.close()
+# f = open("skillAvgDmgTest.txt", "w")
+# f.write(s)
+# f.close()
 
 def printMinMaxDmg(dmg):
 	return "{{'min': {}, 'max': {}}}".format(dmg[0], dmg[1])
@@ -325,18 +341,15 @@ for skill in skills:
 	dmgStrs = []
 	for lvl in skill.dmg.lvlStages:
 		dmgStr = "{"
-		dmgStr += ("'lvl': '{}', 'phys': {}, 'fire': {}, 'cold': {}, 'light': {}, 'chaos': {}, 'mana': {}" +
-				(", 'APS': {}" if skill.dmg.hasAPS else "") + 
-				(", 'chain': {}" if skill.dmg.hasChain else "")).format(
-					lvl,
-					printMinMaxDmg(skill.dmg.phys[i]),
-					printMinMaxDmg(skill.dmg.fire[i]),
-					printMinMaxDmg(skill.dmg.cold[i]),
-					printMinMaxDmg(skill.dmg.light[i]),
-					printMinMaxDmg(skill.dmg.chaos[i]),
-					skill.dmg.mana[i],
-					skill.dmg.APS[i] if skill.dmg.hasAPS else skill.dmg.chains[i],
-					skill.dmg.chains[i])
+		dmgStr += "'lvl': '{}'".format(lvl)
+		for type in dmgTypes:
+			if hasattr(skill.dmg, type):
+				dmgStr += ", '{}': {}".format(type, printMinMaxDmg(getattr(skill.dmg, type)[i]))
+		dmgStr += ", 'mana': {}".format(skill.dmg.mana[i])
+		if skill.dmg.hasAPS:
+			dmgStr += ", 'APS': {}".format(skill.dmg.APS[i])
+		if skill.dmg.hasChain:
+			dmgStr += ", 'chain': {}".format(skill.dmg.chains[i])
 			
 		dmgStr += "}";
 		dmgStrs.append(dmgStr)

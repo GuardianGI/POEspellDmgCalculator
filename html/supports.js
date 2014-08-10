@@ -53,7 +53,6 @@ var supports = (function () {
                                     for (stage in support.stages) {
                                         stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
                                     }
-                                    console.log(stageStats);
                                     
                                     return function (supportStage, skillLvl, skill) {
                                         skill.increasedDuration[skillLvl] += stageStats[supportStage];
@@ -145,7 +144,7 @@ var supports = (function () {
                         res[sName].enabled = true;
                         res[sName].isApplicable = (function (dmgType, support) {
                             return function (skill) {//has correct elemental dmg at selected level?
-                                return support.enabled && skill.dmg[userInput.playerLvlForSuggestions][dmgType].min > 0;
+                                return support.enabled && skill.getDmg(dmgType, userInput.playerLvlForSuggestions).min > 0;
                             };
                         })(translateMatch(matches[1]), res[sName]);
                         
@@ -319,17 +318,8 @@ var supports = (function () {
                         res[sName].enabled = true;
                         res[sName].isApplicable = (function (dmgType, support) {
                             return function (skill) {//has dmg of converted type at selected level?
-                                var t;
-                                if (support.enabled) {
-                                    for (t in skill.dmg[userInput.playerLvlForSuggestions]) {
-                                        if (0 === t.indexOf(dmgType)) {
-                                            if (skill.dmg[userInput.playerLvlForSuggestions][t].min > 0) {
-                                                return true;
-                                            }
-                                        }
-                                    }
-                                }
-                                return false;
+                                return support.enabled &&
+                                    skill.getDmg(dmgType, userInput.playerLvlForSuggestions).min > 0;
                             };
                         })(translateMatch(matches[1]), res[sName]);
                         

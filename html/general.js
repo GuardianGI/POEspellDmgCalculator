@@ -3,8 +3,9 @@ var userInput = {},
         return str.charAt(0).toUpperCase() + str.slice(1);
     },
     dmgLvls = ['min', 'max', 'avg'],
-    defaultDmg = function () { return {min: -1, max: -1, avg: -1}; },
+    defaultDmg = function () { return {min: 0, max: 0, avg: 0}; },
     gemTypes = ['fire', 'cold', 'light', 'melee', 'minion', 'all'],
+    dmgSubTypes = ['aoe', 'melee', 'projectile', 'minion', 'spell', 'attack'],
     executeOnLoad = [],
     addExecuteOnLoad = (function () {
         var loaded = false;
