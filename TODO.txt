@@ -38,6 +38,7 @@ todo:
 
 bugs:
 	if added cold is added to a gem before added cold the cold dmg isn't converted to fire.
+	in the case of insane dmg/crit damage physical dmg reduction causes an increase in dmg???
 
 cool to have:
 	curse cast speed

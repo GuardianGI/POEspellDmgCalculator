@@ -90,17 +90,22 @@ var userInput = {},
     calcPhysDmg = function (rawDmg, armour) {
         return (rawDmg * rawDmg) / (rawDmg + (armour / 12));
     },
+    calcPhysIntergral = (function () {
+        var intergral = function (a, n) {//intergral of: dmg ^ 2 / (dmg + armour / 12)
+            return (a * a * Math.log(a + 12 * n)) / 144 - a * n / 12 + n * n / 2;
+        }
+        return function (a, min, max) {//defined intergral over min to max
+            return intergral(a, max) - intergral(a, min);
+        };
+    })(),
     calcAvgPhysDmg = function (s, min, max, armour, lvl) {
-        var calcPhysIntergral = function (arm) {//defined intergral for dmg ^ 2 / (dmg - armour) over min to max
-            return ((((arm * arm) * (-Math.log(arm + min))) + (arm * arm) * Math.log(arm + max)) - ((max - min) * arm)) + (((max * max) - (min * min)) / 2);
-        }, count = max - min, totalDmg, cc = s.getCritChance(lvl), cd = s.getCritDmg(lvl);
-        armour /= 12;//just the way armour is applied in POE...
-        totalDmg = calcPhysIntergral(armour);
+        var  count = max - min, totalDmg, cc = s.getCritChance(lvl), cd = s.getCritDmg(lvl);
+        totalDmg = calcPhysIntergral(armour, min, max);
         if (userInput.enableCrit) {
             totalDmg *= 1 - cc;
             min *= cd;
             max *= cd;
-            totalDmg += calcPhysIntergral(armour) * cc;
+            totalDmg += calcPhysIntergral(armour, min, max) * cc;
         }
         return totalDmg / count;
     };
