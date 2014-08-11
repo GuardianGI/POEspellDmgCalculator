@@ -47,7 +47,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.castTime = rawSkill.castTime;
         s.projectiles = [];
         s.resPen = [];
-        s.isMinion = rawSkill.hasAPS;
+        s.isMinion = rawSkill.hasAPS || s.name.indexOf('Animate') >= 0;
         s.maxMinions = 0;
         s.chains = rawSkill.chains;
         s.supportQualityLvl = {};
@@ -550,19 +550,21 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.applyAPS = (function (lvl) {
             var apsStages;
             if (s.isMinion) {
-                apsStages = rawSkill.dmg.map(function (skill) { return skill.APS; });
+                apsStages = rawSkill.dmg.map(function (skill) {
+                    return skill.APS;
+                });
                 return function () {
                     var i = 0, stage;
                     if (undefined === lvl) {
                         lvl = 0;
                         for (stage in s.stages) {
-                            for (; lvl < stage; lvl += 1) {
-                                s.dmg.multiply({'mult': apsStages[i], 'lvl': lvl});
+                            for (; lvl < stage; lvl += 1) {//for lvl up to last stage
+                                s.dmg.multiply({'mult': apsStages[i] || 1, 'lvl': lvl});
                             }
                             i += 1;
                         }
-                        for (; lvl < 100; lvl += 1) {
-                            s.dmg.multiply({'mult': apsStages[apsStages.length - 1], 'lvl': lvl});
+                        for (; lvl < 100; lvl += 1) {//lvl form last stage up to 100.
+                            s.dmg.multiply({'mult': apsStages[apsStages.length - 1] || 1, 'lvl': lvl});
                         }
                         lvl = undefined;
                     } else {
@@ -573,7 +575,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                                     break;
                                 }
                             }
-                            s.dmg.multiply({'mult': apsStages[i], 'lvl': lvl});
+                            s.dmg.multiply({'mult': apsStages[i] || 1, 'lvl': lvl});
                         }
                     }
                 };

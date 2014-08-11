@@ -7,10 +7,11 @@ var auras, supports = (function () {
             moreSomethingDmg: /x% more\s(\S+)\s(.+) damage/i,
             less: /(\d+%) less\s?(\S+)\s?(.*)/i,
             addedConvertedDmg: /gain x% of (\S+) damage as extra (\S+) damage/i,
+            addedConvertedDmg2: /add x% of your (\S+) damage as (\S+) damage/i,
+            dmgConverted: /x% of (\S+) damage converted to (\S+) damage/i,
             chain: /chain \+(\d+) times/i,
             chanceToStatusAilment: /x% chance to (\S+)/i,
             penetrateRes: /penetrates x% (\S+) res/i,
-            dmgConverted: /x% of (\S+) damage converted to (\S+) damage/i,
             empower: /\+x level of supported active skill gems/i,//not as general as I'd like, but I doubt there will ever be similar skills
             enhance: /\+x% to quality of supported active skill gems/i,
             faster: /x% increased (\S+) speed/i,
@@ -392,7 +393,7 @@ var auras, supports = (function () {
                             };
                         })(res[sName], s));
                         break;
-                    case 'addedConvertedDmg': case 'dmgConverted':
+                    case 'addedConvertedDmg': case 'dmgConverted': case 'addedConvertedDmg2':
                         res[sName].enabled = true;
                         res[sName].isApplicable = (function (dmgType, support) {
                             return function (skill) {//has dmg of converted type at selected level?
@@ -405,7 +406,7 @@ var auras, supports = (function () {
                         res[sName].applyAfterFirst.push((function (from, to, isAdditional) {
                             var pctConverted = {}, column = false;
                             column = findIndex(s.stageColumns, function (tmpColumn) {
-                                return tmpColumn.indexOf('gain x% of ') >= 0 || tmpColumn.indexOf('converted to') >= 0;
+                                return tmpColumn.indexOf(to) >= 0 || tmpColumn.indexOf('damage') >= 0;
                             });
                             /*for (stage in s.stageStats) {
                                 for (tmpColumn in s.stageStats[stage]) {
@@ -457,7 +458,7 @@ var auras, supports = (function () {
                                     }
                                 }
                             };
-                        })(translateMatch(matches[1]), translateMatch(matches[2]), 'addedConvertedDmg' === reType));
+                        })(translateMatch(matches[1]), translateMatch(matches[2]), 'dmgConverted' !== reType));
                         break;
                     }
                     for (columnIndex in s.stageColumns) {
