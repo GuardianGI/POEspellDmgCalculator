@@ -232,9 +232,16 @@ var auras, supports = (function () {
                         case 'cast': case 'attack':
                             res[sName].enabled = true;
                             res[sName].isApplicable = (function (support, match) {
+                                if (!support.hasOwnProperty('applicableFns')) {//allow multiple applicability fn's for haste aura working on attack, movement and cast speed
+                                    support.applicableFns = [];
+                                }
+                                support.applicableFns.push(function (skill) {
+                                    return skill.keywords.indexOf(match) >= 0;
+                                });
                                 return function (skill) {
-                                    return support.enabled &&
-                                        skill.keywords.indexOf(match) >= 0;
+                                    return support.enabled && support.applicableFns.reduce(function (res, fn) {
+                                        return res || fn(skill);
+                                    }, false);
                                 };
                             })(res[sName], translateMatch(matches[1]));
                             res[sName].applyFirst.push((function (support, rawSupport, match) {
@@ -247,7 +254,9 @@ var auras, supports = (function () {
                                     stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
                                 }
                                 return function (supportStage, skillLvl, skill) {
-                                    skill.otherIncrCastSpeed[skillLvl] += stageStats[supportStage];
+                                    if (skill.keywords.indexOf(match) >= 0) {
+                                        skill.otherIncrCastSpeed[skillLvl] += stageStats[supportStage];
+                                    }
                                 };
                             })(res[sName], s, matches[1]));
                             break;
@@ -430,7 +439,7 @@ var auras, supports = (function () {
                                     var fromType, addedAs;
                                     for (i = 0; i < keys.length; i += 1) {
                                         fromType = keys[i];
-                                        if (0 === fromType.indexOf(from)) {// fromType.indexOf(from) >= 0 && fromType.indexOf(to) < 0 ) {
+                                        if (0 === fromType.indexOf(from)) {
                                             addedAs = to + ' from ' + fromType;
                                             if (!skill.dmg[skillLvl].hasOwnProperty(addedAs)) {
                                                 skill.dmg[skillLvl][addedAs] = {}
