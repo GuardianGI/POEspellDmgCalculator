@@ -257,7 +257,7 @@ var supports = (function () {
                         res[sName].enabled = true;
                         res[sName].isApplicable = (function (support) {
                             var keyword, notKeywords = ['totem', 'mine', 'trap'];
-                            if (sName.indexOf('spell') >= 0) {
+                            if (sName.toLowerCase().indexOf('spell') >= 0) {
                                 keyword = 'cast';
                             } else {
                                 keyword = 'attack';

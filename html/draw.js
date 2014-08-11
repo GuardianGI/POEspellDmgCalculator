@@ -946,8 +946,15 @@ var redraw, onRedraw = [],
                         tr.appendChild(th);
                         th.innerHTML = cols[i];
                     }
-                };
-                tabsByDificulty = tabSet(monsterData, 'tabsByDificulty');
+                }, areaAndMonsterContainer, header;
+                areaAndMonsterContainer = document.createElement('div');
+                monsterData.appendChild(areaAndMonsterContainer);
+                
+                header = document.createElement('h3');
+                header.appendChild(document.createTextNode('Area & monster data'));
+                areaAndMonsterContainer.appendChild(header);
+                
+                tabsByDificulty = tabSet(areaAndMonsterContainer, 'tabsByDificulty');
             for (difName in monstersByArea) {
                 difTabParent = tabsByDificulty.addTab(difName);
                 (function () {

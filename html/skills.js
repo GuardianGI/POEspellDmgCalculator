@@ -428,6 +428,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.isArc = s.name.indexOf("Arc") > -1;
         s.isSrs = s.name.indexOf("Summon Raging Spirit") > -1;
         s.isDischarge = s.name.indexOf("Discharge") > -1;
+        s.isRf = s.name.indexOf("Righteous Fire") > -1;
         
         s.applySwarm = function () {
             s.dmg.multiply({'mult': s.maxMinions});
@@ -652,7 +653,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.getAdditionalChanceToIgnite = function () { return 0; };
                 
                 resetKeywords();//reset keywords, may be modified by supports.
-                if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap || s.isMinion) {
+                if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap || s.isMinion || s.isRf) {
                     index = s.keywords.indexOf('spell');
                     if (index >= 0) {
                         s.keywords.splice(index, 1);//these may be spells, they are not affected by for instance increased spell dmg.
@@ -743,8 +744,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                             s.dmg.multiply({'mult': 1 / (0.1 - s.getQualityLvl(i) / 1000), 'lvl': i});
                         }, lvl);
                     });
-                }
-                if (s.isDischarge) {
+                } else if (s.isDischarge) {
                     (function () {
                         var charges,
                             type,
@@ -761,6 +761,13 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                             }, lvl);
                         }
                     })();
+                } else if (s.isRf) {
+                    s.applyForLvls(function (i) {
+                        s.dmg[i]['burning from fire from life'] = {};
+                        dmgLvls.forEach(function (dLvl) {
+                            s.dmg[i]['burning from fire from life'][dLvl] = userInput.life / 2;
+                        });
+                    }, lvl);
                 }
                 s.parseModifiers(lvl);
                 if (s.isSrs) {//luckily no additional phys dmg bufs exist for now...
