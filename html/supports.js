@@ -255,7 +255,7 @@ var auras, supports = (function () {
                                 }
                                 return function (supportStage, skillLvl, skill) {
                                     if (skill.keywords.indexOf(match) >= 0) {
-                                        skill.otherIncrCastSpeed[skillLvl] += stageStats[supportStage];
+                                        skill.setIncrDmg(stageStats[supportStage], match, skillLvl);
                                     }
                                 };
                             })(res[sName], s, matches[1]));

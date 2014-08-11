@@ -475,15 +475,19 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
         
         s.setIncrDmg = function (incr, type, lvl) {
-            var apply = function () {
-                if (undefined === s.dmgIncreases[lvl]) {
-                    s.dmgIncreases[lvl] = {};
-                }
-                if (!s.dmgIncreases[lvl].hasOwnProperty(type)) {
-                    s.dmgIncreases[lvl][type] = 0;
-                }
-                s.dmgIncreases[lvl][type] += incr;
-            };
+            var apply = 'attack' === type ? function () {
+                    s.incrAps[lvl] += incr;
+                }: 'cast' === type ? function () {
+                    s.otherIncrCastSpeed[lvl] += incr;
+                }: function () {
+                    if (undefined === s.dmgIncreases[lvl]) {
+                        s.dmgIncreases[lvl] = {};
+                    }
+                    if (!s.dmgIncreases[lvl].hasOwnProperty(type)) {
+                        s.dmgIncreases[lvl][type] = 0;
+                    }
+                    s.dmgIncreases[lvl][type] += incr;
+                };
             if (undefined === type || '' === type) {
                 type = 'all';
             }
@@ -554,17 +558,20 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     return skill.APS;
                 });
                 return function () {
-                    var i = 0, stage;
+                    var i = 0, stage, apply = function () {
+                        s.dmg.multiply({'mult': (apsStages[i] || 1) * (1 + (s.incrAps[lvl] || 0)), 'lvl': lvl});
+                    };
                     if (undefined === lvl) {
                         lvl = 0;
                         for (stage in s.stages) {
                             for (; lvl < stage; lvl += 1) {//for lvl up to last stage
-                                s.dmg.multiply({'mult': apsStages[i] || 1, 'lvl': lvl});
+                                apply();
                             }
                             i += 1;
                         }
+                        i = apsStages.length - 1;
                         for (; lvl < 100; lvl += 1) {//lvl form last stage up to 100.
-                            s.dmg.multiply({'mult': apsStages[apsStages.length - 1] || 1, 'lvl': lvl});
+                                apply();
                         }
                         lvl = undefined;
                     } else {
@@ -575,7 +582,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                                     break;
                                 }
                             }
-                            s.dmg.multiply({'mult': apsStages[i] || 1, 'lvl': lvl});
+                            s.dmg.multiply({'mult': apsStages[i] || 1 * (1 + (s.incrAps[lvl] || 0)), 'lvl': lvl});
                         }
                     }
                 };
@@ -691,6 +698,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.incrCcFromQuality = 0;
                 s.incrCdFromQuality = 0;
                 s.dmgIncreases = {};
+                s.incrAps = {};
                 s.empower = {};
                 s.additionalQuality = {};
                 s.additionalChanceToIgnite = {};
@@ -702,6 +710,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.applyForLvls(function (i) {
                     s.dmgIncreases[i] = getDmgTypes();
                     s.projectiles[i] = {base: 1, multiplier: 1};
+                    s.incrAps[i] = 0;
                     s.traps[i] = {base: 1};
                     s.empower[i] = 0;
                     s.additionalQuality[i] = 0;
