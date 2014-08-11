@@ -93,24 +93,33 @@
 					<button title="Warning, SLOOOW" id="reduceToMaxSupports">Reduce all skills to the max amount of supports (removing worst first)</button><br />
 			</div>
 			<div>
-				<h2>Player stats. (values are in %)</h2>
-				<label title="for iron will (not in % ofcourse...)">Strength<input class="userInput" type="text" value="150" id="str" /></label>
-				<label>Cast speed incr.<input class="userInput" type="text" id="incrCastSpeed" value="0" /></label>
-				<label>Crit chance incr.<input class="userInput" type="text" id="incrCritChance" value="0" /></label>
-				<label>Crit dmg incr.<input class="userInput" type="text" id="incrCritDmg" value="0" /></label>
-				<label>incr. spell dmg<input class="userInput" type="text" id="spellDmgIncr" value="0" /></label>
-				<label>incr. elemental dmg<input class="userInput" type="text" id="eleDmgIncr" value="0" /></label>
-				<label>incr. fire dmg<input class="userInput" type="text" id="fireDmgIncr" value="0" /></label>
-				<label>incr. cold dmg<input class="userInput" type="text" id="coldDmgIncr" value="0" /></label>
-				<label>incr. lightning dmg<input class="userInput" type="text" id="lightDmgIncr" value="0" /></label>
-				<label>incr. chaos dmg<input class="userInput" type="text" id="chaosDmgIncr" value="0" /></label>
-				<label>incr. physical dmg<input class="userInput" type="text" id="physDmgIncr" value="0" /></label>
-				<label>incr. AOE dmg<input class="userInput" type="text" id="aoeDmgIncr" value="0" /></label>
-				<label>incr. projectile dmg<input class="userInput" type="text" id="projectileDmgIncr" value="0" /></label>
-				<label>incr. burn dmg<input class="userInput" type="text"  id="burningDmgIncr" value="0" /></label>
-				<label>Chance to shock<input class="userInput" type="text" value="0" id="chanceToShock" /></label>
-				<label>Chance to ignite<input class="userInput" type="text" value="0" id="chanceToIgnite" /></label>
-				<label>Chance to freeze?</label>
+				<h2>Player stats.</h2>
+				<fieldset id="PlayerStatsInt">
+					<legend>Integer values</legend>
+					<label title="for iron will (not in % ofcourse...)">Strength<input class="userInput" type="text" value="150" id="str" /></label>
+					<label title="Consumes all on discharge">Endurance charges<input class="userInput" type="text" value="3" id="enduranceCharges" /></label>
+					<label title="Consumes all on discharge">Power charges<input class="userInput" type="text" value="0" id="powerCharges" /></label>
+					<label title="Consumes all on discharge">Frenzy charges<input class="userInput" type="text" value="0" id="frenzyCharges" /></label>
+				</fieldset>
+				<fieldset id="playerStatsPct">
+					<legend>values in %</legend>
+					<label>Cast speed incr.<input class="userInput" type="text" id="incrCastSpeed" value="0" /></label>
+					<label>Crit chance incr.<input class="userInput" type="text" id="incrCritChance" value="0" /></label>
+					<label>Crit dmg incr.<input class="userInput" type="text" id="incrCritDmg" value="0" /></label>
+					<label>incr. spell dmg<input class="userInput" type="text" id="spellDmgIncr" value="0" /></label>
+					<label>incr. elemental dmg<input class="userInput" type="text" id="eleDmgIncr" value="0" /></label>
+					<label>incr. fire dmg<input class="userInput" type="text" id="fireDmgIncr" value="0" /></label>
+					<label>incr. cold dmg<input class="userInput" type="text" id="coldDmgIncr" value="0" /></label>
+					<label>incr. lightning dmg<input class="userInput" type="text" id="lightDmgIncr" value="0" /></label>
+					<label>incr. chaos dmg<input class="userInput" type="text" id="chaosDmgIncr" value="0" /></label>
+					<label>incr. physical dmg<input class="userInput" type="text" id="physDmgIncr" value="0" /></label>
+					<label>incr. AOE dmg<input class="userInput" type="text" id="aoeDmgIncr" value="0" /></label>
+					<label>incr. projectile dmg<input class="userInput" type="text" id="projectileDmgIncr" value="0" /></label>
+					<label>incr. burn dmg<input class="userInput" type="text"  id="burningDmgIncr" value="0" /></label>
+					<label>Chance to shock<input class="userInput" type="text" value="0" id="chanceToShock" /></label>
+					<label>Chance to ignite<input class="userInput" type="text" value="0" id="chanceToIgnite" /></label>
+					<label>Chance to freeze?</label>
+				</fieldset>
 			</div>
 			<div>
 				<h2>Curses etc. (values are in %)</h2>

@@ -181,7 +181,7 @@ var redraw, onRedraw = [],
         var btn, name, i = 0;
         index.innerHTML = '';
         for (name in skills) {
-            if (skills[name].hasDmg) {
+            if (skills[name].hasDmg || true) {//todo: remove if entirely?
                 if (!skills[name].color) {
                     skills[name].color = getColor(i);
                     i += 1;
@@ -198,6 +198,7 @@ var redraw, onRedraw = [],
                 checkbox.update = (function (skill, checkbox) {
                         return function () {
                             skill.draw = checkbox.checked;
+                            skill.setNeedsRecalc();
                         }
                     })(skills[name], checkbox);
                 checkbox.onclick = (function (checkbox) {

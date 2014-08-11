@@ -124,7 +124,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             return s.projectiles[lvl].base * s.projectiles[lvl].multiplier * s.traps[lvl].base;
         };
         s.getCastTime = function (lvl) {
-            return s.castTime / (1 + (s.otherIncrCastSpeed[lvl] +
+            return s.castTime / ((userInput.frenzyCharges * 0.05) +
+                1 + (s.otherIncrCastSpeed[lvl] +
                 userInput.incrCastSpeed / 100 +
                 s.incrCastSpeedFromQuality * s.getQualityLvl(lvl)));
         };
@@ -279,11 +280,12 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         
         s.additionalIncrCC = [];
         s.getCritChance = function (lvl) {
-            var cc = s.cc * 
-                    (1 + (s.isMinion ? 0 : (userInput.incrCritChance / 100)) +
-                        s.additionalIncrCC[lvl] +
-                        s.incrCcFromQuality * s.getQualityLvl(lvl) +
-                        (s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0));
+            var cc = s.cc * (1 +
+                (userInput.powerCharges * 0.5) +
+                (s.isMinion ? 0 : (userInput.incrCritChance / 100)) +
+                s.additionalIncrCC[lvl] +
+                s.incrCcFromQuality * s.getQualityLvl(lvl) +
+                (s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0));
             return cc > 1 ? 1 : cc < 0 ? 0 : cc;
         };
         s.additionalCD = [];
@@ -425,6 +427,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.isGlacialCascade = s.name.indexOf("Glacial Cascade") > -1;
         s.isArc = s.name.indexOf("Arc") > -1;
         s.isSrs = s.name.indexOf("Summon Raging Spirit") > -1;
+        s.isDischarge = s.name.indexOf("Discharge") > -1;
         
         s.applySwarm = function () {
             s.dmg.multiply({'mult': s.maxMinions});
@@ -741,7 +744,24 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         }, lvl);
                     });
                 }
-                
+                if (s.isDischarge) {
+                    (function () {
+                        var charges,
+                            type,
+                            typeToCharge = {'fire': 'enduranceCharges',
+                                'light': 'powerCharges',
+                                'cold': 'frenzyCharges'};
+                        for (type in eleDmgTypes) {
+                            type = eleDmgTypes[type];
+                            charges = userInput[typeToCharge[type]];
+                            s.applyForLvls(function (i) {
+                                dmgLvls.forEach(function (dLvl) {
+                                    s.dmg[i][type][dLvl] *= charges;
+                                });
+                            }, lvl);
+                        }
+                    })();
+                }
                 s.parseModifiers(lvl);
                 if (s.isSrs) {//luckily no additional phys dmg bufs exist for now...
                     s.dmg.multiply({'mult': 0.5, 'type': 'phys'});
