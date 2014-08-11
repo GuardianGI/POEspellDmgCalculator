@@ -5,7 +5,7 @@ import sys
 from xml.dom.minidom import parseString
 
 generalDir = 'E:\\programming\\Node\\POESkillTree\\'
-dir = generalDir + "spellSupportsHTML\\"
+dir = generalDir + "supportsHTML\\"
 f_escape = open("escape.txt", "rb")
 escape = f_escape.read(1)
 f_escape.close()
@@ -231,6 +231,6 @@ for skill in skills:
 	s += "]}"
 	supports.append(s)
 	
-f = open(generalDir + "supports.json", "w")
+f = open(generalDir + "parsedSupports.json", "w")
 f.write("{" + ", ".join(supports) + "}")
 f.close()

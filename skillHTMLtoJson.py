@@ -5,8 +5,11 @@ import sys
 from xml.dom.minidom import parseString
 
 generalDir = 'E:\\programming\\Node\\POESkillTree\\'
-dir = generalDir + "skillsHTML\\"
-skills = []
+spellDir = generalDir + "spellsHTML\\"
+attackDir = generalDir + "attacksHTML\\"
+spells = []
+attacks = []
+dirs = [spellDir, attackDir]
 
 def printErr(*objs):
 	print(*objs, file=sys.stderr)
@@ -164,7 +167,7 @@ def matchClosingTag(content, reStart, open, close):
 f_escape = open("escape.txt", "rb")
 escape = f_escape.read(1)
 class skill:
-	def __init__(self, fileName):
+	def __init__(self, fileName, dir):
 		print(fileName)
 		self.name = fileName.split(".")[0]
 		self.dmg = dmg()
@@ -291,10 +294,15 @@ class skill:
 				name.lower() +
 				".*?\<\/td\>\s*\<td\>\s*(.*?)\<\/td\>")
 		return re.search(regexStr, self.metaString).group(1).strip()
-
-for file in os.listdir(dir):
-	newSkill = skill(file)
-	skills.append(newSkill)
+isSpells = True
+for dir in dirs:
+	for file in os.listdir(dir):
+		newSkill = skill(file, dir)
+		if isSpells:
+			spells.append(newSkill)
+		else:
+			attacks.append(newSkill)
+	isSpells = False
 # s = "Name\tavgPhys\tavgFire\tavgCold\tavglight\teff\tcrit\taddedFire\taddedCold\taddedLight\tshocked multi\tburnDmg\tMana\ttotal dmg\n"
 # row = 2
 # for skill in skills:
@@ -324,41 +332,71 @@ for file in os.listdir(dir):
 
 def printMinMaxDmg(dmg):
 	return "{{'min': {}, 'max': {}}}".format(dmg[0], dmg[1])
-
-skillStrs = []
-for skill in skills:
-	skillStr = "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'modifiers': [{}], 'hasAPS': {}, 'chains': {}, 'dmg': [".format(
-		skill.name,
-		skill.dmg.crit,
-		skill.dmg.effectiveness,
-		skill.dmg.castTime,
-		skill.qualityBonus,
-		', '.join(["'{}'".format(word) for word in skill.keywords]),
-		', '.join(["'{}'".format(modifier) for modifier in skill.modifiers]),
-		'true' if skill.dmg.hasAPS else 'false',
-		'true' if skill.dmg.hasChain else 'false')
-	i = 1
-	dmgStrs = []
-	for lvl in skill.dmg.lvlStages:
-		dmgStr = "{"
-		dmgStr += "'lvl': '{}'".format(lvl)
-		for type in dmgTypes:
-			if hasattr(skill.dmg, type):
-				dmgStr += ", '{}': {}".format(type, printMinMaxDmg(getattr(skill.dmg, type)[i]))
-		dmgStr += ", 'mana': {}".format(skill.dmg.mana[i])
-		if skill.dmg.hasAPS:
-			dmgStr += ", 'APS': {}".format(skill.dmg.APS[i])
-		if skill.dmg.hasChain:
-			dmgStr += ", 'chain': {}".format(skill.dmg.chains[i])
-			
-		dmgStr += "}";
-		dmgStrs.append(dmgStr)
-		i += 1
-	skillStr += ', '.join(dmgStrs)
-	skillStr += "]}"
-	skillStrs.append(skillStr)
+for foo in [True, False]:
+	skillStrs = []
+	if foo:
+		skills = spells
+		fileName = 'parsedSpells.json'
+		for skill in skills:
+			skillStr = "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'modifiers': [{}], 'hasAPS': {}, 'chains': {}, 'dmg': [".format(
+				skill.name,
+				skill.dmg.crit,
+				skill.dmg.effectiveness,
+				skill.dmg.castTime,
+				skill.qualityBonus,
+				', '.join(["'{}'".format(word) for word in skill.keywords]),
+				', '.join(["'{}'".format(modifier) for modifier in skill.modifiers]),
+				'true' if skill.dmg.hasAPS else 'false',
+				'true' if skill.dmg.hasChain else 'false')
+			i = 1
+			dmgStrs = []
+			for lvl in skill.dmg.lvlStages:
+				dmgStr = "{"
+				dmgStr += "'lvl': '{}'".format(lvl)
+				for type in dmgTypes:
+					if hasattr(skill.dmg, type):
+						dmgStr += ", '{}': {}".format(type, printMinMaxDmg(getattr(skill.dmg, type)[i]))
+				dmgStr += ", 'mana': {}".format(skill.dmg.mana[i])
+				if skill.dmg.hasAPS:
+					dmgStr += ", 'APS': {}".format(skill.dmg.APS[i])
+				if skill.dmg.hasChain:
+					dmgStr += ", 'chain': {}".format(skill.dmg.chains[i])
+					
+				dmgStr += "}";
+				dmgStrs.append(dmgStr)
+				i += 1
+			skillStr += ', '.join(dmgStrs)
+			skillStr += "]}"
+			skillStrs.append(skillStr)
+	else:
+		skills = attacks
+		fileName = 'parsedAttacks.json'
+		for skill in skills:
+			skillStr = "'{}': {{'eff': {}, 'qualityBonus': '{}', 'keywords': [{}], 'modifiers': [{}], 'dmg': [".format(
+				skill.name,
+				skill.dmg.effectiveness,
+				skill.qualityBonus,
+				', '.join(["'{}'".format(word) for word in skill.keywords]),
+				', '.join(["'{}'".format(modifier) for modifier in skill.modifiers]))
+			i = 1
+			dmgStrs = []
+			for lvl in skill.dmg.lvlStages:
+				dmgStr = "{"
+				dmgStr += "'lvl': '{}'".format(lvl)
+				for type in dmgTypes:
+					if hasattr(skill.dmg, type):
+						dmgStr += ", '{}': {}".format(type, printMinMaxDmg(getattr(skill.dmg, type)[i]))
+				dmgStr += ", 'mana': {}".format(skill.dmg.mana[i])
+				
+				dmgStr += "}";
+				dmgStrs.append(dmgStr)
+				i += 1
+			skillStr += ', '.join(dmgStrs)
+			skillStr += "]}"
+			skillStrs.append(skillStr)
 	
-f = open(generalDir + "skillDmgGraph.json", "w")
-f.write('{' + (', '.join(skillStrs)) + '}')
-f.close()
+		
+	f = open(generalDir + fileName, "w")
+	f.write('{' + (', '.join(skillStrs)) + '}')
+	f.close()
 	

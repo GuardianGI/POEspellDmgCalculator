@@ -101,7 +101,7 @@ getTables(content, parseTable)
 def keyIsInt(key):
 	return 'xp' in key or 'lvl' in key or 'res' in key
 
-f = open(dir + 'monsterStats.json', 'w')
+f = open(dir + 'parsedMonsterStats.json', 'w')
 lines = []
 for monster in monsters:
 	lines.append('{{{}}}'.format(', '.join([('"{}": {}' if keyIsInt(key) else '"{}": "{}"').format(key, monster.stats[key]) for key in monster.stats])))
