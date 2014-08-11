@@ -401,7 +401,7 @@ var supports = (function () {
                         })(translateMatch(matches[1]), res[sName]);
                         
                         
-                        res[sName].applyFirst.push((function (from, to, isAdditional) {
+                        res[sName].applyAfterFirst.push((function (from, to, isAdditional) {
                             var pctConverted = {}, column = false, tmpColumn;
                             for (stage in s.stageStats) {
                                 for (tmpColumn in s.stageStats[stage]) {
@@ -665,6 +665,7 @@ var supports = (function () {
         res[sName].stages = s.stages;
         res[sName].initFunctions = [];
         res[sName].applyFirst = [];//apply on raw skill data
+        res[sName].applyAfterFirst = [];//apply on raw skill data
         res[sName].applyBefore = [];//apply before monster def. shock, etc.
         res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
         res[sName].beforeDmgStages = [];//apply before parsing base dmg from raw skill data.

@@ -821,7 +821,12 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         }
                     });
                 }
-                
+                for (key in s.supports) {
+                    support = s.supports[key];
+                    support.applyAfterFirst.forEach(function (fn) {
+                        s.applySupportStage(support, fn, lvl);
+                    });
+                }
                 for (key in s.supports) {
                     support = s.supports[key];
                     support.applyBefore.forEach(function (fn) {

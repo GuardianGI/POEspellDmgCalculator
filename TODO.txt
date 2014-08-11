@@ -2,9 +2,6 @@ todo:
 	~~monster life = 2 * xp / lvl (seems about right on driping dead & brittle thiefs & Oozeback Bloom)~~
 		~~implemented for some cases (when selecting specific mosnters/area's)~~
 		needs more testing or better yet, propper values...
-	charges
-		power & frenzy charges need to scale all dmg
-		discharge should get dmg form charges (now assumes 1 charge of each type)
 	get a better armour value refference (9k is most likely way too high, for now simply dividing by 10....)
 	support gem applicability matrix
 	apply cast time & duration to max DPS for SRS
@@ -37,7 +34,6 @@ todo:
 				
 
 bugs:
-	if added cold is added to a gem before added cold the cold dmg isn't converted to fire.
 	in the case of insane dmg/crit damage physical dmg reduction causes an increase in dmg???
 
 cool to have:
