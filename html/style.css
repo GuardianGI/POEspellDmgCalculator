@@ -8,24 +8,25 @@
 #indexContainer, #canvas, .canvasContainer, .indexAndCanvas {
 	float: left;
 }
-.misc {
-	float: right;
+#misc {
+	/*float: right;*/
+	display: inline-block;
 }
-.misc label, .monster h2 {
+.userInputSection label, .monster h2 {
 	display: block;
 }
-.misc label, .misc span {
+.userInputSection label, #misc span {
 	width: 300px;
 	height: 25px;
 	position: relative;
 }
-.misc input {
+.userInputSection input {
 	right: 0;
 	top: 0;
 	position: absolute;
 	max-width: 50px;
 }
-.misc div {
+.userInputSection {
 	display: block;
 	margin-bottom: 10px;
 	padding: 2px;
@@ -40,12 +41,13 @@
 	width: 200px;
 }
 #spellDetails {
+	clear: both;
 	/*position: absolute;*/
 	/*top: 950px;*/
 	/*left: 5px;
 	width: 100%;*/
 }
-.spellDetails, #supportsTabSetContainer {
+.spellDetails, #supportsTabSetContainer, #monsterTabSetContainer{
 	position: relative;
 	display: block;
 	float: left;

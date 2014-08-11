@@ -879,6 +879,22 @@ var redraw, onRedraw = [],
             }
             div.appendChild(b);
         }*/
+        
+        (function () {//test: moving misc menu to tabs.
+            var misc = document.getElementById('misc'),
+                userInputTabs, newTab, divs, i, head, limit;
+            divs = misc.getElementsByTagName('div');
+            limit = divs.length;
+            userInputTabs = tabSet(misc, 'userInput');
+            for (i = 0; i < limit; i += 1) {
+                head = divs[0].getElementsByTagName('h2');
+                if (head.length > 0) {
+                    newTab = userInputTabs.addTab(head[0].innerHTML);
+                    newTab.appendChild(divs[0]);
+                }
+            }
+        })();
+        
         var getAreas;
         monsterStats.forEach((function () {
             var difficulty = {}, dificulties = ['normal', 'cruel', 'merciless'], i, difKey = 0, curDif = dificulties[difKey];
@@ -905,6 +921,7 @@ var redraw, onRedraw = [],
                 difficulty[curDif][monster.area][monster.name] = monster;
             };
         })());
+        
         (function () {
             var difTabParent, actTabParent, i, sum, count, key, difName, areaName, monsterName, monstersByArea = getAreas(), m, act = 0, actFirstArea = ['the twilight strand', 'the southern forest', 'the city of sarn'],
                 fieldset, cbNew, legend, lblNew, table, difTab, actTab, areaTab, tabsByDificulty, tr, td, th, monsterData = document.getElementById('spellDetails'/*'monsterData'*/),
@@ -946,15 +963,19 @@ var redraw, onRedraw = [],
                         tr.appendChild(th);
                         th.innerHTML = cols[i];
                     }
-                }, areaAndMonsterContainer, header;
-                areaAndMonsterContainer = document.createElement('div');
-                monsterData.appendChild(areaAndMonsterContainer);
-                
-                header = document.createElement('h3');
-                header.appendChild(document.createTextNode('Area & monster data'));
-                areaAndMonsterContainer.appendChild(header);
-                
-                tabsByDificulty = tabSet(areaAndMonsterContainer, 'tabsByDificulty');
+                },
+                areaAndMonsterContainer,
+                header;
+            areaAndMonsterContainer = document.createElement('div');
+            areaAndMonsterContainer.id = 'monsterTabSetContainer';
+            monsterData.appendChild(areaAndMonsterContainer);
+            
+            header = document.createElement('h3');
+            header.appendChild(document.createTextNode('Area & monster data'));
+            areaAndMonsterContainer.appendChild(header);
+            
+            tabsByDificulty = tabSet(areaAndMonsterContainer, 'tabsByDificulty');
+            
             for (difName in monstersByArea) {
                 difTabParent = tabsByDificulty.addTab(difName);
                 (function () {

@@ -25,8 +25,8 @@
 				<canvas id="canvas"></canvas>
 			</div>
 		</div>
-		<div class="misc">
-			<div>
+		<div id="misc">
+			<div class="userInputSection">
 				<h2>graph options</h2>
 				<fieldset>
 					<legend>Scaling.</legend>
@@ -51,19 +51,22 @@
 					<label><button id="shuffleColors">Shuffle graph colors.</button></label>
 				</fieldset>
 			</div>
-			<div>
+			<div class="userInputSection">
 				<h2>Misc.</h2>
-				<label title="(requires lightning dmg)">Enable Shock <input class="userInput" checked="true" type="checkbox" id="enableShock" /></label>
-				<label>Enable Burn (requires fire dmg) <input checked="true" class="userInput" type="checkbox" id="enableBurn" /></label>
-				<label>Enable crit <input checked="true" class="userInput" type="checkbox" id="enableCrit" /></label>
-				<label>Enable monster res/armour: <input checked="true" class="userInput" type="checkbox" id="enableMonsterDef" /></label>
-				<label title="disable to see dmg per cast or for cast on crit builds">Enable cast speed <input checked="true" class="userInput" type="checkbox" id="enableCastSpeed" /></label>
-				<label title="for multi projectile attacks, includes chain and fork">Assume shotgun <input class="userInput" type="checkbox" id="assumeShotgun" /></label>
-				<label title="Assume player level for support effect estimates and such">Player lvl for suggestions<input class="userInput" value="70" type="text" id="playerLvlForSuggestions" /></label>
-				<label>Apply minion APS<input class="userInput" checked="true" type="checkbox" id="applyAPS" /></label>
-				<label>Single target minion swarm<input class="userInput" checked="true" type="checkbox" id="singleTargetSwarm" /></label>
+				<fieldset id="miscStats">
+					<legend>???</legend>
+					<label title="(requires lightning dmg)">Enable Shock <input class="userInput" checked="true" type="checkbox" id="enableShock" /></label>
+					<label>Enable Burn (requires fire dmg) <input checked="true" class="userInput" type="checkbox" id="enableBurn" /></label>
+					<label>Enable crit <input checked="true" class="userInput" type="checkbox" id="enableCrit" /></label>
+					<label>Enable monster res/armour: <input checked="true" class="userInput" type="checkbox" id="enableMonsterDef" /></label>
+					<label title="disable to see dmg per cast or for cast on crit builds">Enable cast speed <input checked="true" class="userInput" type="checkbox" id="enableCastSpeed" /></label>
+					<label title="for multi projectile attacks, includes chain and fork">Assume shotgun <input class="userInput" type="checkbox" id="assumeShotgun" /></label>
+					<label title="Assume player level for support effect estimates and such">Player lvl for suggestions<input class="userInput" value="70" type="text" id="playerLvlForSuggestions" /></label>
+					<label>Apply minion APS<input class="userInput" checked="true" type="checkbox" id="applyAPS" /></label>
+					<label>Single target minion swarm<input class="userInput" checked="true" type="checkbox" id="singleTargetSwarm" /></label>
+				</fieldset>
 			</div>
-			<div>
+			<div class="userInputSection">
 				<h2>Skill specifics.</h2>
 				<fieldset>
 					<legend>Single skill</legend>
@@ -89,7 +92,7 @@
 					<label>Max supports<input class="userInput" type="text" value="5" id="maxSupports" /></label>
 					<button title="Warning, SLOOOW" id="reduceToMaxSupports">Reduce all skills to the max amount of supports (removing worst first)</button><br />
 			</div>
-			<div>
+			<div class="userInputSection">
 				<h2>Player stats.</h2>
 				<fieldset id="PlayerStatsInt">
 					<legend>Integer values</legend>
@@ -119,16 +122,19 @@
 					<label>Chance to freeze?</label>
 				</fieldset>
 			</div>
-			<div>
-				<h2>Curses etc. (values are in %)</h2>
-				<label>(vulnerability)more phys dmg<input class="userInput" type="text" value="0" id="morePhysDmg" /></label>
-				<label>reduced elemental resist<input class="userInput" type="text" value="0" id="reducedResElemental" /></label>
-				<label>reduced fire resist<input class="userInput" type="text" value="0" id="reducedResFire" /></label>
-				<label>reduced cold resist<input class="userInput" type="text" value="0" id="reducedResCold" /></label>
-				<label>reduced light resist<input class="userInput" type="text" value="0" id="reducedResLight" /></label>
-				<label>(crit weakness)Additional chance to crit<input class="userInput" type="text" /></label>
-				<label>(crit weakness)Extra crit multiplier<input class="userInput" type="text" /></label>
-				<label>(temp chains)Extra (burn) duration<input class="userInput" value="0" id="incrDuration" type="text" /></label>
+			<div class="userInputSection">
+				<h2>Curses etc.</h2>
+				<fieldset id="curseStatsPct">
+					<legend>values in %</legend>
+					<label>(vulnerability)more phys dmg<input class="userInput" type="text" value="0" id="morePhysDmg" /></label>
+					<label>reduced elemental resist<input class="userInput" type="text" value="0" id="reducedResElemental" /></label>
+					<label>reduced fire resist<input class="userInput" type="text" value="0" id="reducedResFire" /></label>
+					<label>reduced cold resist<input class="userInput" type="text" value="0" id="reducedResCold" /></label>
+					<label>reduced light resist<input class="userInput" type="text" value="0" id="reducedResLight" /></label>
+					<label>(crit weakness)Additional chance to crit<input class="userInput" type="text" /></label>
+					<label>(crit weakness)Extra crit multiplier<input class="userInput" type="text" /></label>
+					<label>(temp chains)Extra (burn) duration<input class="userInput" value="0" id="incrDuration" type="text" /></label>
+				</fieldset>
 			</div>
 		</div>
 		<div id="spellDetails"></div>
