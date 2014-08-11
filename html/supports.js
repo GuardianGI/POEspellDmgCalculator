@@ -43,10 +43,10 @@ var supports = (function () {
                                })(res[sName]);
                                 res[sName].applyFirst.push((function (support, rawSupport) {
                                     var stageStats = {},
-                                        column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                        column = findIndex(rawSupport.stageColumns, function (key) {
                                             key = key.toLowerCase();
                                             return key.indexOf('duration') >= 0;
-                                        })[0];
+                                        });
                                     for (stage in support.stages) {
                                         stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
                                     }
@@ -80,7 +80,7 @@ var supports = (function () {
                             res[sName].applyBefore.push((function (rawSupport, support, matchedDmgTypes) {
                                 var stageStats = {}, type = matchedDmgTypes.join(', ');
                                 
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                column = findIndex(rawSupport.stageColumns, function (key) {
                                     var i;
                                     key = key.toLowerCase();
                                     for (i = 0; i < matchedDmgTypes.length; i += 1) {
@@ -89,7 +89,7 @@ var supports = (function () {
                                         }
                                     }
                                     return true;
-                                })[0];
+                                });
                                 
                                 for (stage in support.stages) {
                                     stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
@@ -122,10 +122,10 @@ var supports = (function () {
                        })(res[sName]);
                         res[sName].beforeDmgStages.push((function (support, rawSupport) {
                             var stageStats = {},
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                column = findIndex(rawSupport.stageColumns, function (key) {
                                     key = key.toLowerCase();
                                     return key.indexOf('+x') >= 0 && key.indexOf('level') >= 0;
-                                })[0];
+                                });
                             
                             for (stage in support.stages) {
                                 stageStats[stage] = rawSupport.stageStats[stage][column] | 0;
@@ -142,10 +142,10 @@ var supports = (function () {
                        })(res[sName]);
                         res[sName].beforeDmgStages.push((function (support, rawSupport) {
                             var stageStats = {},
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                column = findIndex(rawSupport.stageColumns, function (key) {
                                     key = key.toLowerCase();
                                     return key.indexOf('+x%') >= 0 && key.indexOf('quality') >= 0;
-                                })[0];
+                                });
                             
                             for (stage in support.stages) {
                                 stageStats[stage] = rawSupport.stageStats[stage][column] | 0;
@@ -167,10 +167,10 @@ var supports = (function () {
                         })());
                         res[sName].applyFirst.push((function (support, rawSupport) {
                             var stageStats = {},
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                column = findIndex(rawSupport.stageColumns, function (key) {
                                     key = key.toLowerCase();
                                     return key.indexOf('reduced') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
-                                })[0];
+                                });
                             
                             for (stage in support.stages) {
                                 stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
@@ -190,10 +190,10 @@ var supports = (function () {
                         
                         res[sName].applyFirst.push((function (support, rawSupport, type) {
                             var stageStats = {},
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                column = findIndex(rawSupport.stageColumns, function (key) {
                                     key = key.toLowerCase();
                                     return key.indexOf('resistance') >= 0 && key.indexOf(type) >= 0;
-                                })[0];
+                                });
                             
                             for (stage in support.stages) {
                                 stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) * 100;
@@ -211,10 +211,10 @@ var supports = (function () {
                         
                         res[sName].applyFirst.push((function (support, rawSupport, type) {
                             var stageStats = {}, selector,
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                column = findIndex(rawSupport.stageColumns, function (key) {
                                     key = key.toLowerCase();
                                     return key.indexOf('crit') >= 0 && key.indexOf(type) >= 0;
-                                })[0];
+                                });
                                 
                             for (stage in support.stages) {
                                 stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
@@ -237,10 +237,10 @@ var supports = (function () {
                             })(res[sName], translateMatch(matches[1]));
                             res[sName].applyFirst.push((function (support, rawSupport, match) {
                                 var stageStats = {},
-                                    column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                    column = findIndex(rawSupport.stageColumns, function (key) {
                                         key = key.toLowerCase();
                                         return key.indexOf('increased') >= 0 && key.indexOf(match) >= 0 && key.indexOf('speed') >= 0;
-                                    })[0];
+                                    });
                                 for (stage in support.stages) {
                                     stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]);
                                 }
@@ -350,10 +350,10 @@ var supports = (function () {
                         })(res[sName]);
                         res[sName].applyAfter.push((function (support, rawSupport) {
                             var stageStats = {},
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                column = findIndex(rawSupport.stageColumns, function (key) {
                                     key = key.toLowerCase();
                                     return key.indexOf('more') >= 0 && key.indexOf('attack') >= 0 && key.indexOf('speed') >= 0;
-                                })[0];
+                                });
                             for (stage in support.stages) {
                                 stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) + 1;
                             }
@@ -377,10 +377,10 @@ var supports = (function () {
                         })(res[sName]);
                         res[sName].applyAfter.push((function (support, rawSupport) {
                             var stageStats = {},
-                                column = Object.keys(rawSupport.stageStats[0]).filter(function (key) {
+                                column = findIndex(rawSupport.stageColumns, function (key) {
                                     key = key.toLowerCase();
                                     return key.indexOf('more') >= 0 && key.indexOf('cast') >= 0 && key.indexOf('speed') >= 0;
-                                })[0];
+                                });
                             for (stage in support.stages) {
                                 stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) + 1;
                             }
@@ -402,8 +402,11 @@ var supports = (function () {
                         
                         
                         res[sName].applyAfterFirst.push((function (from, to, isAdditional) {
-                            var pctConverted = {}, column = false, tmpColumn;
-                            for (stage in s.stageStats) {
+                            var pctConverted = {}, column = false;
+                            column = findIndex(s.stageColumns, function (tmpColumn) {
+                                return tmpColumn.indexOf('gain x% of ') >= 0 || tmpColumn.indexOf('converted to') >= 0;
+                            });
+                            /*for (stage in s.stageStats) {
                                 for (tmpColumn in s.stageStats[stage]) {
                                     if (tmpColumn.indexOf('gain x% of ') >= 0 || tmpColumn.indexOf('converted to') >= 0 ) {
                                         column = tmpColumn;
@@ -413,7 +416,7 @@ var supports = (function () {
                                 if (column) {
                                     break;
                                 }
-                            }
+                            }*/
                             for (stage in s.stageStats) {
                                 pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
                             }
@@ -456,7 +459,8 @@ var supports = (function () {
                         })(translateMatch(matches[1]), translateMatch(matches[2]), 'addedConvertedDmg' === reType));
                         break;
                     }
-                    for (column in s.stageStats[0]) {
+                    for (columnIndex in s.stageColumns) {
+                        column = s.stageColumns[columnIndex];
                         if (column.indexOf(matches[1]) > -1) {//column matching modifier (to describe an x or some other variable in the modifier)
                             if (column.indexOf('damage') > -1) {
                                 res[sName].types.push(reType);
@@ -483,7 +487,7 @@ var supports = (function () {
                                         var dmgTypes = matchedKeywords.filter(isDmgType),
                                             stageStats = {};
                                         for (stage in support.stages) {
-                                            stageStats[stage] = parsePercent(rawSupport.stageStats[stage][column]) + 1;
+                                            stageStats[stage] = parsePercent(rawSupport.stageStats[stage][columnIndex]) + 1;
                                         }
                                         return function (supportStage, skillLvl, skill) {
                                             if (dmgTypes.length > 0) {
@@ -508,7 +512,7 @@ var supports = (function () {
                                         var dmgStages = [];
                                         for (stage in s.stageStats) {
                                             d = {};
-                                            d[translateMatch(matches[1])] = s.stageStats[stage][column].split("-").
+                                            d[translateMatch(matches[1])] = s.stageStats[stage][columnIndex].split("-").
                                                 reduce(function(d, val) {
                                                     d[0 === d.min ? 'min' : 'max'] = val | 0;
                                                     return d;
@@ -565,7 +569,7 @@ var supports = (function () {
                                     res[sName].applyBefore.push((function(support) {
                                         var multipliers = [];
                                         for (stage in s.stageStats) {
-                                            multipliers.push(parsePercent(s.stageStats[stage][column]) + 1);
+                                            multipliers.push(parsePercent(s.stageStats[stage][columnIndex]) + 1);
                                         }
                                         return function (supportStage, skillLvl, skill) {
                                             skill.dmg.multiply({mult: multipliers[supportStage], lvl: skillLvl});
@@ -585,9 +589,9 @@ var supports = (function () {
                                     res[sName].applyFirst.push((function () {
                                         var additionalAilmentChance = {}, ailment = firstToUpper(translateMatch(innerMatches[1]));
                                         
-                                        for (stage in s.stageStats) {
-                                            for (column in s.stageStats[stage]) {
-                                                if (column.indexOf('additional chance to') >= 0) {
+                                        for (column in s.stageColumns) {
+                                            if (s.stageColumns[column].indexOf('additional chance to') >= 0) {
+                                                for (stage in s.stageStats) {
                                                     additionalAilmentChance[stage] =
                                                         parsePercent(s.stageStats[stage][column]);
                                                 }
@@ -603,9 +607,9 @@ var supports = (function () {
                                 case 'incrDmg':
                                     res[sName].applyFirst.push((function (type, support) {
                                         var incrDmg = {};
-                                        for (stage in s.stageStats) {
-                                            for (column in s.stageStats[stage]) {
-                                                if (column.match('increased.*?' + translateMatch(matches[1]) + '.*?damage')) {
+                                        for (column in s.stageColumns) {
+                                            if (s.stageColumns[column].match('increased.*?' + translateMatch(matches[1]) + '.*?damage')) {
+                                                for (stage in s.stageStats) {
                                                     var matchedPct = s.stageStats[stage][column].match(/(\d+%)/i);
                                                     if (matchedPct) {
                                                         incrDmg[stage] = parsePercent(matchedPct[1]);
@@ -613,6 +617,7 @@ var supports = (function () {
                                                         incrDmg[stage] = 0;
                                                     }
                                                 }
+                                                break;
                                             }
                                         }
                                     
@@ -648,7 +653,7 @@ var supports = (function () {
                                 case 'incrOther'://ignore in case of dmg...
                                     break;
                                 default:
-                                    console.log(['no case added for', reType, column, sName]);
+                                    console.log(['no case added for', reType, s.stageColumns[column], sName]);
                                     break;
                                 }
                             }// else console.log(['not applied', column, sName]);

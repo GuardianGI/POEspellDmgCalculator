@@ -1,4 +1,13 @@
-var userInput = {},
+var findIndex = function (arr, filter) {
+        var i;
+        for (i = 0; i < arr.length; i += 1) {
+            if (filter(arr[i])) {
+                return i;
+            }
+        }
+        return -1;
+    },
+    userInput = {},
     firstToUpper = function (str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     },

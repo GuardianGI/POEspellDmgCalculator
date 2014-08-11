@@ -219,14 +219,25 @@ for skill in skills:
 	
 	s += ', '.join(str(n) for n in skill.lvlStages)
 	
+	s += "], 'stageColumns': ["
+	stages = []
+	lvl = skill.lvlStages[0];
+	columns = []
+	for collName in skill.values[lvl].keys():
+		columns.append("'{}'".format(stripXml(tryGetTitle(collName))))
+	stages.append(', '.join(columns))
+	s += ', '.join(stages)
+	
+	
 	s += "], 'stageStats': ["
 	stages = []
 	for lvl in skill.lvlStages:
 		columns = []
 		for collName in skill.values[lvl].keys():
-			columns.append("'{}': '{}'".format(tryGetTitle(collName), skill.values[lvl][collName]))
-		stages.append('{' + ', '.join(columns) + '}')
+			columns.append("'{}'".format(skill.values[lvl][collName]))
+		stages.append('[' + ', '.join(columns) + ']')
 	s += ', '.join(stages)
+	
 	
 	s += "]}"
 	supports.append(s)

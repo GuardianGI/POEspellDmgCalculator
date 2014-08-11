@@ -129,16 +129,7 @@ label.support {
 	max-height: 700px;
 	overflow: auto;
 }
-/*
-.support label {
-	width: 200px;
-	display: inline-block;
-	position: relative;
-}
-.support input {
-	position: absolute;
-	right: 0;
-}*/
+
 .lblSkillHover {
 	visibility: hidden;
 }
