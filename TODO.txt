@@ -35,7 +35,8 @@ todo:
 
 bugs:
 	in the case of insane dmg/crit damage physical dmg reduction causes an increase in dmg???
-
+	quality on added fire not working? (probably died during the general dmg support update)
+	
 cool to have:
 	curse cast speed
 		avg. combat time (using monster life expectations & curse cast recomendations)

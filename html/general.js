@@ -77,6 +77,7 @@ var findIndex = function (arr, filter) {
     userInput,
     getRawSkillDmgAtLvl = function (rawSkill, lvl, additionalLvl, maxLvl) {
         var lastLvl = -1, i, dmgLvl = -1, dmgKey, type;
+        maxLvl -= 1;//to zero based index.
         lvl += 1;//lvl to 1 based index for comparison to wiki tables.
         for (i = 0; i < rawSkill.dmg.length; i += 1) {
             dmgLvl = rawSkill.dmg[i].lvl | 0;

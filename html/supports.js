@@ -408,21 +408,19 @@ var auras, supports = (function () {
                             column = findIndex(s.stageColumns, function (tmpColumn) {
                                 return tmpColumn.indexOf(to) >= 0 || tmpColumn.indexOf('damage') >= 0;
                             });
-                            /*for (stage in s.stageStats) {
-                                for (tmpColumn in s.stageStats[stage]) {
-                                    if (tmpColumn.indexOf('gain x% of ') >= 0 || tmpColumn.indexOf('converted to') >= 0 ) {
-                                        column = tmpColumn;
-                                        break;
-                                    }
-                                }
-                                if (column) {
-                                    break;
-                                }
-                            }*/
                             for (stage in s.stageStats) {
                                 pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
                             }
                         
+                            if (!isAdditional) {//dmg is converted not just added.
+                                //TODO: move to an apply before/after (interferes with converted dmg that is alter used for added)
+                                res[sName].applyBefore.push(function (supportStage, skillLvl, skill) {
+                                    dmgLvls.forEach(function (dmgLvl) {
+                                        skill.dmg[skillLvl][from][dmgLvl] *= 1 - pctConverted[supportStage];
+                                    });
+                                });
+                            }
+                            
                             return function (supportStage, skillLvl, skill) {
                                 var i, keys = [], dmgLvl, increases = {'min': {}, 'max': {}, 'avg': {}};
                                 for (i in skill.dmg[skillLvl]) {
@@ -432,7 +430,7 @@ var auras, supports = (function () {
                                     var fromType, addedAs;
                                     for (i = 0; i < keys.length; i += 1) {
                                         fromType = keys[i];
-                                        if (0 <= fromType.indexOf(from)/* && 0 > fromType.indexOf(to)*/) {
+                                        if (0 === fromType.indexOf(from)) {// fromType.indexOf(from) >= 0 && fromType.indexOf(to) < 0 ) {
                                             addedAs = to + ' from ' + fromType;
                                             if (!skill.dmg[skillLvl].hasOwnProperty(addedAs)) {
                                                 skill.dmg[skillLvl][addedAs] = {}
@@ -442,13 +440,6 @@ var auras, supports = (function () {
                                             }
                                             increases[dmgLvl][addedAs] = skill.dmg[skillLvl][fromType][dmgLvl] *
                                                 pctConverted[supportStage];
-                                            /*skill.dmg[skillLvl][addedAs][dmgLvl] +=
-                                                skill.dmg[skillLvl][fromType][dmgLvl] *
-                                                pctConverted[supportStage];*/
-                                            if (!isAdditional) {//dmg is converted not just added.
-                                                //TODO: move to an apply before/after (interferes with converted dmg that is alter used for added)
-                                                skill.dmg[skillLvl][fromType][dmgLvl] *= 1 - pctConverted[supportStage];
-                                            }
                                         }
                                     }
                                 });
