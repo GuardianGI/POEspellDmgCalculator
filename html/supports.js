@@ -1,7 +1,8 @@
-var supports = (function () {
-    var sName, res = {}, i, reType, s, stage, column, d,
+var auras, supports = (function () {
+    var sName, res = {}, storedRes, i, reType, s, stage, column, d,
         modRegexes = {
             addedDmg: /adds x-y (\S+) damage/i,
+            addedDmg2: /additional (\S+) damage with attacks/i,
             moreDmg: /x% more\s?(\S*) damage/i,
             moreSomethingDmg: /x% more\s(\S+)\s(.+) damage/i,
             less: /(\d+%) less\s?(\S+)\s?(.*)/i,
@@ -502,10 +503,17 @@ var supports = (function () {
                                         }
                                     })(s, res[sName], matchedKeywords))
                                     break;
-                                case 'addedDmg':
+                                case 'addedDmg': case 'addedDmg2':
                                     res[sName].enabled = true;
                                     res[sName].isApplicable = (function (support) {
-                                        return function (skill) { return support.enabled; };
+                                        if ('addedDmg2' === reType) {
+                                            return function (skill) {
+                                                return support.enabled &&
+                                                    skill.keywords.indexOf('attack') >= 0;
+                                            };
+                                        } else {
+                                            return function (skill) { return support.enabled; };
+                                        }
                                     })(res[sName]);
                                     
                                     res[sName].applyFirst.push((function (support) {
@@ -661,43 +669,54 @@ var supports = (function () {
                     }
                 }
             }
-        };
-    for (sName in rawSupports) {
-        s = rawSupports[sName];
-        res[sName] = {};
-        res[sName].maxLvl = s.maxLvl;//this should be a proper value, but with a max of +2 to gem levels on gear and 1 from corruption it should be ok?
-        res[sName].name = sName;
-        res[sName].stages = s.stages;
-        res[sName].initFunctions = [];
-        res[sName].applyFirst = [];//apply on raw skill data
-        res[sName].applyAfterFirst = [];//apply on raw skill data
-        res[sName].applyBefore = [];//apply before monster def. shock, etc.
-        res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
-        res[sName].beforeDmgStages = [];//apply before parsing base dmg from raw skill data.
-        res[sName].types = [];
-        res[sName].keywords = s.keywords.splice(0).map(translateMatch);
-        res[sName].enabled = false;
-        res[sName].isApplicable = (function (supportName) {
-            return function () {
-                //console.log('default is applicable was called for '+ supportName);
-                return false;
-            };
-        })(sName);
-        for (i in s.modifiers) {
-            applyRegexes(s.modifiers[i]);
-        }
-        res[sName].qualityBonus = s.qualityBonus;
-        res[sName].clone = (function (self) {
-            return function () {
-                var clone = {}, key;
-                for (key in self) {
-                    clone[key] = self[key];
+        }, parse = function (data) {
+            for (sName in data) {
+                s = data[sName];
+                res[sName] = {};
+                res[sName].maxLvl = s.maxLvl;//this should be a proper value, but with a max of +2 to gem levels on gear and 1 from corruption it should be ok?
+                res[sName].name = sName;
+                res[sName].stages = s.stages;
+                res[sName].initFunctions = [];
+                res[sName].applyFirst = [];//apply on raw skill data
+                res[sName].applyAfterFirst = [];//apply on raw skill data
+                res[sName].applyBefore = [];//apply before monster def. shock, etc.
+                res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
+                res[sName].beforeDmgStages = [];//apply before parsing base dmg from raw skill data.
+                res[sName].types = [];
+                res[sName].keywords = s.keywords.splice(0).map(translateMatch);
+                res[sName].enabled = false;
+                res[sName].isApplicable = (function (supportName) {
+                    return function () {
+                        //console.log('default is applicable was called for '+ supportName);
+                        return false;
+                    };
+                })(sName);
+                for (i in s.modifiers) {
+                    applyRegexes(s.modifiers[i]);
                 }
-                return clone;
-            };
-        })(res[sName]);
-    }
-    return res;
+                res[sName].qualityBonus = s.qualityBonus;
+                res[sName].clone = (function (self) {
+                    return function () {
+                        var clone = {}, key;
+                        for (key in self) {
+                            clone[key] = self[key];
+                        }
+                        return clone;
+                    };
+                })(res[sName]);
+                res[sName].isParsed = res[sName].enabled;
+            }
+        };
+      
+    parse(rawSupports);
+    storedRes = res;
+    
+    res = {}
+    parse(rawAuras);
+    auras = res;
+    
+    
+    return storedRes;
 })(),
 getSortedSupports = function (s) {
     var support, key, tmpClone, stillApplicable, dmgPrev, dmgAfter, nonProblematicSupports,

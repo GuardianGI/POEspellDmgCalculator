@@ -1220,26 +1220,32 @@ var redraw, onRedraw = [],
                 };
             })(difTab));
         })();
-        (function(){
+        parseSupports = function (data, title, id, defaultChecked, onChange) {
             var supportsTab, container,
                 userInputTabset = document.getElementById('userInput').tabSet,
                 name,
                 tabs = {},
                 tabName,
-                s, keyword, lblSupport, cbSupportEnabled, update, heading;
-            container = userInputTabset.addTab('Support gems');
+                s, keyword, lblSupport, cbSupportEnabled, update, heading, init;
+            container = userInputTabset.addTab(title);
             container.id = 'supportsTabSetContainer';
             container.className = 'userInputSection';
             heading = document.createElement('h3');
-            heading.appendChild(document.createTextNode('Support gems'));
+            heading.appendChild(document.createTextNode(title));
             container.appendChild(heading);
-            supportsTab = tabSet(container, 'supportsApplicability');
+            supportsTab = tabSet(container, id);
+            
+            for (name in data) {
+                s = data[name];
+                s.enabled = defaultChecked;
+            }
+                    
             update = function () {
                 for (keyword in tabs) {
                     tabs[keyword].innerHTML = '';//clear all tabs.
                 }
-                for (name in supports) {
-                    s = supports[name];
+                for (name in data) {
+                    s = data[name];
                     for (keyword in s.keywords) {
                         keyword = s.keywords[keyword];
                         if (Object.keys(tabs).indexOf(keyword) < 0) {
@@ -1247,16 +1253,22 @@ var redraw, onRedraw = [],
                         }
                         cbSupportEnabled = document.createElement('input');
                         cbSupportEnabled.type = 'checkbox';
-                        cbSupportEnabled.checked = s.enabled;
+                        cbSupportEnabled.checked =  s.isParsed && s.enabled;
+                        cbSupportEnabled.disabled = !s.isParsed;
                         lblSupport = document.createElement('label');
                         lblSupport.appendChild(document.createTextNode(s.name + ': '));
                         lblSupport.appendChild(cbSupportEnabled);
                         tabs[keyword].appendChild(lblSupport);
                         
-                        cbSupportEnabled.onchange = (function (self, support) {
+                        cbSupportEnabled.onchange = (function (self, gem) {
                             return function () {
-                                support.enabled = self.checked;
+                                gem.enabled = self.checked;
                                 update();
+                                
+                                if (undefined !== onChange) {
+                                    onChange(gem);
+                                }
+                                
                                 redraw();
                             };
                         })(cbSupportEnabled, s);
@@ -1265,7 +1277,19 @@ var redraw, onRedraw = [],
             };
             //onRedraw.push(update);//if the support enabled ever updates by another source this line needs to be added...
             update();
-        })();
+        };
+        parseSupports(supports, 'Support gems', 'supportsApplicability', true);
+        parseSupports(auras, 'Auras', 'activeAuras', false, function (aura) {
+            var name, s, index;
+            for (name in skills) {
+                s = skills[name];
+                if (aura.enabled) {
+                    s.tryAddSupport(aura);
+                } else {
+                    s.tryRemoveSupport(aura);
+                }
+            }
+        });
     })();
     
     redraw();

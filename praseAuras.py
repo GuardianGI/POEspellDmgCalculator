@@ -370,7 +370,7 @@ for skill in auras:
 	columns = []
 	for collName in skill.values[lvl].keys():
 		columns.append("'{}'".format(stripXml(tryGetTitle(collName))))
-	stages.append('[' + ', '.join(columns) + ']')
+	stages.append(', '.join(columns))
 	s += ', '.join(stages)
 	
 	

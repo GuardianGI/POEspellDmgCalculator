@@ -53,6 +53,20 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.supportQualityLvl = {};
         s.additionalKeywordLvl = {};
         
+        s.tryAddSupport = function (support) {
+            if (support.isApplicable(s)) {
+                s.supports.push(support);
+                s.setNeedsRecalc();
+            }
+        }
+        s.tryRemoveSupport = function (support) {
+            var index = s.supports.indexOf(support);
+            if (index >= 0) {
+                s.supports.splice(index);
+                s.setNeedsRecalc();
+            }
+        }
+        
         if (s.isMinion) {
             s.maxMinions = 3;//todo: get actual values form skills... and then limit animate weapon somehow...
         }
