@@ -710,7 +710,7 @@ var redraw, onRedraw = [],
         
         lblName.style.display = 'none';
         lblName.className = 'lblSkillHover';
-        body.appendChild(lblName);
+        document.getElementById('canvas').parentNode.appendChild(lblName);
         
         lblName.onmouseover = function () { ignoreOut = true; };
         lblName.onmouseout = function () { ignoreOut = false; };
@@ -1222,14 +1222,14 @@ var redraw, onRedraw = [],
         })();
         (function(){
             var supportsTab, container,
-                detailsSection = document.getElementById('spellDetails'),
+                userInputTabset = document.getElementById('userInput').tabSet,
                 name,
                 tabs = {},
                 tabName,
                 s, keyword, lblSupport, cbSupportEnabled, update, heading;
-            container = document.createElement('div');
+            container = userInputTabset.addTab('Support gems');
             container.id = 'supportsTabSetContainer';
-            detailsSection.appendChild(container);
+            container.className = 'userInputSection';
             heading = document.createElement('h3');
             heading.appendChild(document.createTextNode('Support gems'));
             container.appendChild(heading);
@@ -1243,7 +1243,7 @@ var redraw, onRedraw = [],
                     for (keyword in s.keywords) {
                         keyword = s.keywords[keyword];
                         if (Object.keys(tabs).indexOf(keyword) < 0) {
-                            tabs[keyword] = supportsTab.addTab(keyword);
+                            tabs[keyword] = supportsTab.addTab(keyword, document.createElement('fieldset')).firstChild;
                         }
                         cbSupportEnabled = document.createElement('input');
                         cbSupportEnabled.type = 'checkbox';
@@ -1252,7 +1252,6 @@ var redraw, onRedraw = [],
                         lblSupport.appendChild(document.createTextNode(s.name + ': '));
                         lblSupport.appendChild(cbSupportEnabled);
                         tabs[keyword].appendChild(lblSupport);
-                        tabs[keyword].appendChild(document.createElement('br'));
                         
                         cbSupportEnabled.onchange = (function (self, support) {
                             return function () {

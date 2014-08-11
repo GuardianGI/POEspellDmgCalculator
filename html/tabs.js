@@ -7,6 +7,7 @@ var tabSet = function (parent, id) {
     content = document.createElement('div');
     
     tabSet.id = id;
+    tabSet.tabSet = res;//allow accesing tabset from DOM.
     
     tabSet.className = 'tabSet';
     header.className = 'tabHeader';

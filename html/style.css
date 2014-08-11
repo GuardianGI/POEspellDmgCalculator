@@ -11,16 +11,17 @@
 #misc {
 	/*float: right;*/
 	display: inline-block;
+	max-width: 600px;
 }
-.userInputSection label, .monster h2 {
+.userInputSection fieldset label, .monster h2 {
 	display: block;
 }
-.userInputSection label, #misc span {
+.userInputSection fieldset  label, #misc span {
 	width: 300px;
 	height: 25px;
 	position: relative;
 }
-.userInputSection input {
+.userInputSection fieldset input {
 	right: 0;
 	top: 0;
 	position: absolute;
@@ -47,7 +48,11 @@
 	/*left: 5px;
 	width: 100%;*/
 }
-.spellDetails, #supportsTabSetContainer, #monsterTabSetContainer{
+#supportsTabSetContainer {
+	display: block;
+	position: relative;
+}
+.spellDetails, /*#supportsTabSetContainer, */#monsterTabSetContainer{
 	position: relative;
 	display: block;
 	float: left;
@@ -120,6 +125,26 @@ label.support {
 	margin: 5px;
 }
 
+.support {
+	max-height: 700px;
+	overflow: auto;
+}
+/*
+.support label {
+	width: 200px;
+	display: inline-block;
+	position: relative;
+}
+.support input {
+	position: absolute;
+	right: 0;
+}*/
+.lblSkillHover {
+	visibility: hidden;
+}
+.canvasContainer:hover .lblSkillHover, .lblSkillHover:hover {
+	visibility: visible;
+}
 
 
 
