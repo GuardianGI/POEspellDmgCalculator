@@ -802,7 +802,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         dmgLvls.forEach(function (dLvl) {
                             s.dmg[i]['burning from fire from life'][dLvl] = userInput.life / 2;
                         });
-                    }, lvl);
+                    }, ((rawSkill.dmg[0].lvl | 0) || 0), 100);//todo:get from s.stages?
                 }
                 s.parseModifiers(lvl);
                 if (s.isSrs) {//luckily no additional phys dmg bufs exist for now...
