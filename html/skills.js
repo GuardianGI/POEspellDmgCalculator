@@ -53,7 +53,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         
         s.tryAddMod = function (mod) {
             if (mod.isApplicable(s)) {
-                s.modifiers.push();
+                s.modifiers.push(mod);
                 s.setNeedsRecalc();
             }
         }

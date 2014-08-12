@@ -26,13 +26,13 @@ def ignore_exception(IgnoreException=Exception,DefaultVal=None):
 
 sint = ignore_exception(ValueError)(int)
 
-def getXmlVal(s):
-	return re.search("(<?\<.*?\>)(.*?)\<\/", s.lower()).group(2).strip()
-def getNodeVal(node):
-	return getXmlVal(node.toxml())
+# def getXmlVal(s):
+	# return re.search("(<?\<.*?\>)(.*?)\<\/", s.lower()).group(2).strip()
 # def getNodeVal(node):
-	# xml = node.toxml().lower()
-	# return None if re.match('^\<[^>]+/\>$', xml) else re.search("(<?\<.*?\>)(.*?)\<\/", xml).group(2).strip()
+	# return getXmlVal(node.toxml())
+def getNodeVal(node):
+	xml = node.toxml().lower()
+	return None if re.match('^\<[^>]+/\>$', xml) else re.search("(<?\<.*?\>)(.*?)\<\/", xml).group(2).strip()
 
 def stripXml(xml):
 	return re.sub('\s+', ' ',
