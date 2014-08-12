@@ -11,6 +11,7 @@ var curses = (function () {
             var reType, makeStageFn, makeFindColumnFn, applyWhen;
             for (reType in modRegexes) {
                 matches = effectStr.match(modRegexes[reType]);
+                applyWhen = false;
                 if (null !== matches) {
                     res[sName].enabled = true;
                     switch (reType) {
@@ -23,7 +24,8 @@ var curses = (function () {
                         applyWhen = 'beforeDmgStages';
                         makeStageFn = function (stageStats, parsedMatches) {
                             return function (supportStage, skillLvl, skill) {
-                                skill.reducedRes[skillLvl][parsedMatches[0]] += stageStats[supportStage] * 100;//resist values are handled in 0-100 rather than 0-1 scale...
+                                skill.reducedRes[skillLvl][parsedMatches[0]] = (skill.reducedRes[skillLvl][parsedMatches[0]] || 0) +
+                                    stageStats[supportStage] * 100;//resist values are handled in 0-100 rather than 0-1 scale...
                             };
                         };
                         break;
@@ -72,9 +74,9 @@ var curses = (function () {
                         break;
                     case 'extraDot'://(for now) doesn't have stages, always ?40%
                         res[sName].applyAfter.push((function () {
-                            var moreDotDmg = parsePercent(matches[1]);
-                            return function (supportStage, skillLvl, skill) {//for now burning is the only dot TODO: apply to DoT and add exception to dmg for DoT's
-                                skill.dmg.multiply({mult: 1 + moreDotDmg, type: 'burning', lvl: skillLvl});
+                            var moreDot = parsePercent(matches[1]);
+                            return function (supportStage, skillLvl, skill) {
+                                skill.dmg.multiply({mult: 1 + moreDot, type: 'dot', lvl: skillLvl});
                             };
                         })());
                         break;
@@ -89,21 +91,23 @@ var curses = (function () {
                         makeStageFn = function (stageStats, parsedMatches) {
                             return function (supportStage, skillLvl, skill) {
                                 skill.dmg.multiply({
-                                    mult: stageStats[supportStage],
+                                    mult: 1 + stageStats[supportStage],
                                     type: parsedMatches[0],
-                                    lvl: skillLvl});
+                                    lvl: skillLvl
+                                });
                             };
                         };
                         break;
                     }
                     
-                    if (makeStageFn && makeFindColumnFn) {
+                    if (applyWhen) {
                         res[sName][applyWhen].push((function (curse, parsedMatches) {
                             var stageStats = {}, stage,
                                 columnIndex = findIndex(s.stageColumns, makeFindColumnFn(parsedMatches));
                             for (stage in curse.stages) {
                                 stageStats[stage] = parsePercent(s.stageStats[stage][columnIndex]);
                             }
+                            res[sName].stageStats = stageStats;//todo: remove this debug line when ever...
                             return makeStageFn(stageStats, parsedMatches);
                         })(res[sName], matches.slice(1).map(translateMatch)));
                     }

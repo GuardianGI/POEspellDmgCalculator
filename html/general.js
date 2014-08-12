@@ -69,6 +69,16 @@ var findIndex = function (arr, filter) {
     isEleDmgType = function (type) {
         return eleDmgTypes.indexOf(type) >= 0;
     },
+    dotTypes = ['burning', 'dot'],
+    isDotType = function (type) {
+        var i;
+        for (i = 0; i < dotTypes.length; i += 1) {
+            if (type.indexOf(dotTypes[i]) >= 0) {
+                return true;
+            }
+        }
+        return false;
+    },
     translateMatch = function (str) {
         switch (str) {
         case 'lightning':

@@ -101,6 +101,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                                     || 0 <= type.indexOf(properties.type)
                                     || isApplicable(properties.type)
                                     || ('elemental' === properties.type && isEleDmgType(type))
+                                    || ('dot' === properties.type && isDotType(type))
                                     ) {
                                 d[type].min *= properties.mult;
                                 d[type].max *= properties.mult;
@@ -260,7 +261,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                             pen = 0;
                             reduced = 0;
                             if (eleDmgTypes.indexOf(type) >= 0) {//if type is ele dmg:
-                                reduced = userInput.reducedResElemental + s.reducedRes[i].elemental || 0;
+                                reduced = (userInput.reducedResElemental || 0) + (s.reducedRes[i].elemental || 0);
                             }
                             reduced += userInput['reducedRes' + firstToUpper(type)] || 0;
                             reduced += s.reducedRes[i][type] || 0;
@@ -822,7 +823,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     });
                     s.parseQualityBonus(support.qualityBonus,
                         (function (supportName) {
-                            return function () { return s.supportQualityLvl[supportName];}
+                            return function () { return s.supportQualityLvl[supportName] || 0; }
                         })(support.name),
                         lvl);
                 }
