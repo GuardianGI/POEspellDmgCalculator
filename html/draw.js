@@ -262,62 +262,64 @@ var redraw, onRedraw = [],
                                 lblNew.innerHTML = s.keywords.join(', ');
                                 details.appendChild(lblNew);
                                 
-                                newFieldset('Supports');
-                                
-                                rows = [];
-                                tbl = document.createElement('table');
-                                fieldset.appendChild(tbl);
-                                tbl.width = '100%';
-                                for (k in s.modifiers) {//draw checkbox to turn of applied supports
-                                    if ('support' !== s.modifiers[k].type) {
-                                        continue;
-                                    }
-                                    r = {}
+                                ['aura', 'curse', 'support'].forEach(function (modType) {
+                                    newFieldset(firstToUpper(modType) + 's');
                                     
-                                    r['Name'] = document.createTextNode(s.modifiers[k].name);
-                                    
-                                    inputNew = document.createElement('input');
-                                    inputNew.type = 'text';
-                                    inputNew.value = s.modifiers[k].maxLvl;
-                                    inputNew.title = 'max lvl';
-                                    inputNew.onchange = (function (self, support, skill) {
-                                        return function () {
-                                            support.maxLvl = self.value | 0;
-                                            skill.setNeedsRecalc();
-                                            redraw();
-                                        };
-                                    })(inputNew, s.modifiers[k], s);
-                                    r['Max gem lvl'] = inputNew;
-                                    
-                                    inputNew = document.createElement('input');
-                                    inputNew.type = 'text';
-                                    inputNew.value = s.supportQualityLvl[s.modifiers[k].name];
-                                    inputNew.title = 'quality lvl';
-                                    inputNew.onchange = (function (self, support, skill) {
-                                        return function () {
-                                            skill.supportQualityLvl[support.name] = self.value | 0;
-                                            skill.setNeedsRecalc();
-                                            redraw();
-                                        };
-                                    })(inputNew, s.modifiers[k], s);
-                                    r['Quality lvl'] = inputNew;
-                                    
-                                    r['Remove mult.'] = document.createTextNode(
-                                        roundForDisplay(getSupportRemovedDiff(s, k)))
-                                    
-                                    checkbox = document.createElement('input');
-                                    checkbox.type = 'button';
-                                    checkbox.value = 'X';
-                                    checkbox.onclick = (function (self, support) {
-                                        return function() {
-                                            s.tryRemoveMod(support);
-                                            redraw();
+                                    rows = [];
+                                    tbl = document.createElement('table');
+                                    fieldset.appendChild(tbl);
+                                    tbl.width = '100%';
+                                    for (k in s.modifiers) {//draw checkbox to turn of applied supports
+                                        if (modType !== s.modifiers[k].type) {
+                                            continue;
                                         }
-                                    })(checkbox, s.modifiers[k]);
-                                    r['Remove'] = checkbox;
-                                    rows.push(r)
-                                }
-                                drawTable(tbl, rows);
+                                        r = {}
+                                        
+                                        r['Name'] = document.createTextNode(s.modifiers[k].name);
+                                        
+                                        inputNew = document.createElement('input');
+                                        inputNew.type = 'text';
+                                        inputNew.value = s.modifiers[k].maxLvl;
+                                        inputNew.title = 'max lvl';
+                                        inputNew.onchange = (function (self, support, skill) {
+                                            return function () {
+                                                support.maxLvl = self.value | 0;
+                                                skill.setNeedsRecalc();
+                                                redraw();
+                                            };
+                                        })(inputNew, s.modifiers[k], s);
+                                        r['Max gem lvl'] = inputNew;
+                                        
+                                        inputNew = document.createElement('input');
+                                        inputNew.type = 'text';
+                                        inputNew.value = s.supportQualityLvl[s.modifiers[k].name];
+                                        inputNew.title = 'quality lvl';
+                                        inputNew.onchange = (function (self, support, skill) {
+                                            return function () {
+                                                skill.supportQualityLvl[support.name] = self.value | 0;
+                                                skill.setNeedsRecalc();
+                                                redraw();
+                                            };
+                                        })(inputNew, s.modifiers[k], s);
+                                        r['Quality lvl'] = inputNew;
+                                        
+                                        r['Remove mult.'] = document.createTextNode(
+                                            roundForDisplay(getSupportRemovedDiff(s, k)))
+                                        
+                                        checkbox = document.createElement('input');
+                                        checkbox.type = 'button';
+                                        checkbox.value = 'X';
+                                        checkbox.onclick = (function (self, support) {
+                                            return function() {
+                                                s.tryRemoveMod(support);
+                                                redraw();
+                                            }
+                                        })(checkbox, s.modifiers[k]);
+                                        r['Remove'] = checkbox;
+                                        rows.push(r)
+                                    }
+                                    drawTable(tbl, rows);
+                                });
                                 
                                 fieldset.appendChild(getSupportsDropDown());
                                 
