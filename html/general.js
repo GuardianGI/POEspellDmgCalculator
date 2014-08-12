@@ -83,8 +83,10 @@ var findIndex = function (arr, filter) {
         switch (str) {
         case 'lightning':
             return 'light';
-        case 'area':
+        case 'area': case 'area of effect':
             return 'aoe';
+        case 'curses':
+            return 'curse';
         case 'projectiles':
             return 'projectile';
         case 'physical':
@@ -93,9 +95,7 @@ var findIndex = function (arr, filter) {
             return 'trap';
         case 'spells':
             return 'spell';
-        case 'ele.':
-            return 'elemental';
-        case 'ele':
+        case 'ele.': case 'ele':
             return 'elemental';
         case 'frozen':
             return 'freeze';
