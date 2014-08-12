@@ -50,15 +50,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.chains = rawSkill.chains;
         s.supportQualityLvl = {};
         s.additionalKeywordLvl = {};
-        /*s.additionalIgniteChance = {};
-        s.additionalShockChance = {};
-        s.additionalFreezeChance = {};
-        s.additionalCritChance = {};
-        s.additionalCritDamage = {};*/
         
         s.tryAddMod = function (mod) {
             if (mod.isApplicable(s)) {
-                s.modifiers.push(mod);
+                s.modifiers.push();
                 s.setNeedsRecalc();
             }
         }

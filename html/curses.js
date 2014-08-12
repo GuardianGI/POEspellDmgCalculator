@@ -38,7 +38,7 @@ var curses = (function () {
                         makeStageFn = function (stageStats, parsedMatches) {
                             return function (supportStage, skillLvl, skill) {
                                 skill['additional' + firstToUpper(parsedMatches[0]) + 'Chance'][skillLvl] = 
-                                    supportStage[supportStage];
+                                    stageStats[supportStage];
                             };
                         };
                         break;
@@ -52,7 +52,7 @@ var curses = (function () {
                         applyWhen = 'beforeDmgStages';
                         makeStageFn = function (stageStats) {
                             return function (supportStage, skillLvl, skill) {
-                                skill.additionalCritChance[skillLvl] = supportStage[supportStage];
+                                skill.additionalCritChance[skillLvl] = stageStats[supportStage];
                             };
                         };
                         break;
@@ -66,7 +66,7 @@ var curses = (function () {
                         applyWhen = 'beforeDmgStages';
                         makeStageFn = function (stageStats) {
                             return function (supportStage, skillLvl, skill) {
-                                skill.additionalCritDamage[skillLvl] = supportStage[supportStage];
+                                skill.additionalCritDamage[skillLvl] = stageStats[supportStage];
                             };
                         };
                         break;

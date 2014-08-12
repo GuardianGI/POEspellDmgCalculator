@@ -142,7 +142,7 @@ def tryGetTitle(node):
 		nodeTitle = re.search('title="([^"]*)"', node).group(1)
 	except Exception:
 		nodeTitle = node;
-	return nodeTitle
+	return nodeTitle.replace('category:', '').replace(' skills', '')
 
 def fixUnclosedTags(content):
 	return re.sub('(\<img [^>]*?)/?\>', '\g<1> />', content).replace('<br>', '<br />')
