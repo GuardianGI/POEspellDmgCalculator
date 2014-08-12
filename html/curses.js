@@ -23,7 +23,7 @@ var curses = (function () {
                         applyWhen = 'beforeDmgStages';
                         makeStageFn = function (stageStats, parsedMatches) {
                             return function (supportStage, skillLvl, skill) {
-                                skill.reducedRes[skillLvl][parsedMatches[0]] = stageStats[supportStage] * 100;//resist values are handled in 0-100 rather than 0-1 scale...
+                                skill.reducedRes[skillLvl][parsedMatches[0]] += stageStats[supportStage] * 100;//resist values are handled in 0-100 rather than 0-1 scale...
                             };
                         };
                         break;
@@ -37,7 +37,7 @@ var curses = (function () {
                         applyWhen = 'beforeDmgStages';
                         makeStageFn = function (stageStats, parsedMatches) {
                             return function (supportStage, skillLvl, skill) {
-                                skill['additional' + firstToUpper(parsedMatches[0]) + 'Chance'][skillLvl] = 
+                                skill['additional' + firstToUpper(parsedMatches[0]) + 'Chance'][skillLvl] += 
                                     stageStats[supportStage];
                             };
                         };
@@ -52,7 +52,7 @@ var curses = (function () {
                         applyWhen = 'beforeDmgStages';
                         makeStageFn = function (stageStats) {
                             return function (supportStage, skillLvl, skill) {
-                                skill.additionalCritChance[skillLvl] = stageStats[supportStage];
+                                skill.additionalCritChance[skillLvl] += stageStats[supportStage];
                             };
                         };
                         break;
@@ -66,7 +66,7 @@ var curses = (function () {
                         applyWhen = 'beforeDmgStages';
                         makeStageFn = function (stageStats) {
                             return function (supportStage, skillLvl, skill) {
-                                skill.additionalCritDamage[skillLvl] = stageStats[supportStage];
+                                skill.moreCritDamage[skillLvl] += stageStats[supportStage];
                             };
                         };
                         break;

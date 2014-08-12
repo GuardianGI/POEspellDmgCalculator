@@ -302,11 +302,12 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
         s.additionalCD = [];
         s.getCritDmg = function (lvl) {
-            return s.cd +
-                (s.additionalCritDamage[lvl] || 0) +
-                (s.isMinion ? 0 : userInput.incrCritDmg / 100) +
-                s.additionalCD[lvl] +
-                s.incrCdFromQuality * s.getQualityLvl(lvl);
+            return (s.cd +
+                    (s.additionalCritDamage[lvl] || 0) +
+                    (s.isMinion ? 0 : userInput.incrCritDmg / 100) +
+                    s.additionalCD[lvl] +
+                    s.incrCdFromQuality * s.getQualityLvl(lvl))
+                * s.moreCritDamage[lvl];
         };
         s.applyCrit = function (lvl) {
             var chance, mult;
@@ -702,6 +703,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.additionalShockChance = {};
                 s.additionalFreezeChance = {};
                 s.additionalCritChance = {};
+                s.moreCritDamage = {};
                 s.additionalCritDamage = {};
                 s.traps = {};
                 s.increasedDuration = {};
@@ -720,6 +722,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.additionalFreezeChance[i] = 0;
                     s.additionalCritChance[i] = 0;
                     s.additionalCritDamage[i] = 0;
+                    s.moreCritDamage[i] = 1;
                     s.increasedDuration[i] = 0;
                     s.reducedRes[i] = {};
                 }, lvl);
