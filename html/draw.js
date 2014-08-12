@@ -33,7 +33,7 @@ var redraw, onRedraw = [],
             ctx = c.getContext("2d"),
             getSupportRemovedDiff = function (skill, supportIndex) {
                 var clone = skill.clone('tmpClone');
-                clone.supports.splice(supportIndex, 1);
+                clone.modifiers.splice(supportIndex, 1);
                 clone.setNeedsRecalc();
                 clone.calcDmg(userInput.playerLvlForSuggestions);
                 return clone.totalDmg(userInput.playerLvlForSuggestions) / skill.totalDmg(userInput.playerLvlForSuggestions);
@@ -268,14 +268,17 @@ var redraw, onRedraw = [],
                                 tbl = document.createElement('table');
                                 fieldset.appendChild(tbl);
                                 tbl.width = '100%';
-                                for (k in s.supports) {//draw checkbox to turn of applied supports
+                                for (k in s.modifiers) {//draw checkbox to turn of applied supports
+                                    if ('support' !== s.modifiers[k].type) {
+                                        continue;
+                                    }
                                     r = {}
                                     
-                                    r['Name'] = document.createTextNode(s.supports[k].name);
+                                    r['Name'] = document.createTextNode(s.modifiers[k].name);
                                     
                                     inputNew = document.createElement('input');
                                     inputNew.type = 'text';
-                                    inputNew.value = s.supports[k].maxLvl;
+                                    inputNew.value = s.modifiers[k].maxLvl;
                                     inputNew.title = 'max lvl';
                                     inputNew.onchange = (function (self, support, skill) {
                                         return function () {
@@ -283,12 +286,12 @@ var redraw, onRedraw = [],
                                             skill.setNeedsRecalc();
                                             redraw();
                                         };
-                                    })(inputNew, s.supports[k], s);
+                                    })(inputNew, s.modifiers[k], s);
                                     r['Max gem lvl'] = inputNew;
                                     
                                     inputNew = document.createElement('input');
                                     inputNew.type = 'text';
-                                    inputNew.value = s.supportQualityLvl[s.supports[k].name];
+                                    inputNew.value = s.supportQualityLvl[s.modifiers[k].name];
                                     inputNew.title = 'quality lvl';
                                     inputNew.onchange = (function (self, support, skill) {
                                         return function () {
@@ -296,7 +299,7 @@ var redraw, onRedraw = [],
                                             skill.setNeedsRecalc();
                                             redraw();
                                         };
-                                    })(inputNew, s.supports[k], s);
+                                    })(inputNew, s.modifiers[k], s);
                                     r['Quality lvl'] = inputNew;
                                     
                                     r['Remove mult.'] = document.createTextNode(
@@ -307,14 +310,10 @@ var redraw, onRedraw = [],
                                     checkbox.value = 'X';
                                     checkbox.onclick = (function (self, support) {
                                         return function() {
-                                            var i = s.supports.indexOf(support);
-                                            if (i > -1) {
-                                                s.supports.splice(i, 1);
-                                                s.setNeedsRecalc();
-                                            }
+                                            s.tryRemoveMod(support);
                                             redraw();
                                         }
-                                    })(checkbox, s.supports[k]);
+                                    })(checkbox, s.modifiers[k]);
                                     r['Remove'] = checkbox;
                                     rows.push(r)
                                 }
@@ -425,7 +424,7 @@ var redraw, onRedraw = [],
                                 option.innerHTML = supportName + ' | ' + roundForDisplay(dmgMulti);
                                 option.apply = (function (self, s, innerSupport) {
                                     return function () {
-                                        s.supports.push(innerSupport.clone());
+                                        s.tryAddMod(innerSupport.clone());
                                         s.setNeedsRecalc();
                                         redraw();
                                     };
@@ -767,10 +766,10 @@ var redraw, onRedraw = [],
             for (name in skills) {
                 s = skills[name];
                 if (s.draw) {
-                    while (s.supports.length > userInput.maxSupports) {
+                    while (s.modifiers.length > userInput.maxSupports) {
                         worstSupportKey = -1;
                         mult = -1;
-                        for (k in s.supports) {
+                        for (k in s.modifiers) {
                             s.calcDmg(userInput.playerLvlForSuggestions);
                             newMult = getSupportRemovedDiff(s, k);
                             if (newMult > mult) {
@@ -779,7 +778,7 @@ var redraw, onRedraw = [],
                             }
                         }
                         if (worstSupportKey >= 0) {
-                            s.supports.splice(worstSupportKey, 1);
+                            s.modifiers.splice(worstSupportKey, 1);
                             s.setNeedsRecalc();
                         } else {
                             break;
@@ -798,7 +797,7 @@ var redraw, onRedraw = [],
                     dmgMultForSupports = getSortedSupports(s);
                     if (dmgMultForSupports.length > 0) {
                         for (i = 0; i < dmgMultForSupports.length; i += 1) {
-                            s.supports.push(dmgMultForSupports[i].support.clone());
+                            s.tryAddMod(dmgMultForSupports[i].support.clone());
                         }
                         s.setNeedsRecalc();
                     }
@@ -811,9 +810,9 @@ var redraw, onRedraw = [],
             var s, name;
             for (name in skills) {
                 s = skills[name];
-                if (s.draw && s.supports.length > 0) {
+                if (s.draw && s.modifiers.length > 0) {
                     s.setNeedsRecalc();
-                    s.supports = [];
+                    s.modifiers = [];
                 }
             }
             redraw();
@@ -826,7 +825,7 @@ var redraw, onRedraw = [],
                 if (s.draw) {
                     dmgMultForSupports = getSortedSupports(s);
                     if (dmgMultForSupports.length > 0) {
-                        s.supports.push(dmgMultForSupports[0].support.clone());
+                        s.tryAddMod(dmgMultForSupports[0].support.clone());
                         s.setNeedsRecalc();
                     }
                 }
@@ -840,7 +839,7 @@ var redraw, onRedraw = [],
                 if (s.draw) {
                      worstSupportKey = -1;
                      mult = -1;
-                    for (k in s.supports) {
+                    for (k in s.modifiers) {
                         s.calcDmg(userInput.playerLvlForSuggestions);
                         newMult = getSupportRemovedDiff(s, k);
                         if (newMult > mult) {
@@ -849,7 +848,7 @@ var redraw, onRedraw = [],
                         }
                     }
                     if (worstSupportKey >= 0) {
-                        s.supports.splice(worstSupportKey, 1);
+                        s.modifiers.splice(worstSupportKey, 1);
                         s.setNeedsRecalc();
                     }
                 }
@@ -1284,9 +1283,20 @@ var redraw, onRedraw = [],
             for (name in skills) {
                 s = skills[name];
                 if (aura.enabled) {
-                    s.tryAddSupport(aura);
+                    s.tryAddMod(aura);
                 } else {
-                    s.tryRemoveSupport(aura);
+                    s.tryRemoveMod(aura);
+                }
+            }
+        });
+        parseSupports(curses, 'Curses', 'activeCurses', false, function (curse) {
+            var name, s, index;
+            for (name in skills) {
+                s = skills[name];
+                if (curse.enabled) {
+                    s.tryAddMod(curse);
+                } else {
+                    s.tryRemoveMod(curse);
                 }
             }
         });

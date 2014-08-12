@@ -38,11 +38,9 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.dmg = [];
         s.stages = [];
         s.mana = [];
-        s.supports = [];
+        s.modifiers = [];
         s.incrCastSpeedFromQuality = 0;
         s.incrCcFromQuality = 0;
-        s.additionalChanceToIgnite = [];
-        s.additionalShockChance = [];
         s.otherIncrCastSpeed = [];
         s.castTime = rawSkill.castTime;
         s.projectiles = [];
@@ -52,17 +50,22 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.chains = rawSkill.chains;
         s.supportQualityLvl = {};
         s.additionalKeywordLvl = {};
+        /*s.additionalIgniteChance = {};
+        s.additionalShockChance = {};
+        s.additionalFreezeChance = {};
+        s.additionalCritChance = {};
+        s.additionalCritDamage = {};*/
         
-        s.tryAddSupport = function (support) {
-            if (support.isApplicable(s)) {
-                s.supports.push(support);
+        s.tryAddMod = function (mod) {
+            if (mod.isApplicable(s)) {
+                s.modifiers.push(mod);
                 s.setNeedsRecalc();
             }
         }
-        s.tryRemoveSupport = function (support) {
-            var index = s.supports.indexOf(support);
+        s.tryRemoveMod = function (mod) {
+            var index = s.modifiers.indexOf(mod);
             if (index >= 0) {
-                s.supports.splice(index);
+                s.modifiers.splice(index);
                 s.setNeedsRecalc();
             }
         }
@@ -195,7 +198,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         value = matches[1] - 0;//cast to float
                         if ("ignite" == matches[3]) {
                             s.applyForLvls(function (i) {
-                                s.additionalChanceToIgnite[i] = (value / 100) * getQualityLvl(i) + (s.additionalChanceToIgnite[i] || 0);
+                                s.additionalIgniteChance[i] = (value / 100) * getQualityLvl(i) + (s.additionalIgniteChance[i] || 0);
                             }, lvl);
                         } else if ('shock' == matches[3]) {//todo: add freeze.
                             s.applyForLvls(function (i) {
@@ -244,7 +247,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         };
 
         s.applyDefense = function (lvl) {
-            var pen, res, reduced, monster, morePhysDmg = 1 + userInput.morePhysDmg / 100;
+            var pen, res, reduced, monster;
             
             s.applyForLvls(function (i) {
                 var j, dmg, life, nrOfHits;
@@ -254,8 +257,6 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     if (s.dmg[i].hasOwnProperty(type)) {
                         if ('phys' === type) {
                             if (s.dmg[i][type].min > 0 && s.dmg[i][type].max > 0) {
-                                s.dmg[i][type].min *= morePhysDmg;
-                                s.dmg[i][type].max *= morePhysDmg;
                                 s.dmg[i][type].avg = calcAvgPhysDmg(s, s.dmg[i][type].min, s.dmg[i][type].max, monster.armour, i);
                                 s.dmg[i][type].min = calcPhysDmg(s.dmg[i][type].min, monster.armour);
                                 s.dmg[i][type].max = calcPhysDmg(s.dmg[i][type].max, monster.armour);
@@ -264,9 +265,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                             pen = 0;
                             reduced = 0;
                             if (eleDmgTypes.indexOf(type) >= 0) {//if type is ele dmg:
-                                reduced = userInput.reducedResElemental;
+                                reduced = userInput.reducedResElemental + s.reducedRes[i].elemental || 0;
                             }
                             reduced += userInput['reducedRes' + firstToUpper(type)] || 0;
+                            reduced += s.reducedRes[i][type] || 0;
                             pen += s.resPen[i][type];
                             res = monster[type];
                             res -= reduced;
@@ -300,11 +302,13 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.additionalIncrCC[lvl] +
                 s.incrCcFromQuality * s.getQualityLvl(lvl) +
                 (s.isIceSpear && userInput.assumeStageTwoIceSpear ? 5 : 0));
+            cc += s.additionalCritChance[lvl] || 0;
             return cc > 1 ? 1 : cc < 0 ? 0 : cc;
         };
         s.additionalCD = [];
         s.getCritDmg = function (lvl) {
             return s.cd +
+                (s.additionalCritDamage[lvl] || 0) +
                 (s.isMinion ? 0 : userInput.incrCritDmg / 100) +
                 s.additionalCD[lvl] +
                 s.incrCdFromQuality * s.getQualityLvl(lvl);
@@ -321,17 +325,15 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             }, lvl);
         };
         s.getIncrDurationMutiplier = function (type, lvl) {
-            return 1 +
-                s.increasedDuration[lvl] +
-                (s.isMinion ? 0 : ((userInput.incrDuration / 100 || 0) +
-                    (userInput['incrDuration' + firstToUpper(type)] / 100 || 0)));
+            return 1 + s.increasedDuration[lvl] +
+                (s.isMinion ? 0 : ((userInput.incrDuration / 100 || 0)));
         };
         s.applyBurn = function (lvl) {
             //todo: in the event of a crit, should we apply the crit dmg? or is crit dmg already in the dps values?
             var apply = function (fromType, toType, lvl) {
-                var mult, additionalIgniteChance = s.additionalChanceToIgnite[lvl] +
+                var mult, additionalIgniteChance = s.additionalIgniteChance[lvl] +
                             (s.isMinion ? 0 : (userInput.chanceToIgnite / 100)) +
-                            s.getAdditionalChanceToIgnite(lvl),
+                            s.getadditionalIgniteChance(lvl),
                         chanceToIgnite = 1 - ((1 - s.getCritChance(lvl)) * (1 - additionalIgniteChance));
                     chanceToIgnite = chanceToIgnite > 1 ? 1 : chanceToIgnite;
                     mult = chanceToIgnite * 0.8 * s.getIncrDurationMutiplier('burn', lvl) *
@@ -558,8 +560,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     return skill.APS;
                 });
                 return function () {
-                    var i = 0, stage, apply = function () {
-                        s.dmg.multiply({'mult': (apsStages[i] || 1) * (1 + (s.incrAps[lvl] || 0)), 'lvl': lvl});
+                    var stageId = 0, stage, apply = function () {
+                        s.dmg.multiply({'mult': (apsStages[stageId] || 1) * (1 + (s.incrAps[lvl] || 0)), 'lvl': lvl});
                     };
                     if (undefined === lvl) {
                         lvl = 0;
@@ -567,9 +569,9 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                             for (; lvl < stage; lvl += 1) {//for lvl up to last stage
                                 apply();
                             }
-                            i += 1;
+                            stageId += 1;
                         }
-                        i = apsStages.length - 1;
+                        stageId = apsStages.length - 1;
                         for (; lvl < 100; lvl += 1) {//lvl form last stage up to 100.
                                 apply();
                         }
@@ -577,12 +579,12 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     } else {
                         done = false;
                         if (s.stages[0] <= lvl) {
-                            for (i = 0; i < s.stages.length - 1; i += 1) {
-                                if (s.stages[i] <= lvl && s.stages[i + 1] > lvl) {
+                            for (stageId = 0; stageId < s.stages.length - 1; stageId += 1) {
+                                if (s.stages[stageId] <= lvl && s.stages[stageId + 1] > lvl) {
                                     break;
                                 }
                             }
-                            s.dmg.multiply({'mult': apsStages[i] || 1 * (1 + (s.incrAps[lvl] || 0)), 'lvl': lvl});
+                            s.dmg.multiply({'mult': apsStages[stageId] || 1 * (1 + (s.incrAps[lvl] || 0)), 'lvl': lvl});
                         }
                     }
                 };
@@ -673,7 +675,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 }
                 
                 //reset things that may or may not get edited every calcDmg by supports and such.
-                s.getAdditionalChanceToIgnite = function () { return 0; };
+                s.getadditionalIgniteChance = function () { return 0; };
                 
                 resetKeywords();//reset keywords, may be modified by supports.
                 if (s.isDesecrate || s.isShockwaveTotem || s.isBearTrap || s.isMinion || s.isRf) {
@@ -701,11 +703,15 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                 s.incrAps = {};
                 s.empower = {};
                 s.additionalQuality = {};
-                s.additionalChanceToIgnite = {};
+                s.additionalIgniteChance = {};
                 s.additionalShockChance = {};
+                s.additionalFreezeChance = {};
+                s.additionalCritChance = {};
+                s.additionalCritDamage = {};
                 s.traps = {};
                 s.increasedDuration = {};
                 s.projectiles = {};
+                s.reducedRes = {};
                                 
                 s.applyForLvls(function (i) {
                     s.dmgIncreases[i] = getDmgTypes();
@@ -714,12 +720,17 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.traps[i] = {base: 1};
                     s.empower[i] = 0;
                     s.additionalQuality[i] = 0;
-                    s.additionalChanceToIgnite[i] = 0;
-                    s.increasedDuration[i] = userInput.incrDuration / 100;
+                    s.additionalIgniteChance[i] = 0;
+                    s.additionalShockChance[i] = 0;
+                    s.additionalFreezeChance[i] = 0;
+                    s.additionalCritChance[i] = 0;
+                    s.additionalCritDamage[i] = 0;
+                    s.increasedDuration[i] = 0;
+                    s.reducedRes[i] = {};
                 }, lvl);
                 
-                for (key in s.supports) {
-                    support = s.supports[key];
+                for (key in s.modifiers) {
+                    support = s.modifiers[key];
                     support.beforeDmgStages.forEach(function (fn) {
                         s.applySupportStage(support, fn, lvl);
                     });
@@ -806,8 +817,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     }, lvl);
                 }
                 //begin applying supports.
-                for (key in s.supports) {
-                    support = s.supports[key];
+                for (key in s.modifiers) {
+                    support = s.modifiers[key];
                     support.initFunctions.forEach(function (fn) {
                         fn(s);
                     });
@@ -818,8 +829,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         lvl);
                 }
                 
-                for (key in s.supports) {
-                    support = s.supports[key];
+                for (key in s.modifiers) {
+                    support = s.modifiers[key];
                     
                     support.applyFirst.forEach(function (fn) {
                         s.applySupportStage(support, fn, lvl);
@@ -829,7 +840,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         switch (type) {
                         case 'chanceToStatusAilment':
                             if ('fire' === support.ailmentElement) {
-                                s.getAdditionalChanceToIgnite = (function (support) {
+                                s.getadditionalIgniteChance = (function (support) {
                                     return function (lvl) {
                                         var stage = s.getSupportStage(support, lvl);
                                         if (stage >= 0) {
@@ -846,14 +857,14 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         }
                     });
                 }
-                for (key in s.supports) {
-                    support = s.supports[key];
+                for (key in s.modifiers) {
+                    support = s.modifiers[key];
                     support.applyAfterFirst.forEach(function (fn) {
                         s.applySupportStage(support, fn, lvl);
                     });
                 }
-                for (key in s.supports) {
-                    support = s.supports[key];
+                for (key in s.modifiers) {
+                    support = s.modifiers[key];
                     support.applyBefore.forEach(function (fn) {
                         s.applySupportStage(support, fn, lvl);
                     });
@@ -903,8 +914,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     }, lvl);
                 }
                 
-                for (key in s.supports) {
-                    support = s.supports[key];
+                for (key in s.modifiers) {
+                    support = s.modifiers[key];
                     support.applyAfter.forEach(function (fn) {
                         s.applySupportStage(support, fn, lvl);
                     });
@@ -934,8 +945,8 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         
         s.clone = function (newName) {
             var key, clone = skill(rawSkill, name);
-            for (key in s.supports) {
-                clone.supports.push(s.supports[key].clone());
+            for (key in s.modifiers) {
+                clone.modifiers.push(s.modifiers[key].clone());
             }
             for (key in s.supportQualityLvl) {
                 clone.supportQualityLvl[key] = s.supportQualityLvl[key];

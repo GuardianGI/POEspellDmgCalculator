@@ -7,6 +7,35 @@ var findIndex = function (arr, filter) {
         }
         return -1;
     },
+    parsePercent = function (str) {
+        return (((str || '0%').match(/(\d+)%?/i)[1] | 0) / 100);
+    },
+    initModifier = function (name, s, modType) {
+        var self = {};
+        self.name = name;
+        self.type = modType;
+        self.maxLvl = s.maxLvl;
+        self.stages = s.stages;
+        self.initFunctions = [];
+        self.beforeDmgStages = [];//apply before parsing base dmg from raw skill data.
+        self.applyFirst = [];//apply on raw skill data
+        self.applyAfterFirst = [];//apply on raw skill data
+        self.applyBefore = [];//apply before monster def. shock, etc.
+        self.applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
+        self.types = [];
+        self.keywords = s.keywords.splice(0).map(translateMatch);
+        self.enabled = false;
+        self.qualityBonus = s.qualityBonus;
+        self.clone = function () {
+            var clone = {}, key;
+            for (key in self) {
+                clone[key] = self[key];
+            }
+            return clone;
+        };
+        self.isApplicable = function () { return false; };
+        return self;
+    },
     userInput = {},
     firstToUpper = function (str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
@@ -54,6 +83,16 @@ var findIndex = function (arr, filter) {
             return 'trap';
         case 'spells':
             return 'spell';
+        case 'ele.':
+            return 'elemental';
+        case 'ele':
+            return 'elemental';
+        case 'frozen':
+            return 'freeze';
+        case 'ignited':
+            return 'ignite';
+        case 'shocked':
+            return 'shock';
         default:
             return str;
         }

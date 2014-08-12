@@ -25,9 +25,6 @@ var auras, supports = (function () {
             multiStrike: /x% more attack speed/i,
             culling: /kills enemies on 10% life or less when hit by supported Skills/i
         }, matches, match,
-        parsePercent = function (str) {
-            return ((str.match(/(\d+)%/i)[1] | 0) / 100);
-        },
         applyRegexes = function (effectStr) {
             for (reType in modRegexes) {
                 matches = effectStr.match(modRegexes[reType]);
@@ -556,7 +553,7 @@ var auras, supports = (function () {
                                                     skill.keywords.indexOf('trap') < 0 &&
                                                     skill.keywords.indexOf('totem') < 0 &&
                                                     (skill.keywords.indexOf('mine') < 0 ||
-                                                        skill.supports.indexOf(res['Remote Mine']) >= 0);
+                                                        skill.modifiers.indexOf(res['Remote Mine']) >= 0);
                                             };														
                                         } else if (sName.toLowerCase().indexOf('mine') > -1) {
                                             res[sName].initFunctions.push(function (skill) {
@@ -670,50 +667,24 @@ var auras, supports = (function () {
                     }
                 }
             }
-        }, parse = function (data) {
+        }, parse = function (data, modType) {
             for (sName in data) {
                 s = data[sName];
-                res[sName] = {};
-                res[sName].maxLvl = s.maxLvl;//this should be a proper value, but with a max of +2 to gem levels on gear and 1 from corruption it should be ok?
-                res[sName].name = sName;
-                res[sName].stages = s.stages;
-                res[sName].initFunctions = [];
-                res[sName].applyFirst = [];//apply on raw skill data
-                res[sName].applyAfterFirst = [];//apply on raw skill data
-                res[sName].applyBefore = [];//apply before monster def. shock, etc.
-                res[sName].applyAfter = [];//apply after mosnter def. (before cast speed bonus is calculated)
-                res[sName].beforeDmgStages = [];//apply before parsing base dmg from raw skill data.
-                res[sName].types = [];
-                res[sName].keywords = s.keywords.splice(0).map(translateMatch);
-                res[sName].enabled = false;
-                res[sName].isApplicable = (function (supportName) {
-                    return function () {
-                        //console.log('default is applicable was called for '+ supportName);
-                        return false;
-                    };
-                })(sName);
+                res[sName] = initModifier(sName, s, modType);
+                
                 for (i in s.modifiers) {
                     applyRegexes(s.modifiers[i]);
                 }
-                res[sName].qualityBonus = s.qualityBonus;
-                res[sName].clone = (function (self) {
-                    return function () {
-                        var clone = {}, key;
-                        for (key in self) {
-                            clone[key] = self[key];
-                        }
-                        return clone;
-                    };
-                })(res[sName]);
+                
                 res[sName].isParsed = res[sName].enabled;
             }
         };
       
-    parse(rawSupports);
+    parse(rawSupports, 'support');
     storedRes = res;
     
     res = {}
-    parse(rawAuras);
+    parse(rawAuras, 'aura');
     auras = res;
     
     
@@ -724,17 +695,17 @@ getSortedSupports = function (s) {
         dmgMultForSupports = [];
     for (key in supports) {
         support = supports[key];
-        if (s.supports.indexOf(support) < 0 && !s.supports.some(function (sup) { return sup.name === support.name; }) && support.isApplicable(s)) {
+        if (s.modifiers.indexOf(support) < 0 && !s.modifiers.some(function (sup) { return sup.name === support.name; }) && support.isApplicable(s)) {
             tmpClone = s.clone('tmpClone');
-            tmpClone.supports.push(support);//temp add support
+            tmpClone.tryAddMod(support);//temp add support
             
             //s.calcDmg();//should not need recalc?
             dmgAfter = tmpClone.calcDmg(userInput.playerLvlForSuggestions);
             
-            nonProblematicSupports = s.supports.filter(function (support) { return support.isApplicable(s); });
+            nonProblematicSupports = s.modifiers.filter(function (support) { return support.isApplicable(s); });
             stillApplicable = true;
             //test applicability of current supports.
-            tmpClone.supports.forEach(function (innerSupport) {
+            tmpClone.modifiers.forEach(function (innerSupport) {
                 if (!innerSupport.isApplicable(tmpClone) &&
                         nonProblematicSupports.indexOf(innerSupport) >= 0 &&
                         support !== innerSupport) {

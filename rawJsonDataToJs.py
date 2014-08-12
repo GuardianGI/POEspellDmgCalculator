@@ -15,6 +15,10 @@ f_attackJson = open(dir + 'parsedAttacks.json', 'r')
 attacks = f_attackJson.read()
 f_attackJson.close()
 
+f_cursesJson = open(dir + 'parsedCurses.json', 'r')
+curses = f_cursesJson.read()
+f_cursesJson.close()
+
 # f_randomJson = open(dir + 'parsedRandom.json', 'r')
 # random = f_randomJson.read()
 # f_randomJson.close()
@@ -33,6 +37,7 @@ f_jsonDataAsJs.write(',\n    '.join([
 		'rawAttacks = {}'.format(attacks),
 		armourVar,
 		'monsterStats = {}'.format(monsters),
-		'rawAuras = {}'.format(auras)
+		'rawAuras = {}'.format(auras),
+		'rawCurses = {}'.format(curses)
 	]) + ';\n')
 	
