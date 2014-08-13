@@ -60,7 +60,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.tryRemoveMod = function (mod) {
             var index = s.modifiers.indexOf(mod);
             if (index >= 0) {
-                s.modifiers.splice(index);
+                s.modifiers.splice(index, 1);
                 s.setNeedsRecalc();
             }
         }

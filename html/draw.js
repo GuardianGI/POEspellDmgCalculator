@@ -177,7 +177,257 @@ var redraw, onRedraw = [],
         };
     })());
     
-    var drawSkillIndex = function () {
+    var getDrawSkillDetailsFn = function (s) {
+        return function () {
+            var details, dif, lblNew, inputNew, btnClone, head, btnClose, fieldset, legend, support, node, checkbox, k, getSupportsDropDown,
+                newFieldset = function (title) {
+                    fieldset = document.createElement("fieldset");
+                    details.appendChild(fieldset);
+                    legend = document.createElement("legend");
+                    legend.innerHTML = title;
+                    fieldset.appendChild(legend);
+                },
+                drawContent = function () {
+                    var rows, r, i, tbl, drawTable = function (tblNode, columns) {
+                        var row, cell, key, val, i;
+                        row = document.createElement('tr');
+                        tblNode.appendChild(row);
+                        for (key in columns[0]) {
+                            cell = document.createElement('th');
+                            row.appendChild(cell);
+                            cell.innerHTML = key;
+                        }
+                        
+                        for (i in columns) {
+                            row = document.createElement('tr');
+                            tblNode.appendChild(row);
+                            for (key in columns[0]) {
+                                cell = document.createElement('td');
+                                row.appendChild(cell);
+                                if (columns[i].hasOwnProperty(key)) {
+                                    cell.appendChild(columns[i][key]);
+                                }
+                            }
+                        }
+                    }
+                    details.innerHTML = '';
+                    head = document.createElement("h2");
+                    head.innerHTML = s.name;
+                    details.appendChild(head);
+                    
+                    btnClose = document.createElement("button");
+                    btnClose.innerHTML = "X";
+                    btnClose.className = "cornerBtn";
+                    btnClose.onclick = function () {
+                        spellDetails.removeChild(details);
+                    }
+                    details.appendChild(btnClose);
+                    
+                    lblNew = document.createElement("label");
+                    lblNew.innerHTML = s.keywords.join(', ');
+                    details.appendChild(lblNew);
+                    
+                    ['aura', 'curse', 'support'].forEach(function (modType) {
+                        newFieldset(firstToUpper(modType) + 's');
+                        
+                        rows = [];
+                        tbl = document.createElement('table');
+                        fieldset.appendChild(tbl);
+                        tbl.width = '100%';
+                        for (k in s.modifiers) {//draw checkbox to turn of applied supports
+                            if (modType !== s.modifiers[k].type) {
+                                continue;
+                            }
+                            r = {}
+                            
+                            r['Name'] = document.createTextNode(s.modifiers[k].name);
+                            
+                            inputNew = document.createElement('input');
+                            inputNew.type = 'text';
+                            inputNew.value = s.modifiers[k].maxLvl;
+                            inputNew.title = 'max lvl';
+                            inputNew.onchange = (function (self, support, skill) {
+                                return function () {
+                                    support.maxLvl = self.value | 0;
+                                    skill.setNeedsRecalc();
+                                    redraw();
+                                };
+                            })(inputNew, s.modifiers[k], s);
+                            r['Max gem lvl'] = inputNew;
+                            
+                            inputNew = document.createElement('input');
+                            inputNew.type = 'text';
+                            inputNew.value = s.supportQualityLvl[s.modifiers[k].name];
+                            inputNew.title = 'quality lvl';
+                            inputNew.onchange = (function (self, support, skill) {
+                                return function () {
+                                    skill.supportQualityLvl[support.name] = self.value | 0;
+                                    skill.setNeedsRecalc();
+                                    redraw();
+                                };
+                            })(inputNew, s.modifiers[k], s);
+                            r['Quality lvl'] = inputNew;
+                            
+                            r['Remove mult.'] = document.createTextNode(
+                                roundForDisplay(getSupportRemovedDiff(s, k)))
+                            
+                            checkbox = document.createElement('input');
+                            checkbox.type = 'button';
+                            checkbox.value = 'X';
+                            checkbox.onclick = (function (self, support) {
+                                return function() {
+                                    s.tryRemoveMod(support);
+                                    redraw();
+                                }
+                            })(checkbox, s.modifiers[k]);
+                            r['Remove'] = checkbox;
+                            rows.push(r)
+                        }
+                        drawTable(tbl, rows);
+                    });
+                    
+                    fieldset.appendChild(getSupportsDropDown());
+                    
+                    newFieldset('Details');
+                    
+                    btnClone = document.createElement("button");
+                    btnClone.innerHTML = 'Clone';
+                    fieldset.appendChild(btnClone);
+                    btnClone.onclick = (function (s) {
+                        return function () {
+                            var name = prompt("Skill name", s.name + "2");
+                            if (null !== name) {
+                                skills[name] = s.clone(name);
+                                skills[name].draw = true;
+                                drawSkillIndex();
+                                redraw();
+                                skills[name].drawDetails = getDrawSkillDetailsFn(skills[name]);
+                                skills[name].drawDetails();
+                            }
+                        };
+                    })(s, name);
+                    
+                    fieldset.appendChild(document.createElement('br'));
+                    lblNew = document.createElement('label');
+                    fieldset.appendChild(lblNew);
+                    lblNew.innerHTML = 'DPS: ' + roundForDisplay(s.totalDmg(userInput.playerLvlForSuggestions));
+                    
+                    newFieldset('Quality/Level');
+                    
+                    lblNew = document.createElement('label');
+                    fieldset.appendChild(lblNew);
+                    inputNew = document.createElement('input');
+                    lblNew.appendChild(document.createTextNode('Quality: '));
+                    lblNew.appendChild(inputNew);
+                    inputNew.type = "text";
+                    inputNew.value = s.qualityLvl;
+                    inputNew.onchange = (function (self) {
+                        return function () {
+                            s.qualityLvl = self.value - 0;
+                            s.setNeedsRecalc();
+                            redraw();
+                        };
+                    })(inputNew);
+                    
+                    lblNew = document.createElement('label');
+                    fieldset.appendChild(lblNew);
+                    inputNew = document.createElement('input');
+                    lblNew.appendChild(document.createTextNode('Additional lvl: '));
+                    inputNew.type = "text";
+                    lblNew.appendChild(inputNew);
+                    inputNew.value = s.additionalLvl;
+                    inputNew.onchange = (function (self, s) {
+                        return function () {
+                            s.additionalLvl = self.value - 0;
+                            s.setNeedsRecalc();
+                            redraw();
+                        };
+                    })(inputNew, s);
+                    
+                    lblNew = document.createElement('label');
+                    fieldset.appendChild(lblNew);
+                    inputNew = document.createElement('input');
+                    lblNew.appendChild(document.createTextNode('Max lvl: '));
+                    inputNew.type = "text";
+                    lblNew.appendChild(inputNew);
+                    inputNew.value = s.maxLvl;
+                    inputNew.onchange = (function (self, s) {
+                        return function () {
+                            s.maxLvl = (self.value | 0);
+                            s.setNeedsRecalc();
+                            redraw();
+                        };
+                    })(inputNew, s);
+                    
+                    newFieldset('Item details');
+                    
+                    gemTypes.forEach(function (keyword) {
+                        lblNew = document.createElement('label');
+                        fieldset.appendChild(lblNew);
+                        inputNew = document.createElement('input');
+                        lblNew.appendChild(document.createTextNode('+x to ' + keyword + ' gems: '));
+                        inputNew.type = "text";
+                        lblNew.appendChild(inputNew);
+                        lblNew.style.width = '300px';
+                        lblNew.style.display = 'inline-block';
+                        lblNew.style.textAlign = 'right';
+                        inputNew.value = s.additionalKeywordLvl[keyword] || 0;
+                        inputNew.onchange = (function (self, s) {
+                            return function () {
+                                s.additionalKeywordLvl[keyword] = self.value | 0;
+                                s.setNeedsRecalc();
+                                redraw();
+                            };
+                        })(inputNew, s);
+                        
+                        fieldset.appendChild(document.createElement('br'));
+                    });
+                };
+            getSupportsDropDown = function () {
+                var key, nonProblematicSupports, stillApplicable = true, select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti, tmpClone, dmgMultForSupports;//todo: calclate dmgDiff
+                select = document.createElement('select');
+                dmgMultForSupports = getSortedSupports(s);
+                for (key in dmgMultForSupports) {
+                    dmgMulti = dmgMultForSupports[key].mult;
+                    supportName = dmgMultForSupports[key].support.name;
+                    option = document.createElement('option');
+                    option.innerHTML = supportName + ' | ' + roundForDisplay(dmgMulti);
+                    option.apply = (function (self, s, innerSupport) {
+                        return function () {
+                            s.tryAddMod(innerSupport.clone());
+                            s.setNeedsRecalc();
+                            redraw();
+                        };
+                    })(option, s, supports[supportName]);
+                    
+                    options.push({dmg: dmgMulti, opt: option});
+                }
+                option = document.createElement('option');
+                option.innerHTML = '--Select a support | dmg multiplier--';
+                select.appendChild(option);
+                
+                options.sort(function (a, b) {
+                    return b.dmg - a.dmg;
+                });
+                for (i = 0; i < options.length; i += 1) {
+                    select.appendChild(options[i].opt);
+                }
+                select.onchange = function () {
+                    select.options[select.selectedIndex].apply();
+                }
+                return select;
+            };
+            details = document.createElement("div");
+            details.className = "spellDetails";
+            details.style.backgroundColor = "#FFF";
+            spellDetails.insertBefore(details, spellDetails.childNodes[0]);
+            
+            drawContent();
+            
+            details.update = drawContent;
+        };
+    },
+    drawSkillIndex = function () {
         var btn, name, i = 0;
         index.innerHTML = '';
         for (name in skills) {
@@ -212,253 +462,8 @@ var redraw, onRedraw = [],
                 btn = document.createElement("button");
                 btn.innerHTML = name;
                 indexLine.appendChild(btn);
-                btn.onclick = (function (s) {
-                    return function () {
-                        var details, dif, lblNew, inputNew, btnClone, head, btnClose, fieldset, legend, support, node, checkbox, k, getSupportsDropDown,
-                            newFieldset = function (title) {
-                                fieldset = document.createElement("fieldset");
-                                details.appendChild(fieldset);
-                                legend = document.createElement("legend");
-                                legend.innerHTML = title;
-                                fieldset.appendChild(legend);
-                            },
-                            drawContent = function () {
-                                var rows, r, i, tbl, drawTable = function (tblNode, columns) {
-                                    var row, cell, key, val, i;
-                                    row = document.createElement('tr');
-                                    tblNode.appendChild(row);
-                                    for (key in columns[0]) {
-                                        cell = document.createElement('th');
-                                        row.appendChild(cell);
-                                        cell.innerHTML = key;
-                                    }
-                                    
-                                    for (i in columns) {
-                                        row = document.createElement('tr');
-                                        tblNode.appendChild(row);
-                                        for (key in columns[0]) {
-                                            cell = document.createElement('td');
-                                            row.appendChild(cell);
-                                            if (columns[i].hasOwnProperty(key)) {
-                                                cell.appendChild(columns[i][key]);
-                                            }
-                                        }
-                                    }
-                                }
-                                details.innerHTML = '';
-                                head = document.createElement("h2");
-                                head.innerHTML = s.name;
-                                details.appendChild(head);
-                                
-                                btnClose = document.createElement("button");
-                                btnClose.innerHTML = "X";
-                                btnClose.className = "cornerBtn";
-                                btnClose.onclick = function () {
-                                    spellDetails.removeChild(details);
-                                }
-                                details.appendChild(btnClose);
-                                
-                                lblNew = document.createElement("label");
-                                lblNew.innerHTML = s.keywords.join(', ');
-                                details.appendChild(lblNew);
-                                
-                                ['aura', 'curse', 'support'].forEach(function (modType) {
-                                    newFieldset(firstToUpper(modType) + 's');
-                                    
-                                    rows = [];
-                                    tbl = document.createElement('table');
-                                    fieldset.appendChild(tbl);
-                                    tbl.width = '100%';
-                                    for (k in s.modifiers) {//draw checkbox to turn of applied supports
-                                        if (modType !== s.modifiers[k].type) {
-                                            continue;
-                                        }
-                                        r = {}
-                                        
-                                        r['Name'] = document.createTextNode(s.modifiers[k].name);
-                                        
-                                        inputNew = document.createElement('input');
-                                        inputNew.type = 'text';
-                                        inputNew.value = s.modifiers[k].maxLvl;
-                                        inputNew.title = 'max lvl';
-                                        inputNew.onchange = (function (self, support, skill) {
-                                            return function () {
-                                                support.maxLvl = self.value | 0;
-                                                skill.setNeedsRecalc();
-                                                redraw();
-                                            };
-                                        })(inputNew, s.modifiers[k], s);
-                                        r['Max gem lvl'] = inputNew;
-                                        
-                                        inputNew = document.createElement('input');
-                                        inputNew.type = 'text';
-                                        inputNew.value = s.supportQualityLvl[s.modifiers[k].name];
-                                        inputNew.title = 'quality lvl';
-                                        inputNew.onchange = (function (self, support, skill) {
-                                            return function () {
-                                                skill.supportQualityLvl[support.name] = self.value | 0;
-                                                skill.setNeedsRecalc();
-                                                redraw();
-                                            };
-                                        })(inputNew, s.modifiers[k], s);
-                                        r['Quality lvl'] = inputNew;
-                                        
-                                        r['Remove mult.'] = document.createTextNode(
-                                            roundForDisplay(getSupportRemovedDiff(s, k)))
-                                        
-                                        checkbox = document.createElement('input');
-                                        checkbox.type = 'button';
-                                        checkbox.value = 'X';
-                                        checkbox.onclick = (function (self, support) {
-                                            return function() {
-                                                s.tryRemoveMod(support);
-                                                redraw();
-                                            }
-                                        })(checkbox, s.modifiers[k]);
-                                        r['Remove'] = checkbox;
-                                        rows.push(r)
-                                    }
-                                    drawTable(tbl, rows);
-                                });
-                                
-                                fieldset.appendChild(getSupportsDropDown());
-                                
-                                newFieldset('Details');
-                                
-                                btnClone = document.createElement("button");
-                                btnClone.innerHTML = 'Clone';
-                                fieldset.appendChild(btnClone);
-                                btnClone.onclick = (function (s) {
-                                    return function () {
-                                        var name = prompt("Skill name", s.name + "2");
-                                        if (null !== name) {
-                                            skills[name] = s.clone(name);
-                                            drawSkillIndex();
-                                            redraw();
-                                        }
-                                    };
-                                })(s, name);
-                                
-                                fieldset.appendChild(document.createElement('br'));
-                                lblNew = document.createElement('label');
-                                fieldset.appendChild(lblNew);
-                                lblNew.innerHTML = 'DPS: ' + roundForDisplay(s.totalDmg(userInput.playerLvlForSuggestions));
-                                
-                                newFieldset('Quality/Level');
-                                
-                                lblNew = document.createElement('label');
-                                fieldset.appendChild(lblNew);
-                                inputNew = document.createElement('input');
-                                lblNew.appendChild(document.createTextNode('Quality: '));
-                                lblNew.appendChild(inputNew);
-                                inputNew.type = "text";
-                                inputNew.value = s.qualityLvl;
-                                inputNew.onchange = (function (self) {
-                                    return function () {
-                                        s.qualityLvl = self.value - 0;
-                                        s.setNeedsRecalc();
-                                        redraw();
-                                    };
-                                })(inputNew);
-                                
-                                lblNew = document.createElement('label');
-                                fieldset.appendChild(lblNew);
-                                inputNew = document.createElement('input');
-                                lblNew.appendChild(document.createTextNode('Additional lvl: '));
-                                inputNew.type = "text";
-                                lblNew.appendChild(inputNew);
-                                inputNew.value = s.additionalLvl;
-                                inputNew.onchange = (function (self, s) {
-                                    return function () {
-                                        s.additionalLvl = self.value - 0;
-                                        s.setNeedsRecalc();
-                                        redraw();
-                                    };
-                                })(inputNew, s);
-                                
-                                lblNew = document.createElement('label');
-                                fieldset.appendChild(lblNew);
-                                inputNew = document.createElement('input');
-                                lblNew.appendChild(document.createTextNode('Max lvl: '));
-                                inputNew.type = "text";
-                                lblNew.appendChild(inputNew);
-                                inputNew.value = s.maxLvl;
-                                inputNew.onchange = (function (self, s) {
-                                    return function () {
-                                        s.maxLvl = (self.value | 0);
-                                        s.setNeedsRecalc();
-                                        redraw();
-                                    };
-                                })(inputNew, s);
-                                
-                                newFieldset('Item details');
-                                
-                                gemTypes.forEach(function (keyword) {
-                                    lblNew = document.createElement('label');
-                                    fieldset.appendChild(lblNew);
-                                    inputNew = document.createElement('input');
-                                    lblNew.appendChild(document.createTextNode('+x to ' + keyword + ' gems: '));
-                                    inputNew.type = "text";
-                                    lblNew.appendChild(inputNew);
-                                    lblNew.style.width = '300px';
-                                    lblNew.style.display = 'inline-block';
-                                    lblNew.style.textAlign = 'right';
-                                    inputNew.value = s.additionalKeywordLvl[keyword] || 0;
-                                    inputNew.onchange = (function (self, s) {
-                                        return function () {
-                                            s.additionalKeywordLvl[keyword] = self.value | 0;
-                                            s.setNeedsRecalc();
-                                            redraw();
-                                        };
-                                    })(inputNew, s);
-                                    
-                                    fieldset.appendChild(document.createElement('br'));
-                                });
-                            };
-                        getSupportsDropDown = function () {
-                            var key, nonProblematicSupports, stillApplicable = true, select, option, supportName, i, options = [], dmgPrev, dmgAfter, dmgMulti, tmpClone, dmgMultForSupports;//todo: calclate dmgDiff
-                            select = document.createElement('select');
-                            dmgMultForSupports = getSortedSupports(s);
-                            for (key in dmgMultForSupports) {
-                                dmgMulti = dmgMultForSupports[key].mult;
-                                supportName = dmgMultForSupports[key].support.name;
-                                option = document.createElement('option');
-                                option.innerHTML = supportName + ' | ' + roundForDisplay(dmgMulti);
-                                option.apply = (function (self, s, innerSupport) {
-                                    return function () {
-                                        s.tryAddMod(innerSupport.clone());
-                                        s.setNeedsRecalc();
-                                        redraw();
-                                    };
-                                })(option, s, supports[supportName]);
-                                
-                                options.push({dmg: dmgMulti, opt: option});
-                            }
-                            option = document.createElement('option');
-                            option.innerHTML = '--Select a support | dmg multiplier--';
-                            select.appendChild(option);
-                            
-                            options.sort(function (a, b) {
-                                return b.dmg - a.dmg;
-                            });
-                            for (i = 0; i < options.length; i += 1) {
-                                select.appendChild(options[i].opt);
-                            }
-                            select.onchange = function () {
-                                select.options[select.selectedIndex].apply();
-                            }
-                            return select;
-                        };
-                        details = document.createElement("div");
-                        details.className = "spellDetails";
-                        details.style.backgroundColor = "#FFF";
-                        spellDetails.insertBefore(details, spellDetails.childNodes[0]);
-                        
-                        drawContent();
-                        
-                        details.update = drawContent;
-                    };
-                })(skills[name]);
+                skills[name].drawDetails = getDrawSkillDetailsFn(skills[name])
+                btn.onclick = skills[name].drawDetails;
             }
         }
     };

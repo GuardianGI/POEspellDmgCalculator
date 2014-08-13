@@ -11,7 +11,16 @@ var findIndex = function (arr, filter) {
         return (((str || '0%').match(/(\d+)%?/i)[1] | 0) / 100);
     },
     initModifier = function (name, s, modType) {
-        var self = {};
+        var self = {}, getCloneFn = function (s) {
+            return function () {
+                var clone = {}, key;
+                for (key in s) {
+                    clone[key] = s[key];
+                }
+                clone.clone = getCloneFn(clone);
+                return clone;
+            }
+        };
         self.name = name;
         self.type = modType;
         self.maxLvl = s.maxLvl;
@@ -26,13 +35,7 @@ var findIndex = function (arr, filter) {
         self.keywords = s.keywords.splice(0).map(translateMatch);
         self.enabled = false;
         self.qualityBonus = s.qualityBonus;
-        self.clone = function () {
-            var clone = {}, key;
-            for (key in self) {
-                clone[key] = self[key];
-            }
-            return clone;
-        };
+        self.clone = getCloneFn(self);
         self.isApplicable = function () { return false; };
         return self;
     },
