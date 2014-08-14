@@ -7,8 +7,8 @@ var findIndex = function (arr, filter) {
         }
         return -1;
     },
-    parsePercent = function (str) {
-        return (((str || '0%').match(/(\d+)%?/i)[1] | 0) / 100);
+    parsePercent = function (s) {
+        return (((s || '0%').match(/(\d+)%?/i)[1] | 0) / 100);
     },
     initModifier = function (name, s, modType) {
         var self = {}, getCloneFn = function (s) {

@@ -4,22 +4,76 @@
 		<title>POE skill/spell dmg plot/calc</title>
 	
 		<script type="text/javascript" src="tabs.js"></script>
+		<script type="text/javascript" src="general.js"></script>
+		<script type="text/javascript" src="skillTree.js"></script>
 		<script type="text/javascript">
 			var load = function (body) {
-				var tabs = tabSet(body, 'a'),
-					tabsB,
-					tabA = tabs.addTab('A'),
-					tabB = tabs.addTab('B'),
-					tabC = tabs.addTab('C');
-				tabA.appendChild(document.createTextNode('foo'));
-				tabB.appendChild(document.createTextNode('bar'));
-				tabsB = tabSet(tabC, 'b')
-				tabsB.addTab('baz').appendChild(document.createTextNode('mooo'));
+				var padding = 10, i, lbl, zoom = 0.3, node, groups = passiveSkillTreeData.groups,
+					canvas = document.getElementById('canvas'),
+					ctx = canvas.getContext('2d'),
+					groupDomNodes = (function () {
+						var res = {}, i, d;
+						for (i in groups) {
+							d = document.createElement('div');
+							d.style.position = 'absolute';
+							d.style.maxWidth = '140px';
+							
+							d.style.border = '1px solid #F00';
+							d.style.left = (((-passiveSkillTreeData.min_x + groups[i].x) * zoom) | 0) + 'px';
+							d.style.top = (((-passiveSkillTreeData.min_x + groups[i].y) * zoom) | 0) + 125 + 'px';
+							body.appendChild(d);
+							res[i] = d;
+						}
+						return res;
+					})();
+					
+				canvas.width = zoom * (-passiveSkillTreeData.min_x + passiveSkillTreeData.max_x);
+				canvas.height = zoom * (-passiveSkillTreeData.min_y + passiveSkillTreeData.max_y);
+				
+				ctx.lineWidth = 1;
+				
+				passiveSkillTreeData.nodes.forEach(valueNode);
+				
+				//importBuild('ww.pathofexile.com/passive-skill-tree/AAAAAgMAB2MRUDvhVyttGYIeu9bB89sL5oE=');//working
+				importBuild('AAAAAgMABUINjRzcHRQfAiL0LJwsvzbFQZZI51SuVcZWSlcrZp5nvWwLeM590n_GghCPRpUEm6Geoa6zr42vm8HFz2XQ0NMb2wLfsO5v-tI=');//not working
+				
+				for (i = 0; i < passiveSkillTreeData.nodes.length; i += 1) {
+					node = passiveSkillTreeData.nodes[i];
+					lbl = document.createElement('label');
+					lbl.innerHTML = i;
+					lbl.title = node.dn + '\n' + node.sd.join('\n');
+					if (node.taken) {
+						lbl.style.backgroundColor = '#0F0';
+					}
+					groupDomNodes[node.g].appendChild(lbl);
+					
+					node.in.forEach(function (n) {
+						ctx.beginPath();
+						
+						ctx.moveTo(node.x * zoom, node.y * zoom);
+						ctx.lineTo(n.x * zoom, n.y * zoom);
+						
+						ctx.stroke();
+					});
+				}
 			}
+			
 		</script>
 		
 		<link rel="stylesheet" type="text/css" href="style.css" />
+		<style>
+			body, canvas {
+				margin: 0;
+				padding: 0;
+			}
+			label {
+				margin-right: 0.5em;
+				position: relative;
+				display: inline-block;
+			}
+		</style>
 	</head>
 	<body onload="load( document.getElementsByTagName('body')[0]);">
+		<canvas id="canvas"></canvas>
 	</body>
 </html>
