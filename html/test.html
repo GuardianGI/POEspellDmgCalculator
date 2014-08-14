@@ -37,6 +37,11 @@
 				//importBuild('ww.pathofexile.com/passive-skill-tree/AAAAAgMAB2MRUDvhVyttGYIeu9bB89sL5oE=');//working
 				importBuild('AAAAAgMABUINjRzcHRQfAiL0LJwsvzbFQZZI51SuVcZWSlcrZp5nvWwLeM590n_GghCPRpUEm6Geoa6zr42vm8HFz2XQ0NMb2wLfsO5v-tI=');//not working
 				
+				passiveSkillTreeData.nodes.forEach(function (node) {
+					node.x = (-passiveSkillTreeData.min_x + groups[node.g].x);
+					node.y = (-passiveSkillTreeData.min_y + groups[node.g].y);
+				});
+				
 				for (i = 0; i < passiveSkillTreeData.nodes.length; i += 1) {
 					node = passiveSkillTreeData.nodes[i];
 					lbl = document.createElement('label');
