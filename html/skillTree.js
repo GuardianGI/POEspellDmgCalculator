@@ -265,7 +265,7 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
         var startNodes = getTakenNodes();
     },
     importBuild = function (url) {
-        var nodesStrs = atob(url.split('passive-skill-tree/').pop().replace('-', '+').replace('_', '/')).split('').splice(6),
+        var nodesStrs = atob(url.split('passive-skill-tree/').pop().replace(/-/g, '+').replace(/_/g, '/')).split('').splice(6),
             i,
             nodes = [];
         for (i = 0; i < nodesStrs.length; i += 2) {
@@ -279,7 +279,7 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
     exportBuild = function () {
         return btoa(getTakenNodes().map(function (n) {
             return String.fromCharCode(n.id >> 8) + String.fromCharCode(n.id & 0xFF);
-        }).join('')).replace('+', '-').replace('/', '_');
+        }).join('')).replace(/\+/g, '-').replace(/\//g, '_');
     };
     
     
