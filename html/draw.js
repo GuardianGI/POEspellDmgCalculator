@@ -1,14 +1,4 @@
 var redraw, onRedraw = [],
-    toggleCheckAll = function (cb) {
-        var i, allCb = document.getElementsByClassName('drawSkill');
-        for (i in allCb) {
-            if ("checkbox" == allCb[i].type) {
-                allCb[i].checked = cb.checked;
-                allCb[i].update();
-            }
-        }
-        redraw();
-    },
     drawBg = function (ctx, canvas, padding) {
         ctx.fillStyle = userInput.useDarkBg ? "#000000" : "#CCCCCC";
         ctx.fillRect(padding, 0, canvas.width - padding, canvas.height - padding);
@@ -38,21 +28,30 @@ var redraw, onRedraw = [],
                 clone.calcDmg(userInput.playerLvlForSuggestions);
                 return clone.totalDmg(userInput.playerLvlForSuggestions) / skill.totalDmg(userInput.playerLvlForSuggestions);
             },
-            getColor = function (n) {
-                var color = "#",
-                    //extra color data to make sure all skills have a distingushable color for the on hover name display.
-                    c1 = (n % 16).toString(16).toUpperCase(),
-                    c2 = ((n + 5) % 16).toString(16).toUpperCase(),
-                    c3 = ((n + 10) % 16).toString(16).toUpperCase(),
-                    colors = ['0' + c3, '8' + c2, 'F' + c1];
-                n %= Math.pow(3, 3);
-                color += colors[n % 3];
-                n = Math.floor(n / 3);
-                color += colors[n % 3];
-                n = Math.floor(n / 3);
-                color += colors[n % 3];
-                return color;
-            },
+            shuffleColors,
+            getColor = (function () {
+                var start = 0, x = 1;
+                shuffleColors = function () {
+                    start = (Math.random() * 32) | 0;
+                    x = 1 + ((Math.random() + 0.5) | 0);
+                };
+                return function () {
+                    var n = start, color = "#",
+                        //extra color data to make sure all skills have a distingushable color for the on hover name display.
+                        c1 = (n % 16).toString(16).toUpperCase(),
+                        c2 = ((n + 5) % 16).toString(16).toUpperCase(),
+                        c3 = ((n + 10) % 16).toString(16).toUpperCase(),
+                        colors = ['0' + c3, '8' + c2, 'F' + c1];
+                    n %= Math.pow(3, 3);
+                    color += colors[n % 3];
+                    n = Math.floor(n / 3);
+                    color += colors[n % 3];
+                    n = Math.floor(n / 3);
+                    color += colors[n % 3];
+                    start += x;
+                    return color;
+                }
+            })(),
             dmgToPx = function (dmg) {
                 if (userInput.enableLogDmgScale) {
                     dmg = Math.log(1 + dmg) * 100;
@@ -110,32 +109,22 @@ var redraw, onRedraw = [],
         redraw();
     };
     
-    document.getElementById("shuffleColors").onclick = (function () {
-        var beginColor = 1;
-        return function () {
-            var name, j, i = beginColor, indexLines = document.getElementsByClassName("spellIndexLine"),
-                spellCount = 0;
-            for (name in skills) {
-                if (skills[name].draw) {
-                    spellCount += 1;
-                }
-            }
-            for (name in skills) {
-                if (skills[name].draw) {
-                    skills[name].color = getColor(i);
-                    for (j in indexLines) {
-                        if (name == indexLines[j].getElementsByTagName("button")[0].innerHTML) {
-                            indexLines[j].style.backgroundColor = skills[name].color;
-                            break;
-                        }
+    document.getElementById("shuffleColors").onclick = function () {
+        var name, i, indexLines = document.getElementsByClassName("spellIndexLine");
+        shuffleColors();
+        for (name in skills) {
+            if (skills[name].enabled) {
+                skills[name].color = getColor();
+                for (i in indexLines) {
+                    if (name == indexLines[i].getElementsByTagName("button")[0].innerHTML) {
+                        indexLines[i].style.backgroundColor = skills[name].color;
+                        break;
                     }
-                    i += spellCount % 16;
                 }
             }
-            beginColor += 1;
-            redraw();
-        };
-    })();
+        }
+        redraw();
+    };
     
     for (i = 0; i < executeOnLoad.length; i += 1) {
         executeOnLoad[i]();
@@ -298,8 +287,7 @@ var redraw, onRedraw = [],
                             var name = prompt("Skill name", s.name + "2");
                             if (null !== name) {
                                 skills[name] = s.clone(name);
-                                skills[name].draw = true;
-                                drawSkillIndex();
+                                skills[name].enabled = true;
                                 redraw();
                                 skills[name].drawDetails = getDrawSkillDetailsFn(skills[name]);
                                 skills[name].drawDetails();
@@ -431,33 +419,11 @@ var redraw, onRedraw = [],
         var btn, name, i = 0;
         index.innerHTML = '';
         for (name in skills) {
-            if (skills[name].hasDmg || true) {//todo: remove if entirely?
-                if (!skills[name].color) {
-                    skills[name].color = getColor(i);
-                    i += 1;
-                }
+            if (skills[name].enabled && skills[name].isParsed) {
                 indexLine = document.createElement("span");
                 indexLine.style.backgroundColor = skills[name].color;
                 indexLine.className = "spellIndexLine";
                 index.appendChild(indexLine);
-                
-                checkbox = document.createElement("input");
-                checkbox.type = "checkbox";
-                checkbox.className = "drawSkill"
-                checkbox.checked = skills[name].draw;
-                checkbox.update = (function (skill, checkbox) {
-                        return function () {
-                            skill.draw = checkbox.checked;
-                            skill.setNeedsRecalc();
-                        }
-                    })(skills[name], checkbox);
-                checkbox.onclick = (function (checkbox) {
-                        return function () {
-                            checkbox.update();
-                            redraw();
-                        }
-                    })(checkbox);
-                indexLine.appendChild(checkbox);
                 
                 btn = document.createElement("button");
                 btn.innerHTML = name;
@@ -467,7 +433,12 @@ var redraw, onRedraw = [],
             }
         }
     };
-    drawSkillIndex();
+    onRedraw.push(drawSkillIndex);
+    Object.keys(skills).forEach(function(name) {
+        if (!skills[name].color) {
+            skills[name].color = getColor();
+        }
+    });
     
     redraw = function () {
         var getTextColor = function () {
@@ -512,7 +483,7 @@ var redraw, onRedraw = [],
             drawSkills = (function() {
                 var res = [], name;
                 for (name in skills) {
-                    if (skills[name].draw) {
+                    if (skills[name].enabled) {
                         res.push(skills[name]);
                     }
                 }
@@ -691,7 +662,6 @@ var redraw, onRedraw = [],
             }
         })();
         
-        //drawSkillIndex();
         onRedraw.forEach(function (fn) { fn(); });
     };
     
@@ -735,7 +705,7 @@ var redraw, onRedraw = [],
             mouseY = e.pageY;
             for (key in skills) {
                 s = skills[key];
-                if (s.color === hex && s.draw) {
+                if (s.color === hex && s.enabled) {
                     matchedSkills.push(s);
                 }
             }
@@ -772,7 +742,7 @@ var redraw, onRedraw = [],
             var s, k, mult = 0, newMult, worstSupportKey = -1;
             for (name in skills) {
                 s = skills[name];
-                if (s.draw) {
+                if (s.enabled) {
                     while (s.modifiers.length > userInput.maxSupports) {
                         worstSupportKey = -1;
                         mult = -1;
@@ -800,7 +770,7 @@ var redraw, onRedraw = [],
             var dmgMultForSupports, s, name, i;
             for (name in skills) {
                 s = skills[name];
-                if (s.draw) {
+                if (s.enabled) {
                     dmgMultForSupports = getSortedSupports(s);
                     if (dmgMultForSupports.length > 0) {
                         for (i = 0; i < dmgMultForSupports.length; i += 1) {
@@ -817,7 +787,7 @@ var redraw, onRedraw = [],
             var s, name;
             for (name in skills) {
                 s = skills[name];
-                if (s.draw && s.modifiers.length > 0) {
+                if (s.enabled && s.modifiers.length > 0) {
                     s.setNeedsRecalc();
                     s.modifiers = [];
                 }
@@ -829,7 +799,7 @@ var redraw, onRedraw = [],
             var dmgMultForSupports, s, name;
             for (name in skills) {
                 s = skills[name];
-                if (s.draw) {
+                if (s.enabled) {
                     dmgMultForSupports = getSortedSupports(s);
                     if (dmgMultForSupports.length > 0) {
                         s.tryAddMod(dmgMultForSupports[0].support.clone());
@@ -843,7 +813,7 @@ var redraw, onRedraw = [],
             var s, k, mult = 0, newMult, worstSupportKey = -1;
             for (name in skills) {
                 s = skills[name];
-                if (s.draw) {
+                if (s.enabled) {
                      worstSupportKey = -1;
                      mult = -1;
                     for (k in s.modifiers) {
@@ -1242,11 +1212,11 @@ var redraw, onRedraw = [],
             supportsTab = tabSet(container, id);
             
             for (name in data) {
-                s = data[name];
-                s.enabled = defaultChecked;
+                data[name].enabled = defaultChecked;
             }
                     
             update = function () {
+                var s;
                 for (keyword in tabs) {
                     tabs[keyword].innerHTML = '';//clear all tabs.
                 }
@@ -1258,6 +1228,7 @@ var redraw, onRedraw = [],
                             tabs[keyword] = supportsTab.addTab(keyword, document.createElement('fieldset')).firstChild;
                         }
                         cbSupportEnabled = document.createElement('input');
+                        cbSupportEnabled.gem = s;
                         cbSupportEnabled.type = 'checkbox';
                         cbSupportEnabled.checked =  s.isParsed && s.enabled;
                         cbSupportEnabled.disabled = !s.isParsed;
@@ -1307,6 +1278,33 @@ var redraw, onRedraw = [],
                 }
             }
         });
+        parseSupports(skills, 'Skills', 'drawSills', true, function (skill) {
+            //skill.setNeedsRecalc();//should not be needed, but things bug out sometimes...
+            redraw();
+        });
+        (function () {
+            var skillsTab = document.getElementById('drawSills'),
+                cbToggleAll = document.createElement('input'),
+                lblToggleAll = document.createElement('span');
+            lblToggleAll.appendChild(document.createTextNode('Toggle all '));
+            lblToggleAll.appendChild(cbToggleAll);
+            
+            skillsTab.insertBefore(lblToggleAll, skillsTab.firstChild);
+            
+            cbToggleAll.type = 'checkbox';
+            cbToggleAll.onchange = function () {
+                var sbSkills = skillsTab.getElementsByTagName('input'), i;
+                for (i = 0; i < sbSkills.length; i += 1) {
+                    if (!sbSkills[i].disabled) {
+                        if (sbSkills[i].hasOwnProperty('gem')) {
+                            sbSkills[i].checked = cbToggleAll.checked;
+                            sbSkills[i].gem.enabled = cbToggleAll.checked;
+                        }
+                    }
+                }
+                redraw();
+            };
+        })();
     })();
     
     redraw();

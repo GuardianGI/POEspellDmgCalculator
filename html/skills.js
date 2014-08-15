@@ -931,8 +931,11 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.applySwarm();
                 }
                 
-                s.hasDmg = s.totalDmg(40) > 0;//all skills are usable after lvl 31 (I think), so at 40 all skills should be able to deal dmg if they deal dmg at all.
-                s.draw = s.hasDmg;
+                s.hasDmg = (s.totalDmg(40) || -1) > 0;//all skills are usable after lvl 31 (I think), so at 40 all skills should be able to deal dmg if they deal dmg at all.
+                if (!s.hasOwnProperty('isParsed')) {
+                    s.enabled = s.hasDmg;
+                    s.isParsed = s.enabled;
+                }
                 s.ignore = s.totalDmg(userInput.playerLvlForSuggestions) > 0;
                 
                 needsRecalc = false;

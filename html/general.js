@@ -106,6 +106,8 @@ var findIndex = function (arr, filter) {
             return 'ignite';
         case 'shocked':
             return 'shock';
+        case 'minions':
+            return 'minion';
         default:
             return str;
         }

@@ -203,6 +203,25 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
             res[nodes[i].id] = nodes[i];
         }
         nodes[24].taken = true;//start as witch
+        
+        //map in and out to nodes
+        nodes.forEach(function (n) {
+            n.out = n.out.map(function (id) {
+                return res[id];
+            });
+        });
+        nodes.forEach(function (n) {
+            n.in = nodes.filter(function (innerNode) {
+                return innerNode.out.indexOf(n) >= 0;
+            });
+        });
+        nodes.forEach(function (n) {
+            n.siblings = n.out.concat(
+                n.in.filter(function (inner) {
+                    return n.out.indexOf(inner) < 0;
+                }));
+        });
+        
         return res;
     })(passiveSkillTreeData.nodes),
     statValues = {
@@ -232,7 +251,11 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
         var statName, val, sum = 0, matches = getSdMatches(sd);
         for (statName in matches) {
             val = matches[statName];
-            sum += val * statValues[statName];
+            if (statValues.hasOwnProperty(statName)) {
+                sum += val * statValues[statName];
+            } else {
+                console.log('missing statValue:', statName)
+            }
         }
         return sum;
     },
@@ -243,9 +266,6 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
         node.sd.forEach(function (sd) {
             node.weight -= getSdWeight(sd);
         });
-        node.in = passiveSkillTreeData.nodes.filter(function (n) {
-            return n.out.indexOf(node.id) >= 0;
-        })/*.map(function (n) { return n.id; }*/;
     },
     getTakenNodes = function () {
         return passiveSkillTreeData.nodes.filter(function (node) { return node.taken; });
@@ -276,11 +296,82 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
         });
         return nodes;
     },
-    exportBuild = function () {
-        return btoa(getTakenNodes().map(function (n) {
+    nodesToBuild = function (nodes) {
+        return btoa(nodes.map(function (n) {
             return String.fromCharCode(n.id >> 8) + String.fromCharCode(n.id & 0xFF);
         }).join('')).replace(/\+/g, '-').replace(/\//g, '_');
-    };
+    },
+    exportBuild = function () {
+        return nodesToBuild(getTakenNodes());
+    },
+    toBuildUrl = function (buildStr, classStr) {
+        if (undefined === classStr) {
+            classStr = 'AgMB';//witch
+        }
+        return 'http://www.pathofexile.com/passive-skill-tree/AAAA' + classStr + buildStr;
+    },
+    getBuildUrl = function () {
+        return toBuildUrl(exportBuild());
+    },
+    bruteForceTest = (function () {
+        var graphs = [],
+            nodes = passiveSkillTreeData.nodes,
+            go = function (x, start, graph) {
+                var siblings = [];
+                if (x > 0) {
+                    graph.push(start);
+                    graph.forEach(function (node) {//find all siblings to the graph.
+                        node.siblings.forEach(function (inner) {
+                            if (graph.indexOf(inner) < 0) {
+                                siblings.push(inner);
+                            }
+                        });
+                    });//go down each path.
+                    siblings.forEach(function (node) {
+                        go(x - 1, node, graph.slice(0));
+                    })
+                } else {
+                    graphs.push(graph);
+                }
+            }, getGraphWeights = function () {
+                return graphs.map(function (graph) {
+                    return graph.reduce(function(sum, node) {
+                        return sum + (node.weight || 99999);
+                    }, 0);
+                });
+            };
+        return {'go': go,
+            'graphs': graphs,
+            'getWeights': getGraphWeights,
+            getMinGraph: function () {
+                var i,
+                    minGraph = graphs[0],
+                    minGraphWeight = minGraph.reduce(function(sum, node) {
+                        return sum + (node.weight || 99999);
+                    }, 0),
+                    weight;
+                for (i = 1; i < graphs.length; i += 1) {
+                    weight = graphs[i].reduce(function(sum, node) {
+                        return sum + (node.weight || 99999);
+                    }, 0);
+                    if (weight < minGraphWeight) {
+                        minGraphWeight = weight;
+                        minGraph = graphs[i];
+                    }
+                }
+                return minGraph;
+            },
+            getGraphsSorted: function () {
+                var weights = getGraphWeights();
+                return graphs.
+                    map(function (g, i) {
+                        return {'graph': g, 'value': weights[i]};
+                    }).sort(function (a, b) {
+                        return a.value > b.value ? 1 : -1;
+                    })/*.map(function (pair) { return pair.graph; })*/;
+            }
+        };
+    })();
     
     
 
