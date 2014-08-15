@@ -4,6 +4,8 @@
 		<title>POE skill/spell dmg plot/calc</title>
 	
 		<script type="text/javascript" src="tabs.js"></script>
+		<script type="text/javascript" src="rawPassiveTree.js"></script>
+		
 		<script type="text/javascript" src="general.js"></script>
 		<script type="text/javascript" src="skillTree.js"></script>
 		<script type="text/javascript">
@@ -37,7 +39,8 @@
 				//importBuild('ww.pathofexile.com/passive-skill-tree/AAAAAgMAB2MRUDvhVyttGYIeu9bB89sL5oE=');
 				//importBuild('AAAAAgMABUINjRzcHRQfAiL0LJwsvzbFQZZI51SuVcZWSlcrZp5nvWwLeM590n_GghCPRpUEm6Geoa6zr42vm8HFz2XQ0NMb2wLfsO5v-tI=');
 				//every last passive in the game (atm)
-				importBuild('http://www.pathofexile.com/passive-skill-tree/AAAAAgMBES0abBzcHwIpTyxGLJwtHy1HLag2xTy9RKtGcVBCVa5tGX_GghCCm4MJg_eMNo6-j6aSwZMnna6io6cIsZC0DLfWuJPB89VP2CTbWd5337DkIg==');
+				//importBuild('http://www.pathofexile.com/passive-skill-tree/AAAAAgMBES0abBzcHwIpTyxGLJwtHy1HLag2xTy9RKtGcVBCVa5tGX_GghCCm4MJg_eMNo6-j6aSwZMnna6io6cIsZC0DLfWuJPB89VP2CTbWd5337DkIg==');
+				
 				passiveSkillTreeData.nodes.forEach(function (node) {
 					node.x = (-passiveSkillTreeData.min_x + groups[node.g].x);
 					node.y = (-passiveSkillTreeData.min_y + groups[node.g].y);
