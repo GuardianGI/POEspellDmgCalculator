@@ -297,6 +297,15 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
         });
         return nodes;
     },
+    classNodeNames = {
+        'WITCH': 'AgMA',
+        'TEMPLAR': 'AgUA',
+        'MARAUDER': 'AgEA',
+        'DUELIST': 'AgQA',
+        'RANGER': 'AgIA',
+        'SIX': 'AgYA',//shadow
+        'Seven': 'AgAA'//scion
+    },
     nodesToBuild = function (nodes) {
         return btoa(nodes.map(function (n) {
             return String.fromCharCode(n.id >> 8) + String.fromCharCode(n.id & 0xFF);
@@ -306,13 +315,24 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
         return nodesToBuild(getTakenNodes());
     },
     toBuildUrl = function (buildStr, classStr) {
-        if (undefined === classStr) {
+        if (!classStr) {
             classStr = 'AgMB';//witch
         }
         return 'http://www.pathofexile.com/passive-skill-tree/AAAA' + classStr + buildStr;
     },
-    getBuildUrl = function () {
-        return toBuildUrl(exportBuild());
+    getBuildUrl = function (nodes) {
+        var className = false, i;
+        nodes = nodes || exportBuild();
+        for (i = 0; i < nodes.length && !className; i += 1) {
+            for (className in classNodeNames) {
+                if (className === nodes[i].dn) {
+                    nodes.splice(i, 1);
+                    break;
+                }
+            }
+            className = false;
+        }
+        return toBuildUrl(nodesToBuild(nodes), className);
     },
     bruteForceTest = (function () {
         var graphs = [],
@@ -486,11 +506,12 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
                 spf(t, nodeSet);
                 return t.distance <= minT.distance ? t : minT;
             }, {'distance': Number.MAX_VALUE});
-            
-            nodeSet.push(closestTarget.path[0]);
-            if (targets.indexOf(closestTarget.path[0]) >= 0) {
-                targets.splice(targets.indexOf(closestTarget.path[0]), 1);
-            }
+            closestTarget.path.forEach(function (n) {
+                nodeSet.push(n);
+                if (targets.indexOf(n) >= 0) {
+                    targets.splice(targets.indexOf(n), 1);
+                }
+            });
         }
         return nodeSet;
     },
