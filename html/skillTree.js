@@ -515,8 +515,112 @@ var passiveSkillTreeData = {"characterData":{"1":{"base_str":32,"base_dex":14,"b
         }
         return nodeSet;
     },
+    spfMulti = function (targets, takenNodes) {
+        var index,
+            current,
+            unvisited = [],
+            anyUnvisitedTargets = function () {
+                var i;
+                for (i = 0; i < targets.length; i += 1) {
+                    if (!targets[i].visited) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+        
+        unvisited.insert = function (n) {
+            var i = unvisited.indexOf(n);
+            if (i >= 0) {
+                unvisited.splice(i, 1);//remove from old position to prevent duplicate entires.
+            }
+            for (i = 0; i < unvisited.length - 1; i += 1) {
+                if (unvisited[i].distance > n.distance) {
+                    unvisited.splice(i, 0, n);
+                    return;
+                }
+            }
+            unvisited.push(n);//should never happen?
+        };
+        unvisited.deQueue = function () {
+            return unvisited.splice(0, 1)[0];
+        };
+        
+        nodes.forEach(function (n) {
+            var distance = Number.MAX_VALUE;
+            if (takenNodes.indexOf(n) >= 0) {//start is always in takenNodes.
+                distance = 0;//taken nodes are free to travel.
+            }
+            n.distance = distance;
+            n.path = [];
+            n.visited = false;//0 === distance;
+            if (!n.visited) {
+                unvisited.insert(n);
+            }
+        });
+        for (current = unvisited.deQueue();
+                unvisited.length > 0 && anyUnvisitedTargets();
+                current = unvisited.deQueue()) {
+            current.siblings.forEach(function (neighbour) {
+                if (!neighbour.visited) {
+                    if (neighbour.distance > current.distance + neighbour.weight) {
+                        neighbour.distance = current.distance + neighbour.weight;
+                        neighbour.path = current.path.concat(neighbour);
+                        unvisited.insert(neighbour);//update position of nieghbour.
+                    }
+                }
+            });
+            current.visited = true;
+        }
+        
+        return (function () {
+            var i, j, nextHop = {}, value;
+            for (i = 0; i < targets.length; i += 1) {
+                for (j = 0; j < targets[i].path.length; j += 1) {
+                    if (!nextHop.hasOwnProperty(targets[i].path[j].id)) {
+                        nextHop[targets[i].path[j].id] = {
+                            'node': targets[i].path[j],
+                            'distances': []};
+                    }
+                    nextHop[targets[i].path[j].id].distances.push(targets[i].distance);
+                }
+            }
+            for (j in nextHop) {//usign j to set it to a valid key in nextHop
+                nextHop[j].distances.sort(function (a, b) { return a - b; });
+                nextHop[j].value = nextHop[j].distances.reduce(function (min, current, index, all) {
+                    var i, sum = 0, val;
+                    for (i = 0; i <= index; i += 1) {
+                        sum += all[i];
+                    }
+                    val = sum / (index + 1);
+                    return Math.min(val, min);
+                }, Number.MAX_VALUE);
+            }
+            for (i in nextHop) {
+                if (nextHop[i].value < nextHop[j].value) {
+                    j = i;
+                }
+            }
+            return nextHop[j].node.path;
+        })();
+    },
+    pathFindMulti = function (start, targets) {
+        var nodeSet = [start],
+            path;
+            
+        while (targets.length > 0) {
+            path = spfMulti(targets, nodeSet);
+            path.forEach(function (n) {
+                nodeSet.push(n);
+                if (targets.indexOf(n) >= 0) {
+                    targets.splice(targets.indexOf(n), 1);
+                }
+            });
+        }
+        return nodeSet;
+    },
     test = function () {
-        pathFind(nodes[24], [nodes[1294], nodes[1291], nodes[879], nodes[157], nodes[1478], nodes[851], nodes[850], nodes[852]]);
+        return pathFindMulti(nodes[24], [nodes[1294], nodes[1291], nodes[879], nodes[157], nodes[1478], nodes[851], nodes[850], nodes[852]]);
     };
     
     
