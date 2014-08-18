@@ -1,3 +1,21 @@
+// id: unique node id
+// dn: Node Name
+// sd: List of actual effects
+
+// ks: Key Stone flag
+// m: Mastery Node flag (centre node in mastery node groups)
+// not: Notable Passive flag
+
+// sa: Strength Added (Oxblood, Strength, etc)
+// da: Dexterity Added (Grace, etc)
+// ia: Intelligence Added (Savant, Intelligence, etc)
+
+// icon: location of node artwork
+// g: group number (every node has a group, which may be a mastery group)
+// o: Orbit distance. Mastery nodes have 0, for other nodes it generally indicates distance from the mastery node.
+// oidx: Orbit index. Used to calculate angle relative to centre of group.
+// out: links to other nodes
+// spc: If this isn't empty then it's one of the 6 starting nodes and contains the class id. (the ones which are auto chosen at level 1 and which you can never spec out of)
 var passiveSkillTreeData = {
     "assets": {
         "Background1": {

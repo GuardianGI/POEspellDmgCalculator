@@ -41,7 +41,7 @@ var findIndex = function (arr, filter) {
     },
     userInput = {},
     firstToUpper = function (str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
+        return undefined === str ? '' : str.charAt(0).toUpperCase() + str.slice(1);
     },
     dmgLvls = ['min', 'max', 'avg'],
     defaultDmg = function () { return {min: 0, max: 0, avg: 0}; },
