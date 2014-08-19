@@ -742,6 +742,108 @@ var nodes = passiveSkillTreeData.nodes,
                 console.log(getSdMatches(s));
             });
         });
+    },
+    setZoom, getZoom,
+    drawTree,
+    initDrawTree = function (body) {
+        var padding = 10, i, lbl, zoom = 0.3, node, groups = passiveSkillTreeData.groups,
+            canvas = document.getElementById('canvas'),
+            ctx = canvas.getContext('2d')
+            nodesDiv = document.createElement('div'),
+            mouseEvents = {},
+            resolveToPoint = function (deg, r) {
+                var rad = Math.PI * deg / 180;
+                return {mX: r * Math.cos(rad), mY: r * Math.sin(rad)};
+            };
+        body.appendChild(nodesDiv);
+        nodesDiv.style.position = 'absolute';
+        setZoom = function (val) {
+            zoom = val;
+        };
+        getZoom = function () {
+            return zoom;
+        };
+        ctx.lineWidth = 1;
+        
+        passiveSkillTreeData.nodes.forEach(valueNode);
+        
+        passiveSkillTreeData.nodes.forEach(function (node) {
+            //a^2 + b^2 = c^2, a = oidx - 5, c = o, b = Math.sqrt(c ^ 2 - a ^ 2)
+            var p = resolveToPoint((node.oidx - 3) * 30, node.o * 80);
+            node.x = (-passiveSkillTreeData.min_x + groups[node.g].x) + p.mX;
+            node.y = (-passiveSkillTreeData.min_y + groups[node.g].y) + p.mY + 200;
+        });
+        
+        canvas.addEventListener('mousewheel',(function () {
+            return function (e) {
+                var d = e.wheelDeltaY > 0 ? 1.1 : 1 / 1.1;
+                setZoom(getZoom() * d);
+                drawTree();
+                e.preventDefault();
+                return false;
+            };
+        })(), false);
+        
+        mouseEvents = (function () {
+            var x, y, draging = false;
+            return {
+                onmousedown: function (e) {
+                    x = e.clientX || e.pageX;
+                    y = e.clientY || e.pageY;
+                    draging = true;
+                },
+                onmousemove: function (e) {
+                    var newX = e.clientX || e.pageX;
+                        newY = e.clientY || e.pageY,
+                        dX = x - newX,
+                        dY = y - newY;
+                    if (draging) {
+                        body.scrollLeft += dX;
+                        body.scrollTop += dY;
+                        
+                        x = newX;
+                        y = newY;
+                    }
+                },
+                onmouseup: function (e) {
+                    draging = false;
+                }};
+        })();
+        
+        canvas.onmousedown = mouseEvents.onmousedown;
+        canvas.onmouseup = mouseEvents.onmouseup;
+        canvas.onmousemove = mouseEvents.onmousemove;
+        
+        drawTree = function () {
+            canvas.width = zoom * (-passiveSkillTreeData.min_x + passiveSkillTreeData.max_x) + 200;
+            canvas.height = zoom * (-passiveSkillTreeData.min_y + passiveSkillTreeData.max_y) + 200;
+            nodesDiv.innerHTML = '';
+            
+            for (i = 0; i < passiveSkillTreeData.nodes.length; i += 1) {
+                node = passiveSkillTreeData.nodes[i];
+                lbl = document.createElement('label');
+                lbl.innerHTML = i;
+                lbl.title = node.dn + '\n' + node.sd.join('\n');
+                if (node.taken) {
+                    lbl.style.backgroundColor = '#0F0';
+                }
+                
+                lbl.style.left = node.x * zoom + 'px';
+                lbl.style.top = node.y * zoom + 'px';
+                lbl.style.position = 'absolute';
+                
+                nodesDiv.appendChild(lbl);
+                
+                node.in.forEach(function (n) {
+                    ctx.beginPath();
+                    
+                    ctx.moveTo(node.x * zoom, node.y * zoom);
+                    ctx.lineTo(n.x * zoom, n.y * zoom);
+                    
+                    ctx.stroke();
+                });
+            }
+        }
     };
     
     
