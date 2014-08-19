@@ -115,7 +115,7 @@ var redraw, onRedraw = [],
         for (name in skills) {
             if (skills[name].enabled) {
                 skills[name].color = getColor();
-                for (i in indexLines) {
+                for (i = 0; i < indexLines.length; i += 1) {
                     if (name == indexLines[i].getElementsByTagName("button")[0].innerHTML) {
                         indexLines[i].style.backgroundColor = skills[name].color;
                         break;

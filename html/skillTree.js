@@ -22,7 +22,7 @@ var nodes = passiveSkillTreeData.nodes,
         'incrCrurseEff': /(\d+\.?\d*)% increased effect of your curses$/i,
         // 'incr': /(\d+\.?\d*)% increased radius of curses$/i,
         // 'incr': /(\d+\.?\d*)% increased cast speed for curses$/i,
-        'incrMaxLife': /(\d+\.?\d*)% increased maximum life$/i,
+        'incrMaxLife': /^(\d+\.?\d*)% increased maximum life$/i,
         // 'With': /knocks back enemies if you get a critical strike with\s?a?n?\s(\S+)$/i,
         'incrMatchedSpeed': /(\d+\.?\d*)% increased (\S+) speed$/i,
         // 'more': /projectile attacks deal up to (\d+\.?\d*)% more damage to targets at the start of their movement, dealing less damage to targets as the projectile travels further$/i,
@@ -745,6 +745,7 @@ var nodes = passiveSkillTreeData.nodes,
     },
     setZoom, getZoom,
     drawTree,
+    recalcNodes,
     initDrawTree = function (body) {
         var padding = 10, i, lbl, zoom = 0.3, node, groups = passiveSkillTreeData.groups,
             canvas = document.getElementById('canvas'),
@@ -765,7 +766,13 @@ var nodes = passiveSkillTreeData.nodes,
         };
         ctx.lineWidth = 1;
         
-        passiveSkillTreeData.nodes.forEach(valueNode);
+        recalcNodes = function () {
+            passiveSkillTreeData.nodes.forEach(valueNode);
+            spfMulti(nodes.filter(function (n) {
+                return passiveSkillTreeData.root.out.indexOf(n.id) < 0;
+            }), [nodeById[54447]]);
+        };
+        recalcNodes();
         
         passiveSkillTreeData.nodes.forEach(function (node) {
             //a^2 + b^2 = c^2, a = oidx - 5, c = o, b = Math.sqrt(c ^ 2 - a ^ 2)
@@ -822,7 +829,7 @@ var nodes = passiveSkillTreeData.nodes,
             for (i = 0; i < passiveSkillTreeData.nodes.length; i += 1) {
                 node = passiveSkillTreeData.nodes[i];
                 lbl = document.createElement('label');
-                lbl.innerHTML = i;
+                lbl.innerHTML = node.weight + '_' +roundForDisplay(node.distance / node.path.length);
                 lbl.title = node.dn + '\n' + node.sd.join('\n');
                 if (node.taken) {
                     lbl.style.backgroundColor = '#0F0';
@@ -831,6 +838,13 @@ var nodes = passiveSkillTreeData.nodes,
                 lbl.style.left = node.x * zoom + 'px';
                 lbl.style.top = node.y * zoom + 'px';
                 lbl.style.position = 'absolute';
+                
+                lbl.onclick = (function (self) {
+                    return function () {
+                        self.taken = !self.taken;
+                        drawTree();
+                    };
+                })(node);
                 
                 nodesDiv.appendChild(lbl);
                 
