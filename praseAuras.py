@@ -163,6 +163,8 @@ class aura:
 								val = '0';
 								if 'x%' in ColumnNames[i]:
 									val += '%'
+							if lvl not in values:
+								values[lvl] = {}
 							values[lvl][ColumnNames[i]] = val
 						else:
 							values.pop(lvl, None)

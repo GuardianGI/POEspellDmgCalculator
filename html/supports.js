@@ -1,13 +1,13 @@
 var auras, supports = (function () {
     var sName, res = {}, storedRes, i, reType, s, stage, column, d,
         modRegexes = {
-            addedDmg: /adds x-y (\S+) damage/i,
+            addedDmg: /adds x-y (\S+) damage(.*)/i,
             addedDmg2: /additional (\S+) damage with attacks/i,
             moreDmg: /x% more\s?(\S*) damage/i,
             moreSomethingDmg: /x% more\s(\S+)\s(.+) damage/i,
             less: /(\d+%) less\s?(\S+)\s?(.*)/i,
-            addedConvertedDmg: /gain x% of (\S+) damage as extra (\S+) damage/i,
-            addedConvertedDmg2: /add x% of your (\S+) damage as (\S+) damage/i,
+            addedConvertedDmg: /gain ([x|\d]+)% of (\S+) damage as extra (\S+) damage/i,
+            addedConvertedDmg2: /add (x)% of your (\S+) damage as (\S+) damage/i,
             dmgConverted: /x% of (\S+) damage converted to (\S+) damage/i,
             chain: /chain \+(\d+) times/i,
             chanceToStatusAilment: /x% chance to (\S+)/i,
@@ -31,6 +31,69 @@ var auras, supports = (function () {
                 if (null !== matches) {
                     res[sName].types.push(reType);
                     switch (reType) {
+                    case 'addedDmg': case 'addedDmg2':
+                        res[sName].enabled = true;
+                        res[sName].isApplicable = (function (support) {
+                            if ('addedDmg2' === reType) {
+                                return function (skill) {
+                                    return support.enabled &&
+                                        skill.keywords.indexOf('attack') >= 0;
+                                };
+                            } else {
+                                return function (skill) { return support.enabled; };
+                            }
+                        })(res[sName]);
+                        console.log(reType);
+                        res[sName].applyFirst.push((function (support, tmp) {
+                            var columnIndex, dmgStages = [], additionalRule = function () { return true; };
+                            if ('' !== matches[2] && undefined !== matches[2]) {
+                                columnIndex = findIndex(s.stageColumns, function (key) {
+                                    return key.toLowerCase().indexOf(matches[2].toLowerCase()) >= 0;
+                                });
+                                
+                                if (matches[2].indexOf('spell' >= 0)) {
+                                    additionalRule = function (skill) {
+                                        return skill.keywords.indexOf('spell') >= 0;
+                                    };
+                                } else if (matches[2].indexOf('attack') >= 0) {
+                                    additionalRule = function (skill) {
+                                        return skill.keywords.indexOf('attack') >= 0 && !skill.isMinion;
+                                    };
+                                } else {
+                                    console.log('????');
+                                }
+                            } else {
+                                columnIndex = findIndex(s.stageColumns, function (key) {
+                                    return key.toLowerCase().indexOf('damage') >= 0;
+                                });
+                            }
+                            for (stage in s.stageStats) {
+                                d = {};
+                                d[translateMatch(matches[1])] = s.stageStats[stage][columnIndex].split("-").
+                                    reduce(function(d, val) {
+                                        d[0 === d.min ? 'min' : 'max'] = val | 0;
+                                        return d;
+                                    }, {min: 0, max: 0});
+                                dmgStages.push(d);
+                            }
+                            return function (supportStage, skillLvl, skill) {
+                                var type;
+                                if (!additionalRule(skill)) {
+                                    return;
+                                }
+                                
+                                for (type in dmgStages[supportStage]) {
+                                    if (skillLvl === 26) console.log(skill.dmg[skillLvl][type].min, dmgStages[supportStage][type].min);
+                                    skill.dmg[skillLvl][type].min += 
+                                            dmgStages[supportStage][type].min;
+                                    skill.dmg[skillLvl][type].max += 
+                                        dmgStages[supportStage][type].max;
+                                    skill.dmg[skillLvl][type].avg += 
+                                        (dmgStages[supportStage][type].min + dmgStages[supportStage][type].max) / 2;
+                                }
+                            };
+                        })(res[sName], matches));
+                        break;
                     case 'incrOther':
                         matches = matches[1].split(/\s/i).map(translateMatch);
                         if (matches.indexOf('damage') < 0) {
@@ -401,32 +464,38 @@ var auras, supports = (function () {
                         break;
                     case 'addedConvertedDmg': case 'dmgConverted': case 'addedConvertedDmg2':
                         res[sName].enabled = true;
+                        
                         res[sName].isApplicable = (function (dmgType, support) {
                             return function (skill) {//has dmg of converted type at selected level?
                                 return support.enabled &&
                                     skill.getDmg(dmgType, userInput.playerLvlForSuggestions).min > 0;
                             };
-                        })(translateMatch(matches[1]), res[sName]);
+                        })(translateMatch(matches[2]), res[sName]);
                         
                         
                         res[sName].applyAfterFirst.push((function (from, to, isAdditional) {
-                            var pctConverted = {}, column = false;
-                            column = findIndex(s.stageColumns, function (tmpColumn) {
-                                return tmpColumn.indexOf(to) >= 0 || tmpColumn.indexOf('damage') >= 0;
-                            });
-                            for (stage in s.stageStats) {
-                                pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
-                            }
-                        
-                            if (!isAdditional) {//dmg is converted not just added.
-                                //TODO: move to an apply before/after (interferes with converted dmg that is alter used for added)
-                                res[sName].applyBefore.push(function (supportStage, skillLvl, skill) {
-                                    dmgLvls.forEach(function (dmgLvl) {
-                                        skill.dmg[skillLvl][from][dmgLvl] *= 1 - pctConverted[supportStage];
-                                    });
-                                });
-                            }
+                            var pctConverted = {}, column = false, hasStages = true;
                             
+                            if ('x' !== matches[1]) {
+                                pctConverted = parsePercent(matches[1]);
+                                hasStages = false;
+                            } else {
+                                column = findIndex(s.stageColumns, function (tmpColumn) {
+                                    return tmpColumn.indexOf(to) >= 0 || tmpColumn.indexOf('damage') >= 0;
+                                });
+                                for (stage in s.stageStats) {
+                                    pctConverted[stage] = parsePercent(s.stageStats[stage][column]);
+                                }
+                            
+                                if (!isAdditional) {//dmg is converted not just added.
+                                    //TODO: move to an apply before/after (interferes with converted dmg that is alter used for added)
+                                    res[sName].applyBefore.push(function (supportStage, skillLvl, skill) {
+                                        dmgLvls.forEach(function (dmgLvl) {
+                                            skill.dmg[skillLvl][from][dmgLvl] *= 1 - pctConverted[supportStage];
+                                        });
+                                    });
+                                }
+                            }
                             return function (supportStage, skillLvl, skill) {
                                 var i, keys = [], dmgLvl, increases = {'min': {}, 'max': {}, 'avg': {}};
                                 for (i in skill.dmg[skillLvl]) {
@@ -445,7 +514,7 @@ var auras, supports = (function () {
                                                 skill.dmg[skillLvl][addedAs][dmgLvl] = 0;
                                             }
                                             increases[dmgLvl][addedAs] = skill.dmg[skillLvl][fromType][dmgLvl] *
-                                                pctConverted[supportStage];
+                                                (hasStages ? pctConverted[supportStage] : pctConverted);
                                         }
                                     }
                                 });
@@ -455,7 +524,7 @@ var auras, supports = (function () {
                                     }
                                 }
                             };
-                        })(translateMatch(matches[1]), translateMatch(matches[2]), 'dmgConverted' !== reType));
+                        })(translateMatch(matches[2]), translateMatch(matches[3]), 'dmgConverted' !== reType));
                         break;
                     }
                     for (columnIndex in s.stageColumns) {
@@ -500,43 +569,6 @@ var auras, supports = (function () {
                                             }
                                         }
                                     })(s, res[sName], matchedKeywords))
-                                    break;
-                                case 'addedDmg': case 'addedDmg2':
-                                    res[sName].enabled = true;
-                                    res[sName].isApplicable = (function (support) {
-                                        if ('addedDmg2' === reType) {
-                                            return function (skill) {
-                                                return support.enabled &&
-                                                    skill.keywords.indexOf('attack') >= 0;
-                                            };
-                                        } else {
-                                            return function (skill) { return support.enabled; };
-                                        }
-                                    })(res[sName]);
-                                    
-                                    res[sName].applyFirst.push((function (support) {
-                                        var dmgStages = [];
-                                        for (stage in s.stageStats) {
-                                            d = {};
-                                            d[translateMatch(matches[1])] = s.stageStats[stage][columnIndex].split("-").
-                                                reduce(function(d, val) {
-                                                    d[0 === d.min ? 'min' : 'max'] = val | 0;
-                                                    return d;
-                                                }, {min: 0, max: 0});
-                                            dmgStages.push(d);
-                                        }
-                                        return function (supportStage, skillLvl, skill) {
-                                            var type;
-                                            for (type in dmgStages[supportStage]) {
-                                                skill.dmg[skillLvl][type].min += 
-                                                        dmgStages[supportStage][type].min;
-                                                skill.dmg[skillLvl][type].max += 
-                                                    dmgStages[supportStage][type].max;
-                                                skill.dmg[skillLvl][type].avg += 
-                                                    (dmgStages[supportStage][type].min + dmgStages[supportStage][type].max) / 2;
-                                            }
-                                        };
-                                    })(res[sName]));
                                     break;
                                 case 'moreDmg':
                                     res[sName].enabled = true;

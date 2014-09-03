@@ -363,7 +363,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             return (s.isMinion ? 0 : (userInput.chanceToShock / 100)) + (s.additionalShockChance[lvl] || 0);
         };
         
-        s.applyShock = function (lvl) {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
+        s.applyShockLegacy = function (lvl) {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
             var hits = 1, shockStage, mult, chanceToShock;
             s.applyForLvls(function (i) {
                 chanceToShock = s.getCritChance(i) + s.getChanceToShock(i);
@@ -375,6 +375,23 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                         return m > 0.3 ? 0.3 : m;
                     };
                     mult = 1 + shockStage(1) + shockStage(2) + shockStage(3);
+                    
+                    s.dmg.multiply({'mult': mult, 'lvl': i});
+                }
+            }, lvl);
+        };
+        s.applyShock = function (lvl) {//assumes multi projectile always shotguns & light dmg is enough to make shock last.
+            var hits = 1, shockStage, mult, chanceToShock;
+            s.applyForLvls(function (i) {
+                chanceToShock = s.getCritChance(i) + s.getChanceToShock(i);
+                chanceToShock = chanceToShock > 1 ? 1 : chanceToShock;
+                if (s.getLightDmg(i).max > 0) {
+                    hits = s.getHits(i);
+                    shockStage = function () {
+                        var m = 0.5 * hits;
+                        return m > 0.5 ? 0.5 : m;
+                    };
+                    mult = 1 + shockStage();
                     
                     s.dmg.multiply({'mult': mult, 'lvl': i});
                 }
@@ -973,6 +990,7 @@ addExecuteOnLoad(function () {
     for (name in rawSkills) {
         skills[name] = skill(rawSkills[name], name);
         skills[name].calcDmg();
+        skills[name].isParsed = true;
     }
     publicSkills = skills;
 });
