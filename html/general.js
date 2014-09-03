@@ -60,7 +60,7 @@ var findIndex = function (arr, filter) {
             }
         };
     })(),
-    dmgSubTypes = ['aoe', 'melee', 'projectile', 'minion', 'spell', 'attack'],
+    dmgSubTypes = ['aoe', 'melee', 'projectile', 'minion', 'spell', 'attack', 'weapon'],
     isDmgSubType = function (type) {
         return dmgSubTypes.indexOf(type) >= 0;
     },
