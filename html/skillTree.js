@@ -70,7 +70,7 @@ var nodes = passiveSkillTreeData.nodes,
         // 'incr': /minions have (\d+\.?\d*)% increased maximum life$/i,
         // '': /minions regenerate (\d+\.?\d*)% life per second$/i,
         // '': /minions leech (\d+\.?\d*)% of damage as life$/i,
-        // 'With': /(\d+\.?\d*)% additional block chance with\s?a?n?\s(\S+)$/i,
+        'BlockWith': /(\d+\.?\d*)% additional block chance with\sa?n?\s?(\S+)$/i,
         // 'incr': /(\d+\.?\d*)% increased maximum energy shield$/i,
         // 'add': /\+(\d+\.?\d*) maximum frenzy charge$/i,
         'incrMatchedDmgWithXhandedMelee': /(\d+\.?\d*)% increased (\S+\s?\S*\s?\S*\s?\S*) damage with\s?a?n?\s(\S+) handed melee weapons$/i,
@@ -121,7 +121,7 @@ var nodes = passiveSkillTreeData.nodes,
         // 'add': /\+(\d+\.?\d*)% to maximum fire resistance$/i,
         // 'add': /\+(\d+\.?\d*)% to fire resistance$/i,
         // 'incr': /(\d+\.?\d*)% increased energy shield from equipped shield$/i,
-        // 'With': /(\d+\.?\d*)% additional chance to block with\s?a?n?\s(\S+)$/i,
+        'shieldBlock': /(\d+\.?\d*)% additional chance to block with shields/i,
         // '': /(\d+\.?\d*)% additional chance to dodge attacks$/i,
         // 'incrWith': /(\d+\.?\d*)% increased accuracy rating with\s?a?n?\s(\S+) handed melee weapons$/i,
         // 'add': /\+(\d+\.?\d*)% to chaos resistance$/i,
@@ -195,7 +195,7 @@ var nodes = passiveSkillTreeData.nodes,
         // 'add': /\+(\d+\.?\d*) to accuracy rating$/i,
         // '': /your hits can't be evaded$/i,
         // '': /never deal critical strikes$/i,
-        // 'With': /(\d+\.?\d*)% additional chance to block spells with\s?a?n?\s(\S+)$/i,
+        'SpellBlockWith': /(\d+\.?\d*)% additional chance to block spells with\s?a?n?\s(\S+)$/i,
         // '': /life leech applies instantly at (\d+\.?\d*)% effectiveness\. life regeneration has no effect.$/i,
         // 'incr': /(\d+\.?\d*)% increased cast speed while dual wielding$/i,
         // '': /\+(\d+\.?\d*)% elemental resistances while holding a shield$/i,
@@ -244,19 +244,39 @@ var nodes = passiveSkillTreeData.nodes,
     })(passiveSkillTreeData.nodes),
     statValues = {
         'incrAsWithClaws': 0,
-        'incrAsWithDaggers': 0,
+        'incrAsWithDaggers': 0.1,
         'incrAsWithSwords': 0,
         'incrCcWithClaws': 0,
-        'incrCcWithDaggers': 0,
+        'incrCcWithDaggers': 0.1,
         'incrCcWithSwords': 0,
-        'incrProjectileDmg': 0.1,
+        'incrProjectileDmg': 0,
+        'incrAsWithAxes': 0,
+        'incrMeleeDmg': 0,
+        'incrMatchedDmgWithXhandedMeleeTwo': 0,
+        'incrAsWithXhandedMeleeTwo': 0,
+        'incrAsWithWands': 0,
+        'incrWandsDmgWith': 0,
+        'incrSpellCc': 0,
+        'incrSpellCd': 0,
+        'incrMatchedDmgWithXhandedMeleeOne': 0,
+        'incrAsWithXhandedMeleeOne': 0,
+        'incrAsWithBows': 0,
+        'incrCcWithMaces': 0,
+        'incrCdWithMaces': 0,
+        'incrCcWithXHandedMeleeOne': 0,
+        'incrCdWithBows': 0,
+        'incrCcWithWands': 0,
+        'incrCdWithWands': 0,
+        'incrAsWithStaves': 0,
+        'incrAsWithMaces': 0,
+        'incrCdWithDaggers': 0.15,
         'addDex': 0.001,
         'addInt': 0.001,
         'addStr': 0.001,
-        'incrSpellDmg': 0.1,
+        'incrSpellDmg': 0,
         'wandPhysDmgAddedAsMatch': 0,
-        'incrCrurseEff': 0.1,
-        'incrMaxLife': 0.2,
+        'incrCrurseEff': 0,
+        'incrMaxLife': 0.5,
         'incrCcWithBows': 0,
         'incrMelee physicalDmg': 0,
         'incrMatchedSpeed': 0,
@@ -266,31 +286,20 @@ var nodes = passiveSkillTreeData.nodes,
         'incrCcWithStaves': 0,
         'incrMineDmg': 0,
         'incrElementalDmg': 0.01,
-        'incrPhysicalDmg': 0.1,
+        'incrPhysicalDmg': 0,
         'incrBuffEff': 0.5,
         'incrMeleeAs': 0,
         'incrCc': 0.1,
-        'incrCd': 0.05,
+        'incrCd': 0.15,
         'incrFireDmg': 0,
         'penMatchedRes': 0,
         'chanceToMatched': 0,
+        'SpellBlockWithShields': 2,
+        'shieldBlock': 2,
         'incrBurnDuration': 0,
-        'incrAsWithAxes': 0,
         'incrMinionAs': 0,
         'LeechedAs': 0,
-        'incrMeleeDmg': 0,
-        'incrMatchedDmgWithXhandedMeleeTwo': 0,
-        'incrAsWithXhandedMeleeTwo': 0,
-        'incrAsWithWands': 0,
-        'incrWandsDmgWith': 0,
-        'incrSpellCc': 0.1,
-        'incrSpellCd': 0.05,
-        'incrMatchedDmgWithXhandedMeleeOne': 0,
-        'incrAsWithXhandedMeleeOne': 0,
-        'incrAsWithBows': 0,
         'ironGrip': 0,
-        'incrCcWithMaces': 0,
-        'incrCdWithMaces': 0,
         'xMatchedToFire': 0,
         '100%LessNonFireDmg': 0,
         'incrTrapDmg': 0,
@@ -298,24 +307,17 @@ var nodes = passiveSkillTreeData.nodes,
         'x%OfMinionLifeAsFireDmg': 0,
         'incrCdWithSwords': 0,
         'incrBurningDmg': 0,
-        'incrCcIfStaff': 0.01,
+        'incrCcIfStaff': 0,
         'incrTotemDmg': 0,
         'incrChaosDmg': 0,
         'incrAreaDmg': 0,
         'incrColdDmg': 0,
         'incrAuraEff': 0.1,
-        'reducedAuraCost': 0.1,
+        'reducedAuraCost': 0.2,
         'incrLightningDmg': 0,
         'incrDot': 0,
-        'incrCcWithXHandedMeleeOne': 0,
-        'incrCdWithBows': 0,
         'incrMatchedDmgPerPowerCharge': 0,
-        'incrCcWithWands': 0,
-        'incrCdWithWands': 0,
-        'incrAsWithStaves': 0,
-        'incrAsWithMaces': 0,
-        'addSpellDodge': 0.1,
-        'incrCdWithDaggers': 0
+        'addSpellDodge': 0,
     },
     getSdMatches = function (sd) {
         var res = {}, reType, matches, val, statName;
@@ -324,6 +326,7 @@ var nodes = passiveSkillTreeData.nodes,
             if (matches) {
                 statName = reType;
                 if (reType.toLowerCase().indexOf('with') > 0) {
+                    if (matches[0].toLowerCase().indexOf('block') >= 0) console.log(matches);
                     statName += firstToUpper(matches[matches.length - 1]);
                 }
                 val = matches[1] | 0;
@@ -339,6 +342,7 @@ var nodes = passiveSkillTreeData.nodes,
                         break;*/
                 }
                 res[statName] = (res[statName] || 0) + val;
+                if (statName.toLowerCase().indexOf('block') >= 0) console.log(statName);
             }
         }
         return res;
@@ -409,7 +413,7 @@ var nodes = passiveSkillTreeData.nodes,
     },
     getBuildUrl = function (nodes) {
         var className = false, i;
-        nodes = nodes || exportBuild();
+        nodes = nodes || getTakenNodes();
         for (i = 0; i < nodes.length && !className; i += 1) {
             for (className in classNodeNames) {
                 if (className === nodes[i].dn) {
@@ -704,6 +708,7 @@ var nodes = passiveSkillTreeData.nodes,
         }
         
         while (targets.length > 0 && nodeSet.length < limit) {
+            console.log(targets.length, nodeSet);
             path = spfMulti(targets, nodeSet);
             path.forEach(function (n) {
                 nodeSet.push(n);
@@ -726,6 +731,40 @@ var nodes = passiveSkillTreeData.nodes,
         });
         console.log(valuedNodes);
         return pathFindMulti(nodeById[54447], valuedNodes.slice(0, 30).map(function (set) { return set.node; }));
+    },
+    madeBuild,
+    makeBuild = function (x) {
+        var valuedNodes, targets;
+        x = x || 30;
+        console.log('a');
+        spfMulti(nodes.filter(function (n) {
+            return passiveSkillTreeData.root.out.indexOf(n.id) < 0;
+        }), [nodeById[54447]]);
+        console.log('a');
+        valuedNodes = nodes.map(function (n) {
+            return {node: n, val: n.distance / (n.path.length / 2)};
+        }).sort(function (a, b) {
+            return a.val >  b.val ? 1 : -1;
+        });
+        console.log('a');
+        targets = valuedNodes.slice(0, x).map(function (set) { return set.node; }).concat(
+                nodes.filter(function (n) {
+                    return n.taken && passiveSkillTreeData.root.out.indexOf(n.id) < 0;
+                })
+            ).reduce(function (res, n) {//get values once
+                if (res.indexOf(n) < 0) {
+                    res.push(n);
+                }
+                return res;
+            }, []);
+        console.log(targets);
+        
+        madeBuild = pathFindMulti(
+            nodeById[54447],
+            targets,
+            100
+        );
+        return madeBuild;
     },
     showAllSdMatched = function () {
         nodes.forEach(function (n) {

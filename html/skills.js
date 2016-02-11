@@ -34,6 +34,7 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
         s.qualityEffects = [];
         s.cc = rawSkill.crit;
         s.eff = rawSkill.eff;
+        s.radius = rawSkill.radius;
         s.cd = 1;
         s.dmg = [];
         s.stages = [];
@@ -677,6 +678,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
             return s.getDmg('chaos', lvl);
         };
         
+        s.applyRadiusMultiplier = function (lvl) {
+            s.dmg.multiply({'mult': s.radius > 0 && s.keywords.indexOf('aoe') >= 0 ? 1 + s.radius / 5 : 1, 'lvl': lvl});
+        };
+        
         s.calcDmg = (function () {
             var needsRecalc = true;
             s.setNeedsRecalc = function () { needsRecalc = true; };
@@ -928,6 +933,10 @@ var skillDmg = function (rawSkill, lvl, additionalLvl, maxLvl) {
                     s.applyForLvls(function (i) {
                         s.dmg.multiply({'mult': s.traps[i].base, 'lvl': i});
                     }, lvl);
+                }
+                
+                if (userInput.applyRadiusTargets) {
+                    s.applyRadiusMultiplier(lvl);
                 }
                 
                 for (key in s.modifiers) {

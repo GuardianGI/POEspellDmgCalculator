@@ -6,7 +6,7 @@ from xml.dom.minidom import parseString
 
 generalDir = 'E:\\programming\\Node\\POESkillTree\\'
 dir = generalDir + "supportsHTML\\"
-f_escape = open("escape.txt", "rb")
+f_escape = open(generalDir+"\POEspellDmgCalculator\escape.txt", "rb")
 escape = f_escape.read(1)
 f_escape.close()
 

@@ -10,6 +10,8 @@ attackDir = generalDir + "attacksHTML\\"
 spells = []
 attacks = []
 dirs = [spellDir, attackDir]
+f_escape = open(generalDir+"\POEspellDmgCalculator\escape.txt", "rb")
+escape = f_escape.read(1)
 
 def printErr(*objs):
 	print(*objs, file=sys.stderr)
@@ -54,6 +56,7 @@ class dmg:
 		self.hasAPS = False
 		self.hasChain = False
 		self.crit = 0
+		self.radius = -1
 		self.effectiveness = 1
 		self.castTime = 1
 	
@@ -164,8 +167,6 @@ def matchClosingTag(content, reStart, open, close):
 				openTags = 0
 		return content[offset:closing]
 		
-f_escape = open("escape.txt", "rb")
-escape = f_escape.read(1)
 class skill:
 	def __init__(self, fileName, dir):
 		print(fileName)
@@ -267,6 +268,10 @@ class skill:
 			keywords = self.getMeta("keywords")
 			self.keywords = [tryGetTitle(word) for word in keywords.split(',')]
 		except Exception: pass
+		try:
+			radius = self.getMeta("radius")
+			self.dmg.radius = self.strToFloat(radius)
+		except Exception: pass
 		
 		modifiers = []
 		offset = 1
@@ -338,11 +343,12 @@ for foo in [True, False]:
 		skills = spells
 		fileName = 'parsedSpells.json'
 		for skill in skills:
-			skillStr = "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'qualityBonus': '{}', 'keywords': [{}], 'modifiers': [{}], 'hasAPS': {}, 'chains': {}, 'dmg': [".format(
+			skillStr = "'{}': {{'crit': {}, 'eff': {}, 'castTime': {}, 'radius': {}, 'qualityBonus': '{}', 'keywords': [{}], 'modifiers': [{}], 'hasAPS': {}, 'chains': {}, 'dmg': [".format(
 				skill.name,
 				skill.dmg.crit,
 				skill.dmg.effectiveness,
 				skill.dmg.castTime,
+				skill.dmg.radius,
 				skill.qualityBonus,
 				', '.join(["'{}'".format(word) for word in skill.keywords]),
 				', '.join(["'{}'".format(modifier) for modifier in skill.modifiers]),

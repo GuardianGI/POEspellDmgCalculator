@@ -7,6 +7,8 @@ from xml.dom.minidom import parseString
 generalDir = 'E:\\programming\\Node\\POESkillTree\\'
 auraDir = generalDir + "aurasHTML\\"
 auras = []
+f_escape = open(generalDir+"\POEspellDmgCalculator\escape.txt", "rb")
+escape = f_escape.read(1)
 
 def printErr(*objs):
 	print(*objs, file=sys.stderr)
@@ -216,8 +218,6 @@ def matchClosingTag(content, reStart, open, close):
 				openTags = 0
 		return content[offset:closing]
 		
-f_escape = open("escape.txt", "rb")
-escape = f_escape.read(1)
 class skill:
 	def __init__(self, fileName, dir):
 		print(fileName)
